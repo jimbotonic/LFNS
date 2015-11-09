@@ -135,6 +135,4 @@ function export_graphml(filename::AbstractString, nodes::Array{Node,1}, edges::A
 	close(graphmlFile)									
 end
 
-nodes,edges = load_IEEE_SLFD(ARGS[1])
-export_graphml("test.graphml", nodes, edges)
 
