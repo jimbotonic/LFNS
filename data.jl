@@ -8,18 +8,18 @@ type Node
 	name::AbstractString
 	# 0:PQ, 1:Q \theta, 2: PV, 3: V\theta
 	bus_type::Int
+	init_voltage::Float64
 	final_voltage::Float64
+	voltage_level::Int
 	angle::Float64
 	load::Complex{Float64}
 	generation::Complex{Float64}
-	init_voltage::Float64
 	Q_min::Float64
 	Q_max::Float64
 	P_min::Float64
 	P_max::Float64
 	sh_conductance::Float64
 	sh_susceptance::Float64
-	voltage_level::Int
 end
 
 # edge type
@@ -62,7 +62,6 @@ function load_ENTSOE(filename::AbstractString)
 	nid = 1
 	# name -> node id
 	name_id = Dict{AbstractString,Int64}()
-
 	
 	for l in lines
 		if startswith(l, end_section)
@@ -96,7 +95,7 @@ function load_ENTSOE(filename::AbstractString)
 				sh_conductance = 0.
 				sh_susceptance = 0.
 
-				n = Node(nid, name, bus_type, final_voltage, angle, load, generation, init_voltage, Q_min, Q_max, P_min, P_max, sh_conductance, sh_susceptance, voltage_level)
+				n = Node(nid, name, bus_type, init_voltage, final_voltage, voltage_level, angle, load, generation, Q_min, Q_max, P_min, P_max, sh_conductance, sh_susceptance)
 				push!(nodes, n)
 				@info("adding node: ", n)
 				# increment node id
@@ -112,20 +111,43 @@ function load_ENTSOE(filename::AbstractString)
 			line_type = 0
 			# line status 0,1,2 -> ON 7,8,9 -> OFF
 			lsc = parse(Int, strip(l[21:21]))
-			if lsc == 0
+			if lsc == 0 || lsc == 1 || lsc == 2
 				line_status = true 
-			elseif lsc == 7
+			elseif lsc == 7 || lsc == 8 || lsc == 9
 				line_status = false 
 			end
 			resistance = float(strip(replace(l[23:28],',','.')))
 			reactance = float(strip(replace(l[30:35],',','.')))
-			sh_susceptance = float(strip(replace(l[37:40],',','.')))
+			sh_susceptance = float(strip(replace(l[37:44],',','.')))
 			ratio = 0.
 
 			edge = Edge(source_id, target_id, line_type, line_status, resistance, reactance, sh_susceptance, ratio)
 			push!(edges, edge)
 			@info("adding edge: ", edge)
 		elseif in_edge_section2
+			name1 = strip(l[1:8])
+			name2 = strip(l[10:17])
+			source_id = name_id[name1]
+			target_id = name_id[name2]
+			# bloc 2 -> 1
+			line_type = 1
+			# line status 0,1,2 -> ON 7,8,9 -> OFF
+			lsc = parse(Int, strip(l[21:21]))
+			if lsc == 0 || lsc == 1 || lsc == 2
+				line_status = true 
+			elseif lsc == 7 || lsc == 8 || lsc == 9
+				line_status = false 
+			end
+			resistance = float(strip(replace(l[41:46],',','.')))
+			reactance = float(strip(replace(l[48:53],',','.')))
+			sh_susceptance = float(strip(replace(l[55:62],',','.')))
+			ratio1 = float(strip(replace(l[23:27],',','.')))
+			ratio2 = float(strip(replace(l[29:33],',','.')))
+			ratio = ratio1/ratio2
+
+			edge = Edge(source_id, target_id, line_type, line_status, resistance, reactance, sh_susceptance, ratio)
+			push!(edges, edge)
+			@info("adding edge: ", edge)
 		# bloc 3 is not parsed for now
 		#elseif in_edge_section3
 		end
@@ -139,6 +161,7 @@ function load_ENTSOE(filename::AbstractString)
 		elseif startswith(l, edge_section3)
 			in_edge_section3 = true
 		end
+	end
 
 	return nodes,edges
 end
@@ -187,7 +210,7 @@ function load_IEEE_SLFD(filename::AbstractString)
 			sh_conductance = float(strip(replace(l[107:114],',','.')))
 			sh_susceptance = float(strip(replace(l[115:122],',','.')))
 			
-			n = Node(id, name, bus_type, final_voltage, angle, load, generation, init_voltage, Q_min, Q_max, 0., 0., sh_conductance, sh_susceptance, 0)
+			n = Node(id, name, bus_type, init_voltage, final_voltage, 0, angle, load, generation, Q_min, Q_max, 0., 0., sh_conductance, sh_susceptance)
 			push!(nodes, n)
 			@info("adding node: ", n)
 		elseif in_edge_section
@@ -226,24 +249,29 @@ function export_graphml(filename::AbstractString, nodes::Array{Node,1}, edges::A
 		write(graphmlFile, "<node id=\"" * string(n.id) * "\">\n")
 		write(graphmlFile, "	<data key=\"name\">" * n.name * "</data>\n")
 		write(graphmlFile, "	<data key=\"bus_type\">" * string(n.bus_type) * "</data>\n")
+		write(graphmlFile, "	<data key=\"init_voltage\">" * string(n.init_voltage) * "</data>\n")
 		write(graphmlFile, "	<data key=\"final_voltage\">" * string(n.final_voltage) * "</data>\n")
+		write(graphmlFile, "	<data key=\"voltage_level\">" * string(n.voltage_level) * "</data>\n")
 		write(graphmlFile, "	<data key=\"angle\">" * string(n.angle) * "</data>\n")
 		write(graphmlFile, "	<data key=\"load\">" * string(n.load) * "</data>\n")
 		write(graphmlFile, "	<data key=\"generation\">" * string(n.generation) * "</data>\n")
-		write(graphmlFile, "	<data key=\"init_voltage\">" * string(n.init_voltage) * "</data>\n")
 		write(graphmlFile, "	<data key=\"Q_min\">" * string(n.Q_min) * "</data>\n")
 		write(graphmlFile, "	<data key=\"Q_max\">" * string(n.Q_max) * "</data>\n")
 		write(graphmlFile, "	<data key=\"P_min\">" * string(n.P_min) * "</data>\n")
 		write(graphmlFile, "	<data key=\"P_max\">" * string(n.P_max) * "</data>\n")
 		write(graphmlFile, "	<data key=\"sh_conductance\">" * string(n.sh_conductance) * "</data>\n")
 		write(graphmlFile, "	<data key=\"sh_susceptance\">" * string(n.sh_susceptance) * "</data>\n")
-		write(graphmlFile, "	<data key=\"voltage_level\">" * string(n.voltage_level) * "</data>\n")
 		write(graphmlFile, "</node>\n")
 	end
 
 	for edge in edges
 		write(graphmlFile, "<edge id=\"" * string(edge.source_id) *"|" * string(edge.target_id) *"\" source=\"" * string(edge.source_id) * "\" target=\"" * string(edge.target_id) * "\">\n")
 		write(graphmlFile, "	<data key=\"line_type\">" * string(edge.line_type) * "</data>\n")
+		if edge.line_status
+			write(graphmlFile, "	<data key=\"line_status\">1</data>\n")
+		else
+			write(graphmlFile, "	<data key=\"line_status\">0</data>\n")
+		end
 		write(graphmlFile, "	<data key=\"resistance\">" * string(edge.resistance) * "</data>\n")
 		write(graphmlFile, "	<data key=\"reactance\">" * string(edge.reactance) * "</data>\n")
 		write(graphmlFile, "	<data key=\"sh_susceptance\">" * string(edge.sh_susceptance) * "</data>\n")
