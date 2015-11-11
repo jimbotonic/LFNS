@@ -1,21 +1,19 @@
 # Newton-Raphson solver for Flow Data networks
 #
 ## INPUT
-# Y = admittance square matrix
-# V = inital voltages
-# T = initial thetas
-# P0 = initial active powers
-# Q0 = initial reactive powers
-# id_PQ = index of the PQ buses
-# slack_id = index of the slack bus
-# epsilon = convergence if max error < epsilon
-# iter_max = max iteration
+# Y: admittance square matrix
+# V: inital voltages
+# T: initial thetas
+# P0: initial active powers
+# Q0: initial reactive powers
+# PQ_ids: array of PQ buses ids
+# slack_id: slack bus id
 #
 ## OUTPUT
-# V = updated voltages
-# T = updated thetas
-# n_iter = # of iterations before convergence
-function NR_solver(Y, V, T, P0, Q0, id_PQ, slack_id, epsilon::Float=1e-4, iter_max::Int=50)
+# V: updated voltages
+# T: updated thetas
+# n_iter: # of iterations before convergence
+function NR_solver(Y, V, T, P0, Q0, PQ_ids, slack_id, epsilon::Float=1e-4, iter_max::Int=50)
     	n = size(Y)[1]
 	# compute Y element-wise absolute values
     	Y_abs = abs(Y)
