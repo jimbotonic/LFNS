@@ -2,6 +2,12 @@ using Logging
 
 @Logging.configure(level=DEBUG)
 
+# ENTSOE standard voltage levels
+ENTSOE_VOLTAGE_LEVELS = Dict(0=> 750., 1=> 320., 2=> 220., 3=> 150., 4=> 120., 5=> 110., 6=> 70., 7=> 27., 8=> 330., 9=> 500.)
+
+# usual base power value
+S_BASE = 100.
+
 # node type
 type Node
 	id::Int64
@@ -10,7 +16,8 @@ type Node
 	bus_type::Int
 	init_voltage::Float64
 	final_voltage::Float64
-	voltage_level::Int
+	# base voltage in KV
+	base_voltage::Float64
 	angle::Float64
 	load::Complex{Float64}
 	generation::Complex{Float64}
@@ -26,6 +33,7 @@ end
 type Edge
 	source_id::Int64
 	target_id::Int64
+	# 
 	line_type::Int
 	# default on 
 	# 0,1,2-> ON
@@ -62,6 +70,8 @@ function load_ENTSOE(filename::AbstractString)
 	nid = 1
 	# name -> node id
 	name_id = Dict{AbstractString,Int64}()
+	# id -> base voltage (used to compute the per-unit values)
+	id_bv = Dict{Int64, Float64}()
 	
 	for l in lines
 		if startswith(l, end_section)
@@ -75,6 +85,7 @@ function load_ENTSOE(filename::AbstractString)
 			if !startswith(l,'#')
 				name = strip(l[1:8])
 				voltage_level = parse(Int, strip(l[7:7]))
+				base_voltage = ENTSOE_VOLTAGE_LEVELS[voltage_level]
 				bus_type = parse(Int, strip(l[25:25]))
 				final_voltage = float(strip(replace(l[27:32],',','.')))
 				angle = 0.
@@ -95,11 +106,12 @@ function load_ENTSOE(filename::AbstractString)
 				sh_conductance = 0.
 				sh_susceptance = 0.
 
-				n = Node(nid, name, bus_type, init_voltage, final_voltage, voltage_level, angle, load, generation, Q_min, Q_max, P_min, P_max, sh_conductance, sh_susceptance)
+				n = Node(nid, name, bus_type, init_voltage, final_voltage, base_voltage, angle, load, generation, Q_min, Q_max, P_min, P_max, sh_conductance, sh_susceptance)
 				push!(nodes, n)
 				@info("adding node: ", n)
 				# increment node id
 				name_id[name] = nid
+				id_bv[nid] = base_voltage
 				nid += 1
 			end
 		elseif in_edge_section1
@@ -116,10 +128,13 @@ function load_ENTSOE(filename::AbstractString)
 			elseif lsc == 7 || lsc == 8 || lsc == 9
 				line_status = false 
 			end
-			resistance = float(strip(replace(l[23:28],',','.')))
-			reactance = float(strip(replace(l[30:35],',','.')))
-			sh_susceptance = float(strip(replace(l[37:44],',','.')))
-			ratio = 0.
+			# compute per_unit value
+			per_unit = S_BASE / id_bv[source_id]^2 
+			resistance = float(strip(replace(l[23:28],',','.'))) * per_unit
+			reactance = float(strip(replace(l[30:35],',','.'))) * per_unit
+			sh_susceptance = float(strip(replace(l[37:44],',','.'))) / per_unit
+			# use default value
+			ratio = 1.
 
 			edge = Edge(source_id, target_id, line_type, line_status, resistance, reactance, sh_susceptance, ratio)
 			push!(edges, edge)
@@ -138,9 +153,11 @@ function load_ENTSOE(filename::AbstractString)
 			elseif lsc == 7 || lsc == 8 || lsc == 9
 				line_status = false 
 			end
-			resistance = float(strip(replace(l[41:46],',','.')))
-			reactance = float(strip(replace(l[48:53],',','.')))
-			sh_susceptance = float(strip(replace(l[55:62],',','.')))
+			# compute per_unit value
+			per_unit = S_BASE / id_bv[source_id]^2 
+			resistance = float(strip(replace(l[41:46],',','.'))) * per_unit
+			reactance = float(strip(replace(l[48:53],',','.'))) * per_unit
+			sh_susceptance = float(strip(replace(l[55:62],',','.'))) / per_unit
 			ratio1 = float(strip(replace(l[23:27],',','.')))
 			ratio2 = float(strip(replace(l[29:33],',','.')))
 			ratio = ratio1/ratio2
@@ -195,6 +212,8 @@ function load_IEEE_SLFD(filename::AbstractString)
 			bus_type = parse(Int, strip(l[26:26]))
 			final_voltage = float(strip(replace(l[28:33],',','.')))
 			angle = float(strip(replace(l[34:40],',','.')))
+			# use default value
+			base_voltage = S_BASE^2
 			
 			active_load = float(strip(replace(l[41:49],',','.')))
 			reactive_load = float(strip(replace(l[50:58],',','.')))
@@ -210,13 +229,14 @@ function load_IEEE_SLFD(filename::AbstractString)
 			sh_conductance = float(strip(replace(l[107:114],',','.')))
 			sh_susceptance = float(strip(replace(l[115:122],',','.')))
 			
-			n = Node(id, name, bus_type, init_voltage, final_voltage, 0, angle, load, generation, Q_min, Q_max, 0., 0., sh_conductance, sh_susceptance)
+			n = Node(id, name, bus_type, init_voltage, final_voltage, base_voltage, angle, load, generation, Q_min, Q_max, 0., 0., sh_conductance, sh_susceptance)
 			push!(nodes, n)
 			@info("adding node: ", n)
 		elseif in_edge_section
 			source_id = parse(Int, strip(l[1:5]))
 			target_id = parse(Int, strip(l[6:11]))
 			line_type = parse(Int, strip(l[19:19]))
+			# NB: per_unit = 1 here
 			resistance = float(strip(replace(l[22:29],',','.')))
 			reactance = float(strip(replace(l[32:39],',','.')))
 			sh_susceptance = float(strip(replace(l[43:50],',','.')))
