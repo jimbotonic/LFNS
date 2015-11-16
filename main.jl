@@ -20,9 +20,10 @@ slack_id = filter(n -> n.bus_type == 3, nodes)[1].id
 
 Y,P0,Q0 = init_simulation_data(nodes,edges)
 
-	for i in 1:n
-		for j in i:n
-			@printf("[%d,%d]  %10.2f - %10.2f\n", i, j, real(Y[i,j]), imag(Y[i,j]))
-		end
-end
-#NR_solver(Y, V, T, P0, Q0, PQ_ids, slack_id, epsilon::Float=1e-4, iter_max::Int=50)
+#	for i in 1:n
+#		for j in i:n
+#			@printf("[%d,%d]  %10.2f - %10.2f\n", i, j, real(Y[i,j]), imag(Y[i,j]))
+#		end
+#end
+
+NR_solver(Y, V, T, P0, Q0, PQ_ids, slack_id, epsilon::Float=1e-4, iter_max::Int=50)

@@ -33,7 +33,7 @@ end
 type Edge
 	source_id::Int64
 	target_id::Int64
-	# 
+	# 0: normal, 1: transformer 
 	line_type::Int
 	# default on 
 	# 0,1,2-> ON
