@@ -18,7 +18,7 @@ PQ_ids = Int64[n.id for n in filter(n -> n.bus_type == 0, nodes)]
 # node id whose bus type is 3
 slack_id = filter(n -> n.bus_type == 3, nodes)[1].id
 
-Y,P0,Q0 = init_simulation_data(nodes,edges)
+Y,P0,Q0 = init_NR_data(nodes,edges)
 
 #	for i in 1:n
 #		for j in i:n
@@ -26,4 +26,4 @@ Y,P0,Q0 = init_simulation_data(nodes,edges)
 #		end
 #end
 
-NR_solver(Y, V, T, P0, Q0, PQ_ids, slack_id, epsilon::Float=1e-4, iter_max::Int=50)
+NR_solver(Y, V, T, P0, Q0, PQ_ids, slack_id)

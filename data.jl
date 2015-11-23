@@ -1,4 +1,4 @@
-using Logging
+using Logging, DataFrames
 
 @Logging.configure(level=DEBUG)
 
@@ -44,6 +44,7 @@ type Edge
 	sh_susceptance::Float64
 	ratio::Float64
 end
+
 
 # load ENTSOE file
 function load_ENTSOE(filename::AbstractString)
@@ -305,3 +306,23 @@ function export_graphml(filename::AbstractString, nodes::Array{Node,1}, edges::A
 end
 
 
+# load P0 and Y matrix from the specified files 
+#
+# CSV files with no-header and comma-separated are expected
+# P0_fn contains one float per line
+# Y_fn: node_id1, node_id2, G_value (0 in the non-dissipative case), B value
+function load_RK_data(P0_fn::String, Y_fn::String)
+	P0_df = readtable(P0_fn, header = false)
+	Y_df = readtable(Y_fn, header = false)
+
+	# the size of the network is assumed to be the # of rows in P0 
+	P0 = collect(P0_df[1])
+	n = length(P0)
+	Y = zeros(Complex{Float64},n,n)
+
+	for i in 1:length(Y_df)
+		Y[Y_df[1][i], Y_df[2][i]] = Y_df[3][i] + Y_df[4][i]*im
+	end
+		
+	return Y,P0
+end
