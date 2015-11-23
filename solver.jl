@@ -7,21 +7,24 @@ function init_NR_data(nodes, edges, Sb::Float64=100.)
         	if edge.line_status
 			z = edge.resistance + edge.reactance*im
 			if edge.line_type == 0
-				y = 1e-6*edge.sh_susceptance*im
+				y = edge.sh_susceptance*im
 				Y[edge.source_id, edge.source_id] += 1/z + y/2
 				Y[edge.target_id, edge.target_id] += 1/z + y/2
 				Y[edge.source_id, edge.target_id] += -1/z
 				Y[edge.target_id, edge.source_id] += -1/z
 			elseif edge.line_type == 1
-				#y = 1e-6*(edge.sh_conductance + edge.sh_susceptance*im)
-				y = 1e-6*edge.sh_susceptance*im
-				Y[edge.source_id, edge.source_id] += 1/z
-				Y[edge.target_id, edge.target_id] += (1/z)*abs(edge.ratio)^2 + y
+				#y = (edge.sh_conductance + edge.sh_susceptance*im)
+				y = edge.sh_susceptance*im
+				Y[edge.source_id, edge.source_id] += (1/z)*abs(edge.ratio)^2 + y
+				Y[edge.target_id, edge.target_id] += 1/z
 				Y[edge.source_id, edge.target_id] += -(1/z)*edge.ratio
 				Y[edge.target_id, edge.source_id] += -(1/z)*conj(edge.ratio)
 			end
         	end
     	end
+
+	# add shunt susceptance to each node
+	Y = Y + diagm(Float64[node.sh_susceptance for node in nodes])*im
     
 	# injections
 	S0 = Complex{Float64}[-(n.load + n.generation)/Sb for n in nodes]
@@ -34,9 +37,9 @@ end
 # Newton-Raphson solver for Flow Data networks
 #
 ## INPUT
-# Y: admittance square matrix (nxn square matrix of complex numbers)
 # V: inital voltages
 # T: initial thetas
+# Y: admittance square matrix (nxn square matrix of complex numbers)
 # P0: initial active powers
 # Q0: initial reactive powers
 # PQ_ids: array of PQ bus ids (m-dimensional vector with m<n)
@@ -46,7 +49,7 @@ end
 # V: updated voltages
 # T: updated thetas
 # n_iter: # of iterations before convergence
-function NR_solver(Y::Array{Complex{Float64},2}, V::Array{Float64,1}, T::Array{Float64,1}, P0::Array{Float64,1}, Q0::Array{Float64,1}, PQ_ids::Array{Int64,1}, slack_id::Int64, epsilon::Float64=1e-4, iter_max::Int=50)
+function NR_solver(V::Array{Float64,1}, T::Array{Float64,1}, Y::Array{Complex{Float64},2}, P0::Array{Float64,1}, Q0::Array{Float64,1}, PQ_ids::Array{Int64,1}, slack_id::Int64, epsilon::Float64=1e-4, iter_max::Int=50)
     	n = size(Y)[1]
 	# compute Y element-wise absolute values
     	Y_abs = abs(Y)
@@ -72,8 +75,8 @@ function NR_solver(Y::Array{Complex{Float64},2}, V::Array{Float64,1}, T::Array{F
 		# 
 		# S_i = P_i + j Q_i
 		# P_i = Re[Vi (\sum Y_{ij}^* V_j^*)]
-		P = collect(sum(M4,2))
-		Q = collect(sum(M3,2))
+		P = vec(sum(M4,2))
+		Q = vec(sum(M3,2))
 
 		# pre-computations 2
 		V3 = -Q-V1
@@ -97,19 +100,13 @@ function NR_solver(Y::Array{Complex{Float64},2}, V::Array{Float64,1}, T::Array{F
 		M = -M4 - diagm(diag(-M4)) + diagm(V6)
 		M = M[PQ_ids,ids]
 		J = [L N;M O]
-		println(J)
 		# solve JX = dPQ
-		@debug("size(L): ", size(L))
-		@debug("size(N): ", size(N))
-		@debug("size(M): ", size(M))
-		@debug("size(O): ", size(O))
-		@debug("size(J): ", size(J))
 		X = J\dPQ
 		
 		# update V and theta
 		T[ids] = T[ids] + X[1:n-1]
 		V[PQ_ids] = V[PQ_ids] + X[n:end]
-		error = max(abs(dPQ))
+		error = maximum(abs(dPQ))
 		n_iter = n_iter + 1
     	end
 
@@ -122,57 +119,71 @@ end
 # t: time
 # y: function of t
 # h: step size
+#
+# time dependent version
+#function RK4(f)
+#        return   (t, y, h)-> 
+#               ( (k1   )-> 
+#               ( (k2   )-> 
+#               ( (k3   )-> 
+#               ( (k4   )->( k1 + 2*k2 + 2*k3 + k4 ) / 6 
+#               )( h * f( t + h  , y + k3   ) )
+#               )( h * f( t + h/2, y + k2/2 ) )
+#               )( h * f( t + h/2, y + k1/2 ) )
+#               )( h * f( t      , y        ) )
+#end
+#
+# varargs time-independent version
 function RK4(f)
-        return   (t,y,h)-> 
+        return   (y, h, v...)-> 
                ( (k1   )-> 
                ( (k2   )-> 
                ( (k3   )-> 
                ( (k4   )->( k1 + 2*k2 + 2*k3 + k4 ) / 6 
-               )( h * f( t +h  , y + k3   ) )
-               )( h * f( t +h/2, y + k2/2 ) )
-               )( h * f( t +h/2, y + k1/2 ) )
-               )( h * f( t     , y         ) )
+               )( h * f( y + k3  , v... ) )
+               )( h * f( y + k2/2, v... ) )
+               )( h * f( y + k1/2, v... ) )
+               )( h * f( y       , v... ) )
 end
 
-# right-hand side of the 
-function f1(const Array & y, const Array & P, const SparseMatrix & B, const SparseMatrix & G)
-{
-	int num_nodes(y.getSize());
-    vector<double> cosy(num_nodes,0),siny(num_nodes,0),interaction(num_nodes,0),v(num_nodes,1.0);
+# right-hand side of the differential equation 
+function f1(T::Array{Float64,1}, V::Array{Float64,1}, Y::Array{Complex{Float64},2}, P0::Array{Float64,1})
+	M1 = V*V'
+	M2 = G.*M1
+	M3 = B.*M1
+	V1 = diag(M2)
+	V2 = cos(T)
+	V3 = sin(T)
+	# set diagonal elements to 0
+	M2 = M2 - diagm(diag(M2))
+	M3 = M3 - diagm(diag(M3))
 
-    for(int j=0;j<num_nodes;j++)
-    {
-        cosy[j]=cos(y.getComposante(j));
-        siny[j]=sin(y.getComposante(j));
-    }
-
-	Array SINY(num_nodes,siny),COSY(num_nodes,cosy),V(num_nodes,v);
-	Array b_s(B*SINY),b_c(B*COSY),g_s(G*SINY),g_c(G*COSY);
-
-	for(int j=0;j<num_nodes;j++)
-    {
-        interaction[j]=cosy[j]*(b_s.getComposante(j)-g_c.getComposante(j))-siny[j]*(g_s.getComposante(j)+b_c.getComposante(j));
-    }
-
-	Array INT_1(num_nodes,interaction),INT_2(G*V);
-	
-    return P+INT_1+INT_2;
-}
+	return (P0 - V1 + (V2.*(-M2*V2 + M3*V3) - v3.*(M2*V3 + M3*V2))) 
+end
 
 # Runge-Kutta solver for Flow Data networks
 #
 ## INPUT
-# Y: admittance square matrix (nxn square matrix of complex numbers)
-# V: inital voltages
 # T: initial thetas
-# Tdot: initial theta derivatives
-# P0: initial active powers
 # h: step size
+# Tdot: initial theta derivatives (often vector of 0s, i.e., "flat start")
+# V: initial voltages
+# Y: admittance square matrix (nxn square matrix of complex numbers)
+# P0: initial active powers
 #
 ## OUTPUT
 # V: updated voltages
 # T: updated thetas
 # n_iter: # of iterations before convergence
-function RK_solver1(Y::Array{Complex{Float64},2}, V::Array{Float64,1}, T::Array{Float64,1}, Tdot::Array{Float64,1}, P0::Array{Float64,1}, h::Float64=1e-4)
+function RK_solver1(T::Array{Float64,1}, Tdot::Array{Float64,1}, h::Float64=1e-2, V::Array{Float64,1}, Y::Array{Complex{Float64},2}, P0::Array{Float64,1}, t_max::Float64=10.)
+	n = length(T)
+	dT = RK4(f1)
 
+	t = 0.
+	while ct <= t_max
+		T += dT(T, h, V, Y, P0)
+		t += h
+	end
+
+	return T,Tdot
 end

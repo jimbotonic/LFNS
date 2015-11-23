@@ -42,7 +42,11 @@ type Edge
 	resistance::Float64
 	reactance::Float64
 	sh_susceptance::Float64
-	ratio::Float64
+	# 1 for a standard power line
+	# transformer on the source side (IEEE)
+	s_ratio::Complex{Float64}
+	# transformer on the target side (ENTSOE)
+	t_ratio::Complex{Float64}
 end
 
 
@@ -133,11 +137,13 @@ function load_ENTSOE(filename::AbstractString)
 			per_unit = S_BASE / id_bv[source_id]^2 
 			resistance = float(strip(replace(l[23:28],',','.'))) * per_unit
 			reactance = float(strip(replace(l[30:35],',','.'))) * per_unit
-			sh_susceptance = float(strip(replace(l[37:44],',','.'))) / per_unit
+			# value is given in micro Siemens
+			sh_susceptance = 1e-6*float(strip(replace(l[37:44],',','.'))) / per_unit
 			# use default value
-			ratio = 1.
+			s_ratio = 1.
+			t_ratio = 1.
 
-			edge = Edge(source_id, target_id, line_type, line_status, resistance, reactance, sh_susceptance, ratio)
+			edge = Edge(source_id, target_id, line_type, line_status, resistance, reactance, sh_susceptance, s_ratio, t_ratio)
 			push!(edges, edge)
 			@info("adding edge: ", edge)
 		elseif in_edge_section2
@@ -161,9 +167,11 @@ function load_ENTSOE(filename::AbstractString)
 			sh_susceptance = float(strip(replace(l[55:62],',','.'))) / per_unit
 			ratio1 = float(strip(replace(l[23:27],',','.')))
 			ratio2 = float(strip(replace(l[29:33],',','.')))
-			ratio = ratio1/ratio2
+			# t_ratio in pu
+			t_ratio = (ratio1/ratio2)*(nodes[target_id].base_voltage/nodes[source_id].base_voltage)
+			s_ratio = 1.
 
-			edge = Edge(source_id, target_id, line_type, line_status, resistance, reactance, sh_susceptance, ratio)
+			edge = Edge(source_id, target_id, line_type, line_status, resistance, reactance, sh_susceptance, s_ratio, t_ratio)
 			push!(edges, edge)
 			@info("adding edge: ", edge)
 		# bloc 3 is not parsed for now
@@ -220,8 +228,8 @@ function load_IEEE_SLFD(filename::AbstractString)
 			reactive_load = float(strip(replace(l[50:58],',','.')))
 			load = complex(active_load, reactive_load)
 
-			active_generation = float(strip(replace(l[59:67],',','.')))
-			reactive_generation = float(strip(replace(l[68:75],',','.')))
+			active_generation = -float(strip(replace(l[59:67],',','.')))
+			reactive_generation = -float(strip(replace(l[68:75],',','.')))
 			generation = complex(active_generation, reactive_generation)
 
 			init_voltage = float(strip(replace(l[85:90],',','.')))
@@ -241,9 +249,15 @@ function load_IEEE_SLFD(filename::AbstractString)
 			resistance = float(strip(replace(l[22:29],',','.')))
 			reactance = float(strip(replace(l[32:39],',','.')))
 			sh_susceptance = float(strip(replace(l[43:50],',','.')))
-			ratio = float(strip(replace(l[77:83],',','.')))
+			rtemp = float(strip(replace(l[77:83],',','.')))
+			if rtemp > 0 
+				s_ratio = 1./rtemp
+			else
+				s_ratio = 1.
+			end
+			t_ratio = 1.
 
-			edge = Edge(source_id, target_id, line_type, true, resistance, reactance, sh_susceptance, ratio)
+			edge = Edge(source_id, target_id, line_type, true, resistance, reactance, sh_susceptance, s_ratio, t_ratio)
 			push!(edges, edge)
 			@info("adding edge: ", edge)
 		end
@@ -296,7 +310,8 @@ function export_graphml(filename::AbstractString, nodes::Array{Node,1}, edges::A
 		write(graphmlFile, "	<data key=\"resistance\">" * string(edge.resistance) * "</data>\n")
 		write(graphmlFile, "	<data key=\"reactance\">" * string(edge.reactance) * "</data>\n")
 		write(graphmlFile, "	<data key=\"sh_susceptance\">" * string(edge.sh_susceptance) * "</data>\n")
-		write(graphmlFile, "	<data key=\"ratio\">" * string(edge.ratio) * "</data>\n")
+		write(graphmlFile, "	<data key=\"s_ratio\">" * string(edge.s_ratio) * "</data>\n")
+		write(graphmlFile, "	<data key=\"t_ratio\">" * string(edge.t_ratio) * "</data>\n")
 		write(graphmlFile, "</edge>\n")
 	end
 
@@ -306,10 +321,10 @@ function export_graphml(filename::AbstractString, nodes::Array{Node,1}, edges::A
 end
 
 # write array to CSV file (with no header)
-function export_csv_data(fn::String, A)
+function export_csv_data(M, fn::String)
 	# M is a vector, i.e., Array{Float64,1}
 	if length(size(M)) == 1
-		writetable(fn, DataFrame(a = A), header=false)
+		writetable(fn, DataFrame(a = M), header=false)
 	# M is a matrix
 	elseif length(size(M)) == 2
 		writetable(fn, DataFrame(M), header=false)

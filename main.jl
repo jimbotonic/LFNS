@@ -15,6 +15,8 @@ T = zeros(Float64, n)
 V = Float64[n.init_voltage for n in nodes]
 # node ids whose bus type is 0
 PQ_ids = Int64[n.id for n in filter(n -> n.bus_type == 0, nodes)]
+# set PQ bus voltages to 1 pu
+V[PQ_ids] = 1.
 # node id whose bus type is 3
 slack_id = filter(n -> n.bus_type == 3, nodes)[1].id
 
@@ -26,4 +28,8 @@ Y,P0,Q0 = init_NR_data(nodes,edges)
 #		end
 #end
 
-NR_solver(Y, V, T, P0, Q0, PQ_ids, slack_id)
+V,T,n_iter = NR_solver(V, T, Y, P0, Q0, PQ_ids, slack_id, 1e-8, 20)
+
+export_csv_data(V, "v.csv")
+T = T*180/pi
+export_csv_data(T, "t.csv")
