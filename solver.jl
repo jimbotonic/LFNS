@@ -1,3 +1,5 @@
+using Distances
+
 # initialize the admittance matrix and the active/reactive  injection vectors
 function init_NR_data(nodes, edges, Sb::Float64=100.)
 	n = length(nodes)
@@ -49,7 +51,7 @@ end
 # V: updated voltages
 # T: updated thetas
 # n_iter: # of iterations before convergence
-function NR_solver(V::Array{Float64,1}, T::Array{Float64,1}, Y::Array{Complex{Float64},2}, P0::Array{Float64,1}, Q0::Array{Float64,1}, PQ_ids::Array{Int64,1}, slack_id::Int64, epsilon::Float64=1e-4, iter_max::Int=50)
+function NR_solver(V::Array{Float64,1}, T::Array{Float64,1}, Y::Array{Complex{Float64},2}, P0::Array{Float64,1}, Q0::Array{Float64,1}, PQ_ids::Array{Int64,1}, slack_id::Int64, epsilon::Float64=1e-6, iter_max::Int64=50)
     	n = size(Y)[1]
 	# compute Y element-wise absolute values
     	Y_abs = abs(Y)
@@ -104,10 +106,10 @@ function NR_solver(V::Array{Float64,1}, T::Array{Float64,1}, Y::Array{Complex{Fl
 		X = J\dPQ
 		
 		# update V and theta
-		T[ids] = T[ids] + X[1:n-1]
-		V[PQ_ids] = V[PQ_ids] + X[n:end]
+		T[ids] += X[1:n-1]
+		V[PQ_ids] += X[n:end]
 		error = maximum(abs(dPQ))
-		n_iter = n_iter + 1
+		n_iter += 1
     	end
 
 	return V,T,n_iter
@@ -139,7 +141,7 @@ function RK4(f)
                ( (k1   )-> 
                ( (k2   )-> 
                ( (k3   )-> 
-               ( (k4   )->( k1 + 2*k2 + 2*k3 + k4 ) / 6 
+               ( (k4   )-> (( k1 + 2*k2 + 2*k3 + k4 )/6, k1) 
                )( h * f( y + k3  , v... ) )
                )( h * f( y + k2/2, v... ) )
                )( h * f( y + k1/2, v... ) )
@@ -165,25 +167,30 @@ end
 #
 ## INPUT
 # T: initial thetas
-# h: step size
+# h: step size (default value 1e-2)
 # Tdot: initial theta derivatives (often vector of 0s, i.e., "flat start")
 # V: initial voltages
 # Y: admittance square matrix (nxn square matrix of complex numbers)
 # P0: initial active powers
 #
 ## OUTPUT
-# V: updated voltages
 # T: updated thetas
+# Tdot: updated theta_dots
 # n_iter: # of iterations before convergence
-function RK_solver1(T::Array{Float64,1}, Tdot::Array{Float64,1}, h::Float64=1e-2, V::Array{Float64,1}, Y::Array{Complex{Float64},2}, P0::Array{Float64,1}, t_max::Float64=10.)
-	n = length(T)
-	dT = RK4(f1)
+function RK_solver1(T::Array{Float64,1}, h::Float64, V::Array{Float64,1}, Y::Array{Complex{Float64},2}, P0::Array{Float64,1}, epsilon::Float64=1e-6, iter_max::Int64=1e4)
+	dU = RK4(f1)
+	nTdot = zeros(Float64, length(n))
 
-	t = 0.
-	while ct <= t_max
-		T += dT(T, h, V, Y, P0)
-		t += h
+	n_iter = 1
+	while n_iter < iter_max
+		(dT, Tdot) = dU(T, h, V, Y, P0)
+		if chebyshev(nTdot, Tdot) < epsilon
+			break
+		end
+		nTdot = copy(Tdot)
+		T += dT
+		n_iter += 1
 	end
 
-	return T,Tdot
+	return T,Tdot,n_iter
 end
