@@ -305,6 +305,23 @@ function export_graphml(filename::AbstractString, nodes::Array{Node,1}, edges::A
 	close(graphmlFile)									
 end
 
+# write array to CSV file (with no header)
+function export_csv_data(fn::String, A)
+	# M is a vector, i.e., Array{Float64,1}
+	if length(size(M)) == 1
+		writetable(fn, DataFrame(a = A), header=false)
+	# M is a matrix
+	elseif length(size(M)) == 2
+		writetable(fn, DataFrame(M), header=false)
+	end
+end
+
+# load CSV data from file
+# 
+# NB: file is assumed to be in CSV format with no header
+function load_csv_data(fn::String)
+	return readtable(fn, header = false)
+end
 
 # load P0 and Y matrix from the specified files 
 #
@@ -312,8 +329,8 @@ end
 # P0_fn contains one float per line
 # Y_fn: node_id1, node_id2, G_value (0 in the non-dissipative case), B value
 function load_RK_data(P0_fn::String, Y_fn::String)
-	P0_df = readtable(P0_fn, header = false)
-	Y_df = readtable(Y_fn, header = false)
+	P0_df = load_csv_data(P0_fn)
+	Y_df = load_csv_data(Y_fn)
 
 	# the size of the network is assumed to be the # of rows in P0 
 	P0 = collect(P0_df[1])
@@ -326,3 +343,5 @@ function load_RK_data(P0_fn::String, Y_fn::String)
 		
 	return Y,P0
 end
+
+

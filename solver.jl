@@ -134,6 +134,31 @@ function RK4(f)
                )( h * f( t     , y         ) )
 end
 
+# right-hand side of the 
+function f1(const Array & y, const Array & P, const SparseMatrix & B, const SparseMatrix & G)
+{
+	int num_nodes(y.getSize());
+    vector<double> cosy(num_nodes,0),siny(num_nodes,0),interaction(num_nodes,0),v(num_nodes,1.0);
+
+    for(int j=0;j<num_nodes;j++)
+    {
+        cosy[j]=cos(y.getComposante(j));
+        siny[j]=sin(y.getComposante(j));
+    }
+
+	Array SINY(num_nodes,siny),COSY(num_nodes,cosy),V(num_nodes,v);
+	Array b_s(B*SINY),b_c(B*COSY),g_s(G*SINY),g_c(G*COSY);
+
+	for(int j=0;j<num_nodes;j++)
+    {
+        interaction[j]=cosy[j]*(b_s.getComposante(j)-g_c.getComposante(j))-siny[j]*(g_s.getComposante(j)+b_c.getComposante(j));
+    }
+
+	Array INT_1(num_nodes,interaction),INT_2(G*V);
+	
+    return P+INT_1+INT_2;
+}
+
 # Runge-Kutta solver for Flow Data networks
 #
 ## INPUT
