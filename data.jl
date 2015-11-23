@@ -3,7 +3,7 @@ using Logging, DataFrames
 @Logging.configure(level=DEBUG)
 
 # ENTSOE standard voltage levels
-ENTSOE_VOLTAGE_LEVELS = Dict(0=> 750., 1=> 320., 2=> 220., 3=> 150., 4=> 120., 5=> 110., 6=> 70., 7=> 27., 8=> 330., 9=> 500.)
+ENTSOE_VOLTAGE_LEVELS = Dict(0=> 750., 1=> 380., 2=> 220., 3=> 150., 4=> 120., 5=> 110., 6=> 70., 7=> 27., 8=> 330., 9=> 500.)
 
 # usual base power value
 S_BASE = 100.
@@ -73,8 +73,11 @@ function load_ENTSOE(filename::AbstractString)
 
 	# node id
 	nid = 1
+	lid = 1
+	tid = 1
 	# name -> node id
 	name_id = Dict{AbstractString,Int64}()
+	trans_name_id = Dict{AbstractString,Int64}()
 	# id -> base voltage (used to compute the per-unit values)
 	id_bv = Dict{Int64, Float64}()
 	
@@ -103,7 +106,7 @@ function load_ENTSOE(filename::AbstractString)
 				reactive_generation = float(strip(replace(l[58:64],',','.')))
 				generation = complex(active_generation, reactive_generation)
 
-				init_voltage = final_voltage
+				init_voltage = final_voltage/base_voltage
 				Q_min = float(strip(replace(l[82:88],',','.')))
 				Q_max = float(strip(replace(l[90:96],',','.')))
 				P_min = float(strip(replace(l[66:72],',','.')))
@@ -146,6 +149,7 @@ function load_ENTSOE(filename::AbstractString)
 			edge = Edge(source_id, target_id, line_type, line_status, resistance, reactance, sh_susceptance, s_ratio, t_ratio)
 			push!(edges, edge)
 			@info("adding edge: ", edge)
+			lid += 1
 		elseif in_edge_section2
 			name1 = strip(l[1:8])
 			name2 = strip(l[10:17])
@@ -174,8 +178,25 @@ function load_ENTSOE(filename::AbstractString)
 			edge = Edge(source_id, target_id, line_type, line_status, resistance, reactance, sh_susceptance, s_ratio, t_ratio)
 			push!(edges, edge)
 			@info("adding edge: ", edge)
-		# bloc 3 is not parsed for now
-		#elseif in_edge_section3
+			name = l[1:19]
+			trans_name_id[name] = tid;
+			tid += 1
+		# bloc 3 is not commeented for now
+		elseif in_edge_section3
+			name = l[1:19]
+			selection_criterion = length(strip(l[21:25]))
+			if selection_criterion != 0
+				n_p = float(strip(l[30:32]))
+				du = float(strip(replace(l[21:25],',','.')))
+				Theta = 0.
+			else
+				n_p = float(strip(replace(l[55:57],',','.')))
+				du = float(strip(replace(l[40:44],',','.')))
+				Theta = (pi/180.0)*float(strip(replace(l[46:50],',','.')))		
+			end
+			rho = 1/sqrt((0.01*n_p*du*sin(Theta))^2+(1+0.01*n_p*du*cos(Theta))^2)
+			alpha = atan(0.01*n_p*du*sin(Theta)/(1+0.01*n_p*du*cos(Theta)))
+			edges[trans_name_id[name]+lid-1].t_ratio *= rho*exp(-alpha*im)
 		end
 
 		if startswith(l, node_section)

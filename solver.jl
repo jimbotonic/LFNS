@@ -17,10 +17,10 @@ function init_NR_data(nodes, edges, Sb::Float64=100.)
 			elseif edge.line_type == 1
 				#y = (edge.sh_conductance + edge.sh_susceptance*im)
 				y = edge.sh_susceptance*im
-				Y[edge.source_id, edge.source_id] += (1/z)*abs(edge.ratio)^2 + y
-				Y[edge.target_id, edge.target_id] += 1/z
-				Y[edge.source_id, edge.target_id] += -(1/z)*edge.ratio
-				Y[edge.target_id, edge.source_id] += -(1/z)*conj(edge.ratio)
+				Y[edge.source_id, edge.source_id] += (1/z)*abs(edge.s_ratio)^2 
+				Y[edge.target_id, edge.target_id] += abs(edge.t_ratio)^2*(1/z + y)
+				Y[edge.source_id, edge.target_id] += -(1/z)*edge.s_ratio*edge.t_ratio
+				Y[edge.target_id, edge.source_id] += -(1/z)*conj(edge.s_ratio*edge.t_ratio)
 			end
         	end
     	end
@@ -193,4 +193,27 @@ function RK_solver1(T::Array{Float64,1}, h::Float64, V::Array{Float64,1}, Y::Arr
 	end
 
 	return T,Tdot,n_iter
+end
+
+# find the connected graph containing the slack bus
+function find_connected_graph(nodes, edges)
+	n = length(nodes)
+	A = zeros(Int64, n,n)
+    	for edge in edges
+			if edge.line_status
+				A[edge.source_id, edge.target_id] = 1
+				A[edge.target_id, edge.source_id] = 1
+			end
+    	end
+	queue = filter(n -> n.bus_type == 3, nodes)[1].id
+	connected = [];
+	while(length(queue) != 0)
+        connected  = [connected; queue[1]];
+		x = findin(A[:,queue[1]],1)
+        queue = [queue; setdiff(x, connected)];
+        queue = unique(queue[2:end]);
+    end
+	#is_connected = falses(n,1)
+	#is_connected[connected] = true
+	return sort(connected)
 end
