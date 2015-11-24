@@ -99,7 +99,8 @@ end
 #               )( h * f( t      , y        ) )
 #end
 #
-# varargs time-independent version
+# varargs time-independent version 
+# returns the value of one RK4 iteration + k1 oefficient
 function RK4(f)
         return   (y, h, v...)-> 
                ( (k1   )-> 
