@@ -8,7 +8,7 @@ nodes,edges = load_ENTSOE(ARGS[1])
 t_ratio = Complex{Float64}[edge.t_ratio for edge in edges]
 export_csv_data(t_ratio, "ratio.csv")
 # export graph to graphml
-# export_graphml(ARGS[2], nodes, edges)
+ export_graphml(ARGS[2], nodes, edges)
 
 # initialize simulation data
 n = length(nodes) 

@@ -73,8 +73,8 @@ function load_ENTSOE(filename::AbstractString)
 
 	# auto-incremented node id
 	nid = 1
-	# TODO ??
-	lid = 1
+	# number of standard power line
+	nline = 0
 	# transformer id
 	tid = 1
 	# node name -> node
@@ -141,7 +141,7 @@ function load_ENTSOE(filename::AbstractString)
 				line_status = false 
 			end
 			# compute per_unit value
-			per_unit = S_BASE / id_bv[source_id]^2 
+			per_unit = S_BASE / id_bv[source.id]^2 
 			resistance = float(strip(replace(l[23:28],',','.'))) * per_unit
 			reactance = float(strip(replace(l[30:35],',','.'))) * per_unit
 			# value is given in micro Siemens
@@ -154,8 +154,8 @@ function load_ENTSOE(filename::AbstractString)
 			push!(edges, edge)
 			@info("adding edge: ", edge)
 
-			# incrememt ??
-			lid += 1
+			# count the number of standard power line
+			nline += 1
 		elseif in_edge_section2
 			name1 = strip(l[1:8])
 			name2 = strip(l[10:17])
@@ -171,14 +171,14 @@ function load_ENTSOE(filename::AbstractString)
 				line_status = false 
 			end
 			# compute per_unit value
-			per_unit = S_BASE / id_bv[source_id]^2 
+			per_unit = S_BASE / id_bv[source.id]^2 
 			resistance = float(strip(replace(l[41:46],',','.'))) * per_unit
 			reactance = float(strip(replace(l[48:53],',','.'))) * per_unit
 			sh_susceptance = float(strip(replace(l[55:62],',','.'))) / per_unit
 			ratio1 = float(strip(replace(l[23:27],',','.')))
 			ratio2 = float(strip(replace(l[29:33],',','.')))
 			# t_ratio in pu
-			t_ratio = (ratio1/ratio2)*(nodes[target_id].base_voltage/nodes[source_id].base_voltage)
+			t_ratio = (ratio1/ratio2)*(nodes[target.id].base_voltage/nodes[source.id].base_voltage)
 			s_ratio = 1.
 
 			edge = Edge(source, target, line_type, line_status, resistance, reactance, sh_susceptance, s_ratio, t_ratio)
@@ -194,26 +194,33 @@ function load_ENTSOE(filename::AbstractString)
 			# increment transformer id
 			tid += 1
 		elseif in_edge_section3
+		# for more information about parameters used in the following,
+		# see Quality of Datasetes and Calculation published by ENSTO-E.
 			name1 = strip(l[1:8])
 			name2 = strip(l[10:17])
 			t_name = name1 * "_" * name2
-			# TODO: length of a string? what is it?
+			# see if there is something to read between cols 21 and 25
+			# if so -> phase regulation
+			# if not -> angle regulation
 			selection_criterion = length(strip(l[21:25]))
-			# TODO: please comment what is n_p, du, ...?
 			if selection_criterion != 0
+				# n_p is the current tap position
 				n_p = float(strip(l[30:32]))
+				# du is the voltage change per tap in percent
 				du = float(strip(replace(l[21:25],',','.')))
+				# Theta is the regulation angle
 				Theta = 0.
 			else
 				n_p = float(strip(replace(l[55:57],',','.')))
 				du = float(strip(replace(l[40:44],',','.')))
 				Theta = (pi/180.0)*float(strip(replace(l[46:50],',','.')))		
 			end
-			### ?
+			# rho is the amplitude of the regulation factor
 			rho = 1/sqrt((0.01*n_p*du*sin(Theta))^2+(1+0.01*n_p*du*cos(Theta))^2)
+			# alpha is the phase of the regulation factor
 			alpha = atan(0.01*n_p*du*sin(Theta)/(1+0.01*n_p*du*cos(Theta)))
-			# ?
-			edges[trans_name_id[t_name]+lid-1].t_ratio *= rho*exp(-alpha*im)
+			# change the transformation ratio of the transformers with regulation
+			edges[trans_name_id[t_name]+nline].t_ratio *= rho*exp(-alpha*im)
 		end
 
 		if startswith(l, node_section)
@@ -330,7 +337,7 @@ function export_graphml(filename::AbstractString, nodes::Array{Node,1}, edges::A
 		write(graphmlFile, "	<data key=\"bus_type\">" * string(n.bus_type) * "</data>\n")
 		write(graphmlFile, "	<data key=\"init_voltage\">" * string(n.init_voltage) * "</data>\n")
 		write(graphmlFile, "	<data key=\"final_voltage\">" * string(n.final_voltage) * "</data>\n")
-		write(graphmlFile, "	<data key=\"voltage_level\">" * string(n.voltage_level) * "</data>\n")
+		write(graphmlFile, "	<data key=\"base_voltage\">" * string(n.base_voltage) * "</data>\n")
 		write(graphmlFile, "	<data key=\"angle\">" * string(n.angle) * "</data>\n")
 		write(graphmlFile, "	<data key=\"load\">" * string(n.load) * "</data>\n")
 		write(graphmlFile, "	<data key=\"generation\">" * string(n.generation) * "</data>\n")
@@ -392,17 +399,17 @@ function init_NR_data(nodes, edges, Sb::Float64=100.)
 			z = edge.resistance + edge.reactance*im
 			if edge.line_type == 0
 				y = edge.sh_susceptance*im
-				Y[edge.source_id, edge.source_id] += 1/z + y/2
-				Y[edge.target_id, edge.target_id] += 1/z + y/2
-				Y[edge.source_id, edge.target_id] += -1/z
-				Y[edge.target_id, edge.source_id] += -1/z
+				Y[edge.source.id, edge.source.id] += 1/z + y/2
+				Y[edge.target.id, edge.target.id] += 1/z + y/2
+				Y[edge.source.id, edge.target.id] += -1/z
+				Y[edge.target.id, edge.source.id] += -1/z
 			elseif edge.line_type == 1
 				#y = (edge.sh_conductance + edge.sh_susceptance*im)
 				y = edge.sh_susceptance*im
-				Y[edge.source_id, edge.source_id] += (1/z)*abs(edge.s_ratio)^2 
-				Y[edge.target_id, edge.target_id] += abs(edge.t_ratio)^2*(1/z + y)
-				Y[edge.source_id, edge.target_id] += -(1/z)*edge.s_ratio*edge.t_ratio
-				Y[edge.target_id, edge.source_id] += -(1/z)*conj(edge.s_ratio*edge.t_ratio)
+				Y[edge.source.id, edge.source.id] += (1/z)*abs(edge.s_ratio)^2 
+				Y[edge.target.id, edge.target.id] += abs(edge.t_ratio)^2*(1/z + y)
+				Y[edge.source.id, edge.target.id] += -(1/z)*edge.s_ratio*edge.t_ratio
+				Y[edge.target.id, edge.source.id] += -(1/z)*conj(edge.s_ratio*edge.t_ratio)
 			end
         	end
     	end
