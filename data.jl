@@ -31,8 +31,8 @@ end
 
 # edge type
 type Edge
-	source_id::Int64
-	target_id::Int64
+	source::Node
+	target::Node
 	# 0: normal, 1: transformer 
 	line_type::Int
 	# default on 
@@ -71,14 +71,17 @@ function load_ENTSOE(filename::AbstractString)
 	in_edge_section2 = false
 	in_edge_section3 = false
 
-	# node id
+	# auto-incremented node id
 	nid = 1
+	# TODO ??
 	lid = 1
+	# transformer id
 	tid = 1
-	# name -> node id
-	name_id = Dict{AbstractString,Int64}()
+	# node name -> node
+	name_node = Dict{AbstractString,Node}()
+	# transformer name -> auto incremented id
 	trans_name_id = Dict{AbstractString,Int64}()
-	# id -> base voltage (used to compute the per-unit values)
+	# node id -> base voltage (used to compute the per-unit values)
 	id_bv = Dict{Int64, Float64}()
 	
 	for l in lines
@@ -117,16 +120,17 @@ function load_ENTSOE(filename::AbstractString)
 				n = Node(nid, name, bus_type, init_voltage, final_voltage, base_voltage, angle, load, generation, Q_min, Q_max, P_min, P_max, sh_conductance, sh_susceptance)
 				push!(nodes, n)
 				@info("adding node: ", n)
-				# increment node id
-				name_id[name] = nid
+
+				# complete utils dictionaries and increment node id
+				name_node[name] = n
 				id_bv[nid] = base_voltage
 				nid += 1
 			end
 		elseif in_edge_section1
 			name1 = strip(l[1:8])
 			name2 = strip(l[10:17])
-			source_id = name_id[name1]
-			target_id = name_id[name2]
+			source = name_node[name1]
+			target = name_node[name2]
 			# bloc 1 -> 0
 			line_type = 0
 			# line status 0,1,2 -> ON 7,8,9 -> OFF
@@ -146,15 +150,17 @@ function load_ENTSOE(filename::AbstractString)
 			s_ratio = 1.
 			t_ratio = 1.
 
-			edge = Edge(source_id, target_id, line_type, line_status, resistance, reactance, sh_susceptance, s_ratio, t_ratio)
+			edge = Edge(source, target, line_type, line_status, resistance, reactance, sh_susceptance, s_ratio, t_ratio)
 			push!(edges, edge)
 			@info("adding edge: ", edge)
+
+			# incrememt ??
 			lid += 1
 		elseif in_edge_section2
 			name1 = strip(l[1:8])
 			name2 = strip(l[10:17])
-			source_id = name_id[name1]
-			target_id = name_id[name2]
+			source = name_node[name1]
+			target = name_node[name2]
 			# bloc 2 -> 1
 			line_type = 1
 			# line status 0,1,2 -> ON 7,8,9 -> OFF
@@ -175,16 +181,25 @@ function load_ENTSOE(filename::AbstractString)
 			t_ratio = (ratio1/ratio2)*(nodes[target_id].base_voltage/nodes[source_id].base_voltage)
 			s_ratio = 1.
 
-			edge = Edge(source_id, target_id, line_type, line_status, resistance, reactance, sh_susceptance, s_ratio, t_ratio)
+			edge = Edge(source, target, line_type, line_status, resistance, reactance, sh_susceptance, s_ratio, t_ratio)
 			push!(edges, edge)
 			@info("adding edge: ", edge)
-			name = l[1:19]
-			trans_name_id[name] = tid;
+
+			## TODO: COMMENT!
+			# name (transformer_name?) is made of name1+name2
+			# we could do: transformer_name = name1 * "_" * name2
+			t_name = name1 * "_" * name2
+			# no need for ;
+			trans_name_id[t_name] = tid
+			# increment transformer id
 			tid += 1
-		# bloc 3 is not commeented for now
 		elseif in_edge_section3
-			name = l[1:19]
+			name1 = strip(l[1:8])
+			name2 = strip(l[10:17])
+			t_name = name1 * "_" * name2
+			# TODO: length of a string? what is it?
 			selection_criterion = length(strip(l[21:25]))
+			# TODO: please comment what is n_p, du, ...?
 			if selection_criterion != 0
 				n_p = float(strip(l[30:32]))
 				du = float(strip(replace(l[21:25],',','.')))
@@ -194,9 +209,11 @@ function load_ENTSOE(filename::AbstractString)
 				du = float(strip(replace(l[40:44],',','.')))
 				Theta = (pi/180.0)*float(strip(replace(l[46:50],',','.')))		
 			end
+			### ?
 			rho = 1/sqrt((0.01*n_p*du*sin(Theta))^2+(1+0.01*n_p*du*cos(Theta))^2)
 			alpha = atan(0.01*n_p*du*sin(Theta)/(1+0.01*n_p*du*cos(Theta)))
-			edges[trans_name_id[name]+lid-1].t_ratio *= rho*exp(-alpha*im)
+			# ?
+			edges[trans_name_id[t_name]+lid-1].t_ratio *= rho*exp(-alpha*im)
 		end
 
 		if startswith(l, node_section)
@@ -229,6 +246,9 @@ function load_IEEE_SLFD(filename::AbstractString)
 
 	in_node_section = false
 	in_edge_section = false
+	
+	# node id -> node
+	id_node = Dict{Int64,Node}()
 
 	for l in lines
 		if startswith(l, end_section)
@@ -262,6 +282,9 @@ function load_IEEE_SLFD(filename::AbstractString)
 			n = Node(id, name, bus_type, init_voltage, final_voltage, base_voltage, angle, load, generation, Q_min, Q_max, 0., 0., sh_conductance, sh_susceptance)
 			push!(nodes, n)
 			@info("adding node: ", n)
+			
+			# complete id -> node dictionary
+			id_node[id] = n
 		elseif in_edge_section
 			source_id = parse(Int, strip(l[1:5]))
 			target_id = parse(Int, strip(l[6:11]))
@@ -278,7 +301,7 @@ function load_IEEE_SLFD(filename::AbstractString)
 			end
 			t_ratio = 1.
 
-			edge = Edge(source_id, target_id, line_type, true, resistance, reactance, sh_susceptance, s_ratio, t_ratio)
+			edge = Edge(id_node[source_id], id_node[target_id], line_type, true, resistance, reactance, sh_susceptance, s_ratio, t_ratio)
 			push!(edges, edge)
 			@info("adding edge: ", edge)
 		end
@@ -321,7 +344,7 @@ function export_graphml(filename::AbstractString, nodes::Array{Node,1}, edges::A
 	end
 
 	for edge in edges
-		write(graphmlFile, "<edge id=\"" * string(edge.source_id) *"|" * string(edge.target_id) *"\" source=\"" * string(edge.source_id) * "\" target=\"" * string(edge.target_id) * "\">\n")
+		write(graphmlFile, "<edge id=\"" * string(edge.source.id) *"|" * string(edge.target.id) *"\" source=\"" * string(edge.source.id) * "\" target=\"" * string(edge.target.id) * "\">\n")
 		write(graphmlFile, "	<data key=\"line_type\">" * string(edge.line_type) * "</data>\n")
 		if edge.line_status
 			write(graphmlFile, "	<data key=\"line_status\">1</data>\n")
@@ -357,6 +380,42 @@ end
 # NB: file is assumed to be in CSV format with no header
 function load_csv_data(fn::String)
 	return readtable(fn, header = false)
+end
+
+# initialize the admittance matrix and the active/reactive  injection vectors
+function init_NR_data(nodes, edges, Sb::Float64=100.)
+	n = length(nodes)
+	Y = zeros(Complex{Float64}, n,n)
+
+    	for edge in edges
+        	if edge.line_status
+			z = edge.resistance + edge.reactance*im
+			if edge.line_type == 0
+				y = edge.sh_susceptance*im
+				Y[edge.source_id, edge.source_id] += 1/z + y/2
+				Y[edge.target_id, edge.target_id] += 1/z + y/2
+				Y[edge.source_id, edge.target_id] += -1/z
+				Y[edge.target_id, edge.source_id] += -1/z
+			elseif edge.line_type == 1
+				#y = (edge.sh_conductance + edge.sh_susceptance*im)
+				y = edge.sh_susceptance*im
+				Y[edge.source_id, edge.source_id] += (1/z)*abs(edge.s_ratio)^2 
+				Y[edge.target_id, edge.target_id] += abs(edge.t_ratio)^2*(1/z + y)
+				Y[edge.source_id, edge.target_id] += -(1/z)*edge.s_ratio*edge.t_ratio
+				Y[edge.target_id, edge.source_id] += -(1/z)*conj(edge.s_ratio*edge.t_ratio)
+			end
+        	end
+    	end
+
+	# add shunt susceptance to each node
+	Y = Y + diagm(Float64[node.sh_susceptance for node in nodes])*im
+    
+	# injections
+	S0 = Complex{Float64}[-(n.load + n.generation)/Sb for n in nodes]
+	P0 = Float64[real(s) for s in S0]
+	Q0 = Float64[imag(s) for s in S0]
+
+	return Y,P0,Q0
 end
 
 # load P0 and Y matrix from the specified files 

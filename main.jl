@@ -1,5 +1,6 @@
 include("data.jl")
 include("solver.jl")
+include("graphs.jl")
 
 # load file
 #nodes,edges = load_IEEE_SLFD(ARGS[1])
@@ -38,7 +39,8 @@ slack_id = findin(bus_type[id_c],3)[1]
 #			@printf("[%d,%d]  %10.2f - %10.2f\n", i, j, real(Y[i,j]), imag(Y[i,j]))
 #		end
 #end
-writedlm("B.txt",imag(Y))
+
+export_csv_data(imag(Y), "B.csv")
 V,T,n_iter = NR_solver(V, T, Y, P0, Q0, PQ_ids, slack_id, 1e-8, 20)
 export_csv_data(V, "v.csv")
 T = T*180/pi
