@@ -1,3 +1,4 @@
+include("init.jl")
 include("data.jl")
 include("solver.jl")
 include("graphs.jl")
