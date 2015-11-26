@@ -1,15 +1,15 @@
 include("init.jl")
 include("data.jl")
-include("solver.jl")
+include("solvers.jl")
 include("graphs.jl")
 
 # load file
-#nodes,edges = load_IEEE_SLFD(ARGS[1])
-nodes,edges = load_ENTSOE(ARGS[1])
+nodes,edges = load_IEEE_SLFD(ARGS[1])
+#nodes,edges = load_ENTSOE(ARGS[1])
 t_ratio = Complex{Float64}[edge.t_ratio for edge in edges]
 export_csv_data(t_ratio, "ratio.csv")
 # export graph to graphml
- export_graphml(ARGS[2], nodes, edges)
+#export_graphml(ARGS[2], nodes, edges)
 
 # initialize simulation data
 n = length(nodes) 
@@ -19,7 +19,7 @@ V = Float64[n.init_voltage for n in nodes]
 # node ids whose bus type is 0
 PQ_ids = Int64[n.id for n in filter(n -> n.bus_type == 0, nodes)]
 # set PQ bus voltages to 1 pu
-#V[PQ_ids] = 1.
+V[PQ_ids] = 1.
 # node id whose bus type is 3
 slack_id = filter(n -> n.bus_type == 3, nodes)[1].id
 
