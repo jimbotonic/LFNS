@@ -79,6 +79,34 @@ function NR_solver(V::Array{Float64,1}, T::Array{Float64,1}, Y::Array{Complex{Fl
 	return V,T,n_iter
 end
 
+# Gauss-Seidel solver for Flow Data networks
+# used to initiate NR solver when flat start diverges
+function NR_solver(V0::Array{Float64,1}, T::Array{Float64,1}, Y::Array{Complex{Float64},2}, P0::Array{Float64,1}, Q0::Array{Float64,1}, PQ_ids::Array{Int64,1}, slack_id::Int64, iter::Int64=5)
+    n = length(V0)
+    V =V0 + 0*im
+    Vnew = V + 0*im
+	is_PQ = falses(n,1)
+	is_PQ[PQ_ids] = true
+    set=setdiff(1:n,slack_id)
+    for ii in 1:iter
+        for i in set
+            if(is_PQ[i] == false)
+                Q = imag(Y[i,:]*V)
+                Vtemp = 1/Y[i,i]*(conj((P0[i]+Q*im)/V[i]) - Y[i,1:i-1]*Vnew[1:i-1] - Y[i,i+1:end]*V[i+1:end])
+                Vnew[i] = V0[i]*exp(angle(Vtemp[1])*im)
+            else
+                Q = Q0[i];
+                Vtemp = 1/Y[i,i]*(conj((P0[i]+Q*im)/V[i]) - Y[i,1:i-1]*Vnew[1:i-1] - Y[i,i+1:end]*V[i+1:end])
+				Vnew[i] = Vtemp[1]
+            end
+        end
+        V = Vnew
+    end
+    V = abs(Vnew)
+    theta = angle(Vnew)
+	return V, theta
+end
+
 # RK4 Runge-Kutta method (used to solve y_dot = f(t,y), y(t_0) = y_0)
 #
 # f: function of t and y
