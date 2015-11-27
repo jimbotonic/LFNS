@@ -174,7 +174,7 @@ function load_ENTSOE(filename::AbstractString)
 			per_unit = S_BASE / id_bv[source.id]^2 
 			resistance = float(strip(replace(l[41:46],',','.'))) * per_unit
 			reactance = float(strip(replace(l[48:53],',','.'))) * per_unit
-			sh_susceptance = float(strip(replace(l[55:62],',','.'))) / per_unit
+			sh_susceptance = 1e-6*float(strip(replace(l[55:62],',','.'))) / per_unit
 			ratio1 = float(strip(replace(l[23:27],',','.')))
 			ratio2 = float(strip(replace(l[29:33],',','.')))
 			# t_ratio in pu
@@ -186,7 +186,7 @@ function load_ENTSOE(filename::AbstractString)
 			@info("adding edge: ", edge)
 
 			# transformer name
-			t_name = name1 * "_" * name2
+			t_name = l[1:19]
 			# complete t_name -> transformer id dictionary
 			trans_name_id[t_name] = tid
 			# increment transformer id
@@ -194,9 +194,7 @@ function load_ENTSOE(filename::AbstractString)
 		elseif in_edge_section3
 			# for more information about parameters used in the following,
 			# see Quality of Datasetes and Calculation published by ENSTO-E.
-			name1 = strip(l[1:8])
-			name2 = strip(l[10:17])
-			t_name = name1 * "_" * name2
+			t_name = l[1:19]
 			# see if there is something to read between cols 21 and 25
 			# if yes -> phase regulation
 			# if not -> angle regulation
