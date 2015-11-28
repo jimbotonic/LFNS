@@ -1,6 +1,6 @@
 using Logging, DataFrames
 
-@Logging.configure(level=DEBUG)
+@Logging.configure(level=CRITICAL)
 
 # ENTSOE standard voltage levels
 ENTSOE_VOLTAGE_LEVELS = Dict(0=> 750., 1=> 380., 2=> 220., 3=> 150., 4=> 120., 5=> 110., 6=> 70., 7=> 27., 8=> 330., 9=> 500.)
@@ -98,7 +98,12 @@ function load_ENTSOE(filename::AbstractString)
 				voltage_level = parse(Int, strip(l[7:7]))
 				base_voltage = ENTSOE_VOLTAGE_LEVELS[voltage_level]
 				bus_type = parse(Int, strip(l[25:25]))
-				final_voltage = float(strip(replace(l[27:32],',','.')))
+				# when disconnected final_voltage might empty
+				if length(strip(l[27:32])) != 0
+					final_voltage = float(strip(replace(l[27:32],',','.')))
+				else
+					final_voltage = 0.
+				end
 				angle = 0.
 
 				active_load = float(strip(replace(l[34:40],',','.')))
@@ -110,13 +115,22 @@ function load_ENTSOE(filename::AbstractString)
 				generation = complex(active_generation, reactive_generation)
 
 				init_voltage = final_voltage/base_voltage
-				Q_min = float(strip(replace(l[82:88],',','.')))
-				Q_max = float(strip(replace(l[90:96],',','.')))
-				P_min = float(strip(replace(l[66:72],',','.')))
-				P_max = float(strip(replace(l[74:80],',','.')))
+
+				# sometimes the line is ended before the P/Q limits
+				if length(l) > 85
+					Q_min = float(strip(replace(l[82:88],',','.')))
+					Q_max = float(strip(replace(l[90:96],',','.')))
+					P_min = float(strip(replace(l[66:72],',','.')))
+					P_max = float(strip(replace(l[74:80],',','.')))
+				else
+					Q_min = 0.
+					Q_max = 0.
+					P_min = 0.
+					P_max = 0.
+				end					
 				sh_conductance = 0.
 				sh_susceptance = 0.
-
+				
 				n = Node(nid, name, bus_type, init_voltage, final_voltage, base_voltage, angle, load, generation, Q_min, Q_max, P_min, P_max, sh_conductance, sh_susceptance)
 				push!(nodes, n)
 				@info("adding node: ", n)
@@ -198,18 +212,24 @@ function load_ENTSOE(filename::AbstractString)
 			# see if there is something to read between cols 21 and 25
 			# if yes -> phase regulation
 			# if not -> angle regulation
-			selection_criterion = length(strip(l[21:25]))
-			if selection_criterion != 0
-				# n_p is the current tap position
-				n_p = float(strip(l[30:32]))
-				# du is the voltage change per tap in percent
-				du = float(strip(replace(l[21:25],',','.')))
-				# Theta is the regulation angle
-				Theta = 0.
+			if length(strip(l[21:50])) != 0
+				selection_criterion = length(strip(l[21:25]))
+				if selection_criterion != 0
+					# n_p is the current tap position
+					n_p = float(strip(l[30:32]))
+					# du is the voltage change per tap in percent
+					du = float(strip(replace(l[21:25],',','.')))
+					# Theta is the regulation angle
+					Theta = 0.
+				else
+					n_p = float(strip(replace(l[55:57],',','.')))
+					du = float(strip(replace(l[40:44],',','.')))
+					Theta = (pi/180.0)*float(strip(replace(l[46:50],',','.')))		
+				end
 			else
-				n_p = float(strip(replace(l[55:57],',','.')))
-				du = float(strip(replace(l[40:44],',','.')))
-				Theta = (pi/180.0)*float(strip(replace(l[46:50],',','.')))		
+				n_p = 0
+				du = 1
+				Theta = 0
 			end
 			# rho is the amplitude of the regulation factor
 			rho = 1/sqrt((0.01*n_p*du*sin(Theta))^2+(1+0.01*n_p*du*cos(Theta))^2)

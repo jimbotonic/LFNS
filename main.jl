@@ -44,12 +44,12 @@ slack_id = findin(bus_type[id_c],3)[1]
 #G = readcsv("G.csv")
 #Y = G +B*im
 #println(Y)
-V,T = GS_solver(V, T, Y, P0, Q0, PQ_ids, slack_id, 20)
+V,T = GS_solver(V, T, Y, P0, Q0, PQ_ids, slack_id, 3)
 #export_csv_data(V, "v.csv")
 #T = T*180/pi
 #export_csv_data(T, "t.csv")
 export_csv_data(imag(Y), "B.csv")
-V,T,n_iter = NR_solver(V, T, Y, P0, Q0, PQ_ids, slack_id, 1e-8, 5)
+V,T,n_iter = NR_solver(V, T, Y, P0, Q0, PQ_ids, slack_id, 1e-8, 15)
 export_csv_data(PQ_ids, "PQ.csv")
 export_csv_data(V, "v.csv")
 T = T*180/pi
