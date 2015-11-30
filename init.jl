@@ -1,5 +1,6 @@
 
 # initialize the admittance matrix and the active/reactive  injection vectors
+# Sb: base power (for converting in p.u.)
 function init_NR_data(nodes, edges, Sb::Float64=100.)
 	n = length(nodes)
 	Y = zeros(Complex{Float64}, n,n)
@@ -49,4 +50,5 @@ function load_RK_data(P0_fn::AbstractString, Y_fn::AbstractString)
 	n = length(P0)
 	Y = zeros(Complex{Float64},n,n)
 	# TO FINISH !!
+	return Y,P0
 end
