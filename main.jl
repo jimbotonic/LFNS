@@ -5,6 +5,7 @@ include("data.jl")
 include("solvers.jl")
 include("graphs.jl")
 
+# parse program arguments
 function parse_cl()
 	s = ArgParseSettings()
 	@add_arg_table s begin
@@ -27,49 +28,49 @@ if solver == "NR"
 	fn = pargs["fn"]
 	if ftype == "IEEE"
 		# load file
-		nodes,edges = load_IEEE_SLFD(fn)
+		g = load_IEEE_SLFD(fn)
 	elseif ftype == "ENTSOE"
-		nodes,edges = load_ENTSOE(fn)
+		g = load_ENTSOE(fn)
 	end
-
-	g = graph(nodes, edges, is_directed=false)
-	println("# vertices: ", length(vertices(g)))
-	println("# edges: ", length(edges(g)))
-	quit()
+	
+	vs = vertices(g)
+	n = length(vs) 
+	
+	@info("# vertices: ", length(vs))
+	@info("# edges: ", length(edges(g)))
+	
 	# export graph to graphml
-	#export_graphml(ARGS[2], nodes, edges)
+	#export_graphml("my_export.graphml", g)
 
 	# initialize simulation data
-	n = length(nodes) 
 	T = zeros(Float64, n)
 	# n-dimensional vector of 0s
-	V = Float64[n.init_voltage for n in nodes]
+	V = Float64[v.init_voltage for v in vs]
 	# node ids whose bus type is 0
-	PQ_ids = Int64[n.id for n in filter(n -> n.bus_type == 0, nodes)]
+	PQ_ids = Int64[v.id for v in filter(v -> v.bus_type == 0, vs)]
 	# set PQ bus voltages to 1 pu
 	V[PQ_ids] = 1.
 	# node id whose bus type is 3
-	slack_id = filter(n -> n.bus_type == 3, nodes)[1].id
-
-	Y,P0,Q0 = init_NR_data(nodes,edges)
+	slack_id = filter(v -> v.bus_type == 3, vs)[1].id
+	Y,P0,Q0 = init_NR_data(g)
 
 	# set of node ids which are part of the connected component containing the slack bus 
-	id_c = find_connected_graph(nodes, edges)
-	Y = Y[id_c,id_c]
-	V = V[id_c]
-	T = T[id_c]
-	P0 = P0[id_c]
-	Q0 = Q0[id_c]
-	bus_type = Int64[n.bus_type for n in nodes]
-	PQ_ids = findin(bus_type[id_c],0)
-	slack_id = findin(bus_type[id_c],3)[1]
-	V,T = GS_solver(V, T, Y, P0, Q0, PQ_ids, slack_id, 3)
-	#export_csv_data(V, "v.csv")
-	#T = T*180/pi
-	#export_csv_data(T, "t.csv")
-	export_csv_data(imag(Y), "B.csv")
-	V,T,n_iter = NR_solver(V, T, Y, P0, Q0, PQ_ids, slack_id, 1e-8, 15)
-	export_csv_data(PQ_ids, "PQ.csv")
+	sc_ids = get_slack_component_ids(g)
+	Y = Y[sc_ids, sc_ids]
+	V = V[sc_ids]
+	T = T[sc_ids]
+	P0 = P0[sc_ids]
+	Q0 = Q0[sc_ids]
+	# bus types of the slack component 	
+	bus_type = Int64[v.bus_type for v in vs]
+	# PQ bus positions in the slack component
+	PQ_pos = findin(bus_type[sc_ids], 0)
+	# slack position in the slack component
+	slack_pos = findin(bus_type[sc_ids],3)[1]
+	# bootstrap simulation
+	V,T = GS_solver(V, T, Y, P0, Q0, PQ_pos, slack_pos, 3)
+	# Newton-Raphson solver
+	V,T,n_iter = NR_solver(V, T, Y, P0, Q0, PQ_pos, slack_pos, 1e-8, 15)
 	export_csv_data(V, "v.csv")
 	T = T*180/pi
 	export_csv_data(T, "t.csv")

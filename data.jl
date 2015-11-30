@@ -1,54 +1,14 @@
 using Logging, DataFrames
 
-@Logging.configure(level=CRITICAL)
+include("graphs.jl")
+
+@Logging.configure(level=ERROR)
 
 # ENTSOE standard voltage levels
 ENTSOE_VOLTAGE_LEVELS = Dict(0=> 750., 1=> 380., 2=> 220., 3=> 150., 4=> 120., 5=> 110., 6=> 70., 7=> 27., 8=> 330., 9=> 500.)
 
 # usual base power value
 S_BASE = 100.
-
-# node type
-type Node
-	id::Int64
-	name::AbstractString
-	# 0:PQ, 1:Q \theta, 2: PV, 3: V\theta
-	bus_type::Int
-	init_voltage::Float64
-	final_voltage::Float64
-	# base voltage in KV
-	base_voltage::Float64
-	angle::Float64
-	load::Complex{Float64}
-	generation::Complex{Float64}
-	Q_min::Float64
-	Q_max::Float64
-	P_min::Float64
-	P_max::Float64
-	sh_conductance::Float64
-	sh_susceptance::Float64
-end
-
-# edge type
-type Edge
-	source::Node
-	target::Node
-	# 0: normal, 1: transformer 
-	line_type::Int
-	# default on 
-	# 0,1,2-> ON
-	# 7,8,9 -> OFF  
-	line_status::Bool
-	resistance::Float64
-	reactance::Float64
-	sh_susceptance::Float64
-	# 1 for a standard power line
-	# transformer on the source side (IEEE)
-	s_ratio::Complex{Float64}
-	# transformer on the target side (ENTSOE)
-	t_ratio::Complex{Float64}
-end
-
 
 # load ENTSOE file
 function load_ENTSOE(filename::AbstractString)
@@ -57,8 +17,8 @@ function load_ENTSOE(filename::AbstractString)
 	lines = readlines(f)
 	close(f)
 
-	nodes = Node[]
-	edges = Edge[]
+	vs = Bus[]
+	es = Line[]
 
 	node_section = "##ZCH"
 	edge_section1 = "##L"
@@ -78,7 +38,7 @@ function load_ENTSOE(filename::AbstractString)
 	# transformer id
 	tid = 1
 	# node name -> node
-	name_node = Dict{AbstractString,Node}()
+	name_node = Dict{AbstractString,Bus}()
 	# transformer name -> auto incremented id
 	trans_name_id = Dict{AbstractString,Int64}()
 	# node id -> base voltage (used to compute the per-unit values)
@@ -131,20 +91,20 @@ function load_ENTSOE(filename::AbstractString)
 				sh_conductance = 0.
 				sh_susceptance = 0.
 				
-				n = Node(nid, name, bus_type, init_voltage, final_voltage, base_voltage, angle, load, generation, Q_min, Q_max, P_min, P_max, sh_conductance, sh_susceptance)
-				push!(nodes, n)
-				@info("adding node: ", n)
+				v = Bus(nid, name, bus_type, init_voltage, final_voltage, base_voltage, angle, load, generation, Q_min, Q_max, P_min, P_max, sh_conductance, sh_susceptance)
+				push!(vs, v)
+				@info("adding vertex: ", v)
 
 				# complete utils dictionaries and increment node id
-				name_node[name] = n
+				name_node[name] = v
 				id_bv[nid] = base_voltage
 				nid += 1
 			end
 		elseif in_edge_section1
 			name1 = strip(l[1:8])
 			name2 = strip(l[10:17])
-			source = name_node[name1]
-			target = name_node[name2]
+			line_source = name_node[name1]
+			line_target = name_node[name2]
 			# bloc 1 -> 0
 			line_type = 0
 			# line status 0,1,2 -> ON 7,8,9 -> OFF
@@ -155,7 +115,7 @@ function load_ENTSOE(filename::AbstractString)
 				line_status = false 
 			end
 			# compute per_unit value
-			per_unit = S_BASE / id_bv[source.id]^2 
+			per_unit = S_BASE / id_bv[line_source.id]^2 
 			resistance = float(strip(replace(l[23:28],',','.'))) * per_unit
 			reactance = float(strip(replace(l[30:35],',','.'))) * per_unit
 			# value is given in micro Siemens
@@ -164,8 +124,8 @@ function load_ENTSOE(filename::AbstractString)
 			s_ratio = 1.
 			t_ratio = 1.
 
-			edge = Edge(source, target, line_type, line_status, resistance, reactance, sh_susceptance, s_ratio, t_ratio)
-			push!(edges, edge)
+			edge = Line(line_source, line_target, line_type, line_status, resistance, reactance, sh_susceptance, s_ratio, t_ratio)
+			push!(es, edge)
 			@info("adding edge: ", edge)
 
 			# count the number of standard power line
@@ -173,8 +133,8 @@ function load_ENTSOE(filename::AbstractString)
 		elseif in_edge_section2
 			name1 = strip(l[1:8])
 			name2 = strip(l[10:17])
-			source = name_node[name1]
-			target = name_node[name2]
+			line_source = name_node[name1]
+			line_target = name_node[name2]
 			# bloc 2 -> 1
 			line_type = 1
 			# line status 0,1,2 -> ON 7,8,9 -> OFF
@@ -185,18 +145,18 @@ function load_ENTSOE(filename::AbstractString)
 				line_status = false 
 			end
 			# compute per_unit value
-			per_unit = S_BASE / id_bv[source.id]^2 
+			per_unit = S_BASE / id_bv[line_source.id]^2 
 			resistance = float(strip(replace(l[41:46],',','.'))) * per_unit
 			reactance = float(strip(replace(l[48:53],',','.'))) * per_unit
 			sh_susceptance = 1e-6*float(strip(replace(l[55:62],',','.'))) / per_unit
 			ratio1 = float(strip(replace(l[23:27],',','.')))
 			ratio2 = float(strip(replace(l[29:33],',','.')))
 			# t_ratio in pu
-			t_ratio = (ratio1/ratio2)*(nodes[target.id].base_voltage/nodes[source.id].base_voltage)
+			t_ratio = (ratio1/ratio2)*(vs[line_target.id].base_voltage/vs[line_source.id].base_voltage)
 			s_ratio = 1.
 
-			edge = Edge(source, target, line_type, line_status, resistance, reactance, sh_susceptance, s_ratio, t_ratio)
-			push!(edges, edge)
+			edge = Line(line_source, line_target, line_type, line_status, resistance, reactance, sh_susceptance, s_ratio, t_ratio)
+			push!(es, edge)
 			@info("adding edge: ", edge)
 
 			# transformer name
@@ -219,24 +179,24 @@ function load_ENTSOE(filename::AbstractString)
 					n_p = float(strip(l[30:32]))
 					# du is the voltage change per tap in percent
 					du = float(strip(replace(l[21:25],',','.')))
-					# Theta is the regulation angle
-					Theta = 0.
+					# theta is the regulation angle
+					theta = 0.
 				else
 					n_p = float(strip(replace(l[55:57],',','.')))
 					du = float(strip(replace(l[40:44],',','.')))
-					Theta = (pi/180.0)*float(strip(replace(l[46:50],',','.')))		
+					theta = (pi/180.0)*float(strip(replace(l[46:50],',','.')))		
 				end
 			else
 				n_p = 0
 				du = 1
-				Theta = 0
+				theta = 0
 			end
 			# rho is the amplitude of the regulation factor
-			rho = 1/sqrt((0.01*n_p*du*sin(Theta))^2+(1+0.01*n_p*du*cos(Theta))^2)
+			rho = 1/sqrt((0.01*n_p*du*sin(theta))^2+(1+0.01*n_p*du*cos(theta))^2)
 			# alpha is the phase of the regulation factor
-			alpha = atan(0.01*n_p*du*sin(Theta)/(1+0.01*n_p*du*cos(Theta)))
+			alpha = atan(0.01*n_p*du*sin(theta)/(1+0.01*n_p*du*cos(theta)))
 			# change the transformation ratio of the transformers with regulation
-			edges[trans_name_id[t_name]+nline].t_ratio *= rho*exp(-alpha*im)
+			es[trans_name_id[t_name]+nline].t_ratio *= rho*exp(-alpha*im)
 		end
 
 		if startswith(l, node_section)
@@ -250,7 +210,7 @@ function load_ENTSOE(filename::AbstractString)
 		end
 	end
 
-	return nodes,edges
+	return graph(vs, es, is_directed=false)
 end
 
 # load IEEE Solved Load Flow Data file
@@ -260,8 +220,8 @@ function load_IEEE_SLFD(filename::AbstractString)
 	lines = readlines(f)
 	close(f)
 
-	nodes = Node[]
-	edges = Edge[]
+	vs = Bus[]
+	es = Line[]
 
 	node_section = "BUS DATA FOLLOWS"
 	edge_section = "BRANCH DATA FOLLOWS"
@@ -271,7 +231,7 @@ function load_IEEE_SLFD(filename::AbstractString)
 	in_edge_section = false
 	
 	# node id -> node
-	id_node = Dict{Int64,Node}()
+	id_node = Dict{Int64,Bus}()
 
 	for l in lines
 		if startswith(l, end_section)
@@ -302,12 +262,12 @@ function load_IEEE_SLFD(filename::AbstractString)
 			sh_conductance = float(strip(replace(l[107:114],',','.')))
 			sh_susceptance = float(strip(replace(l[115:122],',','.')))
 			
-			n = Node(id, name, bus_type, init_voltage, final_voltage, base_voltage, angle, load, generation, Q_min, Q_max, 0., 0., sh_conductance, sh_susceptance)
-			push!(nodes, n)
-			@info("adding node: ", n)
+			v = Bus(id, name, bus_type, init_voltage, final_voltage, base_voltage, angle, load, generation, Q_min, Q_max, 0., 0., sh_conductance, sh_susceptance)
+			push!(vs, v)
+			@info("adding vertex: ", v)
 			
 			# complete id -> node dictionary
-			id_node[id] = n
+			id_node[id] = v
 		elseif in_edge_section
 			source_id = parse(Int, strip(l[1:5]))
 			target_id = parse(Int, strip(l[6:11]))
@@ -324,8 +284,8 @@ function load_IEEE_SLFD(filename::AbstractString)
 			end
 			t_ratio = 1.
 
-			edge = Edge(id_node[source_id], id_node[target_id], line_type, true, resistance, reactance, sh_susceptance, s_ratio, t_ratio)
-			push!(edges, edge)
+			edge = Line(id_node[source_id], id_node[target_id], line_type, true, resistance, reactance, sh_susceptance, s_ratio, t_ratio)
+			push!(es, edge)
 			@info("adding edge: ", edge)
 		end
 
@@ -336,18 +296,20 @@ function load_IEEE_SLFD(filename::AbstractString)
 		end
 	end	
 
-	return nodes,edges
+	return graph(vs, es, is_directed=false)
 end
 
 # export data in graphml
-function export_graphml(filename::AbstractString, nodes::Array{Node,1}, edges::Array{Edge,1})
+function export_graphml(filename::AbstractString, g::Graphs.AbstractGraph{Bus,Line})
+	vs = vertices(g)
+	es = edges(g)
 	graphmlFile = open(filename, "w")
 
 	write(graphmlFile, "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n")
 	write(graphmlFile, "<graphml xmlns=\"http://graphml.graphdrawing.org/xmlns/graphml\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"  xsi:schemaLocation=\"http://graphml.graphdrawing.org/xmlns/graphml\">\n")
 	write(graphmlFile, "<graph edgedefault=\"undirected\">\n")
 
-	for n in nodes
+	for n in vs
 		write(graphmlFile, "<node id=\"" * string(n.id) * "\">\n")
 		write(graphmlFile, "	<data key=\"name\">" * n.name * "</data>\n")
 		write(graphmlFile, "	<data key=\"bus_type\">" * string(n.bus_type) * "</data>\n")
@@ -366,7 +328,7 @@ function export_graphml(filename::AbstractString, nodes::Array{Node,1}, edges::A
 		write(graphmlFile, "</node>\n")
 	end
 
-	for edge in edges
+	for edge in es
 		write(graphmlFile, "<edge id=\"" * string(edge.source.id) *"|" * string(edge.target.id) *"\" source=\"" * string(edge.source.id) * "\" target=\"" * string(edge.target.id) * "\">\n")
 		write(graphmlFile, "	<data key=\"line_type\">" * string(edge.line_type) * "</data>\n")
 		if edge.line_status

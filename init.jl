@@ -1,11 +1,14 @@
+include("graphs.jl")
 
 # initialize the admittance matrix and the active/reactive  injection vectors
 # Sb: base power (for converting in p.u.)
-function init_NR_data(nodes, edges, Sb::Float64=100.)
-	n = length(nodes)
+function init_NR_data(g::Graphs.AbstractGraph{Bus,Line}, Sb::Float64=100.)
+	vs = vertices(g)
+	es = edges(g)
+	n = length(vs)
 	Y = zeros(Complex{Float64}, n,n)
 
-    	for edge in edges
+    	for edge in es
         	if edge.line_status
 			z = edge.resistance + edge.reactance*im
 			if edge.line_type == 0
@@ -26,10 +29,10 @@ function init_NR_data(nodes, edges, Sb::Float64=100.)
     	end
 
 	# add shunt susceptance to each node
-	Y = Y + diagm(Float64[node.sh_susceptance for node in nodes])*im
+	Y = Y + diagm(Float64[v.sh_susceptance for v in vs])*im
     
 	# injections
-	S0 = Complex{Float64}[-(n.load + n.generation)/Sb for n in nodes]
+	S0 = Complex{Float64}[-(v.load + v.generation)/Sb for v in vs]
 	P0 = Float64[real(s) for s in S0]
 	Q0 = Float64[imag(s) for s in S0]
 
