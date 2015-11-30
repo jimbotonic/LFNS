@@ -44,7 +44,7 @@ end
 # CSV files with no-header and comma-separated are expected
 # P0_fn contains one float per line
 # Y_fn: node_id1, node_id2, G_value (0 in the non-dissipative case), B value
-function load_RK_data(P0_fn::AbstractString, Y_fn::AbstractString)
+function load_RK_data(Y_fn::AbstractString, P0_fn::AbstractString)
 	P0_df = load_csv_data(P0_fn)
 	Y_df = load_csv_data(Y_fn)
 
