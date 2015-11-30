@@ -388,7 +388,7 @@ function export_graphml(filename::AbstractString, nodes::Array{Node,1}, edges::A
 end
 
 # write array to CSV file (with no header)
-function export_csv_data(M, fn::String)
+function export_csv_data(M, fn::AbstractString)
 	# M is a vector, i.e., Array{Float64,1}
 	if length(size(M)) == 1
 		writetable(fn, DataFrame(a = M), header=false)
@@ -401,7 +401,7 @@ end
 # load CSV data from file
 # 
 # NB: file is assumed to be in CSV format with no header
-function load_csv_data(fn::String)
+function load_csv_data(fn::AbstractString)
 	return readtable(fn, header = false)
 end
 
