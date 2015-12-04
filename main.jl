@@ -13,7 +13,11 @@ function parse_cl()
 			help = "solver to be used (e.g., NR, RK, ...)"
 		"--ft"
 			help = "file type to be loaded (e.g., IEEE, ENTSOE)"
+			required = false
 		"fn"
+			help = "file name"
+			required = false
+		"fn2"
 			help = "file name"
 			required = false
 	end
@@ -74,6 +78,18 @@ if solver == "NR"
 	export_csv_data(V, "v.csv")
 	T = T*180/pi
 	export_csv_data(T, "t.csv")
+
 elseif solver == "RK"
 
+	fn1,fn2 = pargs["fn"], pargs["fn2"] # filenames Admittance, Powers 
+	Y,P0 = load_RK_data(fn1,fn2) # load Admittance matrix and injected/consumed powers
+	V = ones(length(P0)) # set all voltages to 1
+	T = zeros(length(P0)) # flat start all angles set to zero
+	h, epsilon, step_max = 0.01, 1e-11, round(Int64,1e5)
+
+	T,Tdot,n_iter=RK_solver1(T, h, V, Y, P0, epsilon, step_max)
+
+	#println(n_iter)
+	export_csv_data(T, "t.csv")
+	export_csv_data(Tdot, "tdot.csv")
 end

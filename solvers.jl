@@ -147,8 +147,8 @@ end
 # right-hand side of the differential equation 
 function f1(T::Array{Float64,1}, V::Array{Float64,1}, Y::Array{Complex{Float64},2}, P0::Array{Float64,1})
 	M1 = V*V'
-	M2 = G.*M1
-	M3 = B.*M1
+	M2 = real(Y).*M1 #M2ij=Gij*Vi*Vj
+	M3 = imag(Y).*M1 #M3ij=Bij*Vi*Vj
 	V1 = diag(M2)
 	V2 = cos(T)
 	V3 = sin(T)
@@ -156,7 +156,7 @@ function f1(T::Array{Float64,1}, V::Array{Float64,1}, Y::Array{Complex{Float64},
 	M2 = M2 - diagm(diag(M2))
 	M3 = M3 - diagm(diag(M3))
 
-	return (P0 - V1 + (V2.*(-M2*V2 + M3*V3) - v3.*(M2*V3 + M3*V2))) 
+	return (P0 - V1 + (V2.*(-M2*V2 + M3*V3) - V3.*(M2*V3 + M3*V2))) 
 end
 
 # Runge-Kutta solver for Flow Data networks
@@ -174,8 +174,10 @@ end
 # Tdot: updated theta_dots
 # n_iter: # of iterations before convergence
 function RK_solver1(T::Array{Float64,1}, h::Float64, V::Array{Float64,1}, Y::Array{Complex{Float64},2}, P0::Array{Float64,1}, epsilon::Float64=1e-6, iter_max::Int64=1e4)
+	
 	dU = RK4(f1)
-	nTdot = zeros(Float64, length(n))
+	nTdot = zeros(Float64, length(T))
+	Tdot = zeros(Float64, length(T))
 
 	n_iter = 1
 	while n_iter < iter_max
