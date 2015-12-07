@@ -2,17 +2,28 @@ include("graphs.jl")
 
 abstract  Change
 
-# vertex change
-type VChange <: Change
+# bus change
+abstract BChange <: Change
+# line change
+type LChange <: Change
+
+# change powers
+type PChange <: BChange
 	# index -> new value
 	nvs::Dict{Int,Float64}	
 end
 
-# edge change
-type EChange <: Change
+# change of angle 
+type TChange <: BChange
+	# index -> new value
+	nvs::Dict{Int,Float64}	
+end
+
+# change of admittance
+type YChange <: LChange
 	i::Int
 	j::Int
-	nv::Float64
+	nv::Complex{Float64}
 end 
 
 # state of the system at a given index
@@ -24,7 +35,7 @@ type State
 end
 
 type Simulator
-	# initial conditions (specifiy P,V,T,Y) 
+	# initial conditions (specifiy implicitly P,V,T,Y) 
 	g::Graphs.AbstractGraph{Bus,Line}
 	# convergence criteria
 	epsilon::Float64
