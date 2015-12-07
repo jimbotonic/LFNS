@@ -58,6 +58,5 @@ function load_RK_data(Y_fn::AbstractString, P0_fn::AbstractString)
 		Y[Y_df[i,1],Y_df[i,1]] -= Y_df[i,3]*im-Y_df[i,4] # diagonal terms
 		Y[Y_df[i,2],Y_df[i,2]] -= Y_df[i,3]*im-Y_df[i,4] 
 	end
-	# TO FINISH !!
 	return Y,P0
 end

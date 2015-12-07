@@ -174,7 +174,6 @@ end
 # Tdot: updated theta_dots
 # n_iter: # of iterations before convergence
 function RK_solver1(T::Array{Float64,1}, h::Float64, V::Array{Float64,1}, Y::Array{Complex{Float64},2}, P0::Array{Float64,1}, epsilon::Float64=1e-6, iter_max::Int64=1e4)
-	
 	dU = RK4(f1)
 	nTdot = zeros(Float64, length(T))
 	Tdot = zeros(Float64, length(T))

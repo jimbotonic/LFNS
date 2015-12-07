@@ -14,11 +14,14 @@ function parse_cl()
 		"--ft"
 			help = "file type to be loaded (e.g., IEEE, ENTSOE)"
 			required = false
-		"fn"
+		"--fn"
 			help = "file name"
 			required = false
-		"fn2"
-			help = "file name"
+		"--p_fn"
+			help = "file name for P0 vector"
+			required = false
+		"--y_fn"
+			help = "file name for admittance matrix Y"
 			required = false
 	end
 	return parse_args(s)
@@ -80,9 +83,9 @@ if solver == "NR"
 	export_csv_data(T, "t.csv")
 
 elseif solver == "RK"
-
-	fn1,fn2 = pargs["fn"], pargs["fn2"] # filenames Admittance, Powers 
-	Y,P0 = load_RK_data(fn1,fn2) # load Admittance matrix and injected/consumed powers
+	p_fn = pargs["p_fn"] # vector of initial powers 
+	y_fn = pargs["y_fn"] # initial admittance matrix
+	Y,P0 = load_RK_data(p_fn,y_fn) # load Admittance matrix and injected/consumed powers
 	V = ones(length(P0)) # set all voltages to 1
 	T = zeros(length(P0)) # flat start all angles set to zero
 	h, epsilon, step_max = 0.01, 1e-11, round(Int64,1e5)
