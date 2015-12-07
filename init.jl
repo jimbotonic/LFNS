@@ -75,6 +75,8 @@ function load_SD_data(Y_fn::AbstractString, P0_fn::AbstractString)
 	n = length(P0)
 	Y = zeros(Complex{Float64},n,n)
 	for i in 1:size(Y_df,1)
+		Y[Y_df[i,1],Y_df[i,2]] = -Y_df[i,3] + Y_df[i,4]*im
 	end
+	Y=Y+Y'
 	return Y,P0
 end
