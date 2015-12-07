@@ -192,3 +192,17 @@ function RK_solver1(T::Array{Float64,1}, h::Float64, V::Array{Float64,1}, Y::Arr
 	return T,Tdot,n_iter
 end
 
+# Steepest descent solver for Flow Data networks
+#
+## INPUT
+# T: initial thetas
+# Y: admittance square matrix (nxn square matrix of complex numbers)
+# P0: initial active powers
+#
+## OUTPUT
+# T: updated thetas
+# n_iter: # of iterations before convergence
+function SD_solver(T::Array{Float64,1}, Y::Array{Complex{Float64},2}, P0::Array{Float64,1}, epsilon::Float64=1e-6, iter_max::Int64=1e4)
+
+	# return T,n_iter,delta
+end

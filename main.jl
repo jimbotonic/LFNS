@@ -81,7 +81,6 @@ if solver == "NR"
 	export_csv_data(V, "v.csv")
 	T = T*180/pi
 	export_csv_data(T, "t.csv")
-
 elseif solver == "RK"
 	p_fn = pargs["p_fn"] # vector of initial powers 
 	y_fn = pargs["y_fn"] # initial admittance matrix
@@ -95,4 +94,6 @@ elseif solver == "RK"
 	#println(n_iter)
 	export_csv_data(T, "t.csv")
 	export_csv_data(Tdot, "tdot.csv")
+elseif solver == "SD"
+
 end
