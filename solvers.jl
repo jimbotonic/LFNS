@@ -209,16 +209,21 @@ function SD_solver(T::Array{Float64,1}, Y::Array{Complex{Float64},2}, P0::Array{
 	a = T
 	n = length(a)
 	del = .01
-	
+
+	# We only use the susceptive part of the admittance matrix, with zero diagonal elements	
 	k = imag(Y-diagm(diag(Y)))
 	
 	da = a*ones(1,n)-ones(n,1)*a'
-	f0 = sum(p.*a) + .5*sum(k.*cos(da))
-	nabla = p - sum(k.*sin(da),2)
 	
+	# f0 is the potential in the phase space whose extremas are solutions of the PFEs
+	f0 = sum(p.*a) + .5*sum(k.*cos(da))
+	
+	# nabla is the gradient of this potential
+	nabla = p - sum(k.*sin(da),2)
 	delta = norm(nabla)
 	
-	while delta > eps && n_iter < iter_max
+	# Follow the path of highest gradient, until the correction is less than delta, to reach the top of a hill
+	while delta > epsilon && n_iter < iter_max
 		n_iter += 1
 		a = T + nabla*del
 		f1 = sum(p.*a) + .5*sum(k.*cos(a*ones(1,n)-ones(n,1)*a'))
@@ -236,6 +241,7 @@ function SD_solver(T::Array{Float64,1}, Y::Array{Complex{Float64},2}, P0::Array{
 	
 	T = mod(T-T[end]+pi,2*pi)-pi
 	
+	# M is the stability matrix
 	M = k.*cos(T*ones(1,n)-ones(n,1)*T')
 	M = M-diagm(collect(sum(M,2)))
 	lambda = eigenvals(M)
