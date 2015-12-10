@@ -201,7 +201,6 @@ end
 #
 ## OUTPUT
 # T: updated thetas
-# lambda: eigenvalues of the stability matrix
 # n_iter: # of iterations before convergence
 # delta: norm of the last gradient
 function SD_solver(T::Array{Float64,1}, Y::Array{Complex{Float64},2}, P0::Array{Float64,1}, epsilon::Float64=1e-6, iter_max::Int64=1e4)
@@ -241,10 +240,5 @@ function SD_solver(T::Array{Float64,1}, Y::Array{Complex{Float64},2}, P0::Array{
 	
 	T = mod(T-T[end]+pi,2*pi)-pi
 	
-	# M is the stability matrix
-	M = k.*cos(T*ones(1,n)-ones(n,1)*T')
-	M = M-diagm(collect(sum(M,2)))
-	lambda = eigenvals(M)
-		
-	return T,lambda,n_iter,delta
+	return T,n_iter,delta
 end
