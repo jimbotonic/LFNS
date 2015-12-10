@@ -201,8 +201,44 @@ end
 #
 ## OUTPUT
 # T: updated thetas
+# lambda: eigenvalues of the stability matrix
 # n_iter: # of iterations before convergence
+# delta: norm of the last gradient
 function SD_solver(T::Array{Float64,1}, Y::Array{Complex{Float64},2}, P0::Array{Float64,1}, epsilon::Float64=1e-6, iter_max::Int64=1e4)
-
-	# return T,n_iter,delta
+	n_iter = 0
+	a = T
+	n = length(a)
+	del = .01
+	
+	k = imag(Y-diagm(diag(Y)))
+	
+	da = a*ones(1,n)-ones(n,1)*a'
+	f0 = sum(p.*a) + .5*sum(k.*cos(da))
+	nabla = p - sum(k.*sin(da),2)
+	
+	delta = norm(nabla)
+	
+	while delta > eps && n_iter < iter_max
+		n_iter += 1
+		a = T + nabla*del
+		f1 = sum(p.*a) + .5*sum(k.*cos(a*ones(1,n)-ones(n,1)*a'))
+		while f1 < f0 && norm(f1-f0) > epsilon
+			del = del/2
+			a = T + nabla*del
+			f1 = sum(p.*a) + .5*sum(k.*cos(a*ones(1,n)-ones(n,1)*a'))
+		end
+		T = a
+		da = a*ones(1,n)-ones(n,1)*a'
+		f0 = f1
+		nabla = p - sum(k.*sin(da),2)
+		delta = norm(nabla)
+	end
+	
+	T = mod(T-T[end]+pi,2*pi)-pi
+	
+	M = k.*cos(T*ones(1,n)-ones(n,1)*T')
+	M = M-diagm(collect(sum(M,2)))
+	lambda = eigenvals(M)
+		
+	return T,lambda,n_iter,delta
 end
