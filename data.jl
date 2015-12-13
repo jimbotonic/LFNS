@@ -367,3 +367,50 @@ function load_csv_data(fn::AbstractString)
 	return readtable(fn, header = false)
 end
 
+# TODO: return a graph
+#
+# load P0 and Y matrix from the specified files 
+#
+# CSV files with no-header and comma-separated are expected
+# P0_fn contains one float per line
+# Y_fn: node_id1, node_id2, G_value (0 in the non-dissipative case), B value
+function load_RK_data(Y_fn::AbstractString, P0_fn::AbstractString)
+	P0_df = load_csv_data(P0_fn)
+	Y_df = load_csv_data(Y_fn)
+
+	# the size of the network is assumed to be the # of rows in P0 
+	P0 = collect(P0_df[1])
+	n = length(P0)
+	Y = zeros(Complex{Float64},n,n)
+	for i in 1:size(Y_df,1)
+		# off-diagonal elements
+		Y[Y_df[i,1],Y_df[i,2]] += -Y_df[i,3]+Y_df[i,4]*im
+		Y[Y_df[i,2],Y_df[i,1]] += -Y_df[i,3]+Y_df[i,4]*im
+		# diagonal elements
+		Y[Y_df[i,1],Y_df[i,1]] -= -Y_df[i,3]+Y_df[i,4]*im
+		Y[Y_df[i,2],Y_df[i,2]] -= -Y_df[i,3]+Y_df[i,4]*im 
+	end
+	return Y,P0
+end
+
+# TODO: return a graph
+#
+# load P0 and Y matrix from the specified files 
+#
+# CSV files with no-header and comma-separated are expected
+# P0_fn contains one float per line
+# Y_fn: node_id1, node_id2, G_value (0 in the non-dissipative case), B value
+function load_SD_data(Y_fn::AbstractString, P0_fn::AbstractString)
+	P0_df = load_csv_data(P0_fn)# input format [P1, ...,Pn]
+	Y_df = load_csv_data(Y_fn)# input format [site i, sitej, bij, -gij]
+
+	# the size of the network is assumed to be the # of rows in P0 
+	P0 = collect(P0_df[1])
+	n = length(P0)
+	Y = zeros(Complex{Float64},n,n)
+	for i in 1:size(Y_df,1)
+		Y[Y_df[i,1],Y_df[i,2]] = -Y_df[i,3] + Y_df[i,4]*im
+	end
+	Y=Y+Y'
+	return Y,P0
+end

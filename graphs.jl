@@ -19,6 +19,12 @@ type Bus
 	P_max::Float64
 	sh_conductance::Float64
 	sh_susceptance::Float64
+
+	# TODO
+	#
+	# function Bus(id::Int64, p0::Float64)
+	# new Bus(id, ..)
+	# end 
 end
 
 # edge type
@@ -39,6 +45,9 @@ type Line
 	s_ratio::Complex{Float64}
 	# transformer on the target side (ENTSOE)
 	t_ratio::Complex{Float64}
+
+	# TODO
+	# function Line(source::Bus, target::Bus, g::Float64, b::Float64)
 end
 
 # redefine some of the base functions
@@ -56,26 +65,6 @@ function get_slack_component_ids(g::Graphs.AbstractGraph{Bus,Line})
 	end
 end
 
-#function find_connected_graph(vs::Vector{Bus}, es::Vector{Line})
-#	n = length(vs)
-#	A = zeros(Int64, n,n)
-#    	for edge in es
-#			if edge.line_status
-#				A[edge.source.id, edge.target.id] = 1
-#				A[edge.target.id, edge.source.id] = 1
-#			end
-#    	end
-#	queue = filter(v -> v.bus_type == 3, vs)[1].id
-#	connected = []
-#	while(length(queue) != 0)
-#        connected  = [connected; queue[1]]
-#	x = findin(A[:,queue[1]],1)
-#        queue = [queue; setdiff(x, connected)]
-#        queue = unique(queue[2:end])
-#    end
-#	#is_connected = falses(n,1)
-#	#is_connected[connected] = true
-#	return sort(connected)
-#end
-
-
+# TODO
+# function generate_PY(g::Graphs.AbstractGraph{Bus,Line})
+# function create_double_cycle()
