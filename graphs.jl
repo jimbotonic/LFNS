@@ -37,8 +37,9 @@ type Line
 	# 0,1,2-> ON
 	# 7,8,9 -> OFF  
 	line_status::Bool
-	resistance::Float64
-	reactance::Float64
+	#resistance::Float64
+	#reactance::Float64
+	admittance::Float64
 	sh_susceptance::Float64
 	# 1 for a standard power line
 	# transformer on the source side (IEEE)

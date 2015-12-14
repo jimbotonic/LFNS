@@ -118,13 +118,14 @@ function load_ENTSOE(filename::AbstractString)
 			per_unit = S_BASE / id_bv[line_source.id]^2 
 			resistance = float(strip(replace(l[23:28],',','.'))) * per_unit
 			reactance = float(strip(replace(l[30:35],',','.'))) * per_unit
+			admittance = 1./(resistance+reactance*im)
 			# value is given in micro Siemens
 			sh_susceptance = 1e-6*float(strip(replace(l[37:44],',','.'))) / per_unit
 			# use default value
 			s_ratio = 1.
 			t_ratio = 1.
 
-			edge = Line(line_source, line_target, line_type, line_status, resistance, reactance, sh_susceptance, s_ratio, t_ratio)
+			edge = Line(line_source, line_target, line_type, line_status, admittance, sh_susceptance, s_ratio, t_ratio)
 			push!(es, edge)
 			@info("adding edge: ", edge)
 
@@ -148,6 +149,7 @@ function load_ENTSOE(filename::AbstractString)
 			per_unit = S_BASE / id_bv[line_source.id]^2 
 			resistance = float(strip(replace(l[41:46],',','.'))) * per_unit
 			reactance = float(strip(replace(l[48:53],',','.'))) * per_unit
+			admittance = 1./(resistance+reactance*im)
 			sh_susceptance = 1e-6*float(strip(replace(l[55:62],',','.'))) / per_unit
 			ratio1 = float(strip(replace(l[23:27],',','.')))
 			ratio2 = float(strip(replace(l[29:33],',','.')))
@@ -155,7 +157,7 @@ function load_ENTSOE(filename::AbstractString)
 			t_ratio = (ratio1/ratio2)*(vs[line_target.id].base_voltage/vs[line_source.id].base_voltage)
 			s_ratio = 1.
 
-			edge = Line(line_source, line_target, line_type, line_status, resistance, reactance, sh_susceptance, s_ratio, t_ratio)
+			edge = Line(line_source, line_target, line_type, line_status, admittance, sh_susceptance, s_ratio, t_ratio)
 			push!(es, edge)
 			@info("adding edge: ", edge)
 
@@ -275,6 +277,7 @@ function load_IEEE_SLFD(filename::AbstractString)
 			# NB: per_unit = 1 here
 			resistance = float(strip(replace(l[22:29],',','.')))
 			reactance = float(strip(replace(l[32:39],',','.')))
+			admittance = 1./(resistance+reactance*im)
 			sh_susceptance = float(strip(replace(l[43:50],',','.')))
 			rtemp = float(strip(replace(l[77:83],',','.')))
 			if rtemp > 0 
@@ -284,7 +287,7 @@ function load_IEEE_SLFD(filename::AbstractString)
 			end
 			t_ratio = 1.
 
-			edge = Line(id_node[source_id], id_node[target_id], line_type, true, resistance, reactance, sh_susceptance, s_ratio, t_ratio)
+			edge = Line(id_node[source_id], id_node[target_id], line_type, true, admittance, sh_susceptance, s_ratio, t_ratio)
 			push!(es, edge)
 			@info("adding edge: ", edge)
 		end

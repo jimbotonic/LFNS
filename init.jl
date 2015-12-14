@@ -12,20 +12,21 @@ function init_NR_data(g::Graphs.AbstractGraph{Bus,Line}, Sb::Float64=100.)
 
     	for edge in es
         	if edge.line_status
-			z = edge.resistance + edge.reactance*im
+			#z = edge.resistance + edge.reactance*im
+			y = edge.admittance
 			if edge.line_type == 0
-				y = edge.sh_susceptance*im
-				Y[edge.source.id, edge.source.id] += 1/z + y/2
-				Y[edge.target.id, edge.target.id] += 1/z + y/2
-				Y[edge.source.id, edge.target.id] += -1/z
-				Y[edge.target.id, edge.source.id] += -1/z
+				ysh = edge.sh_susceptance*im
+				Y[edge.source.id, edge.source.id] += y + ysh/2
+				Y[edge.target.id, edge.target.id] += y + ysh/2
+				Y[edge.source.id, edge.target.id] += -y
+				Y[edge.target.id, edge.source.id] += -y
 			elseif edge.line_type == 1
 				#y = (edge.sh_conductance + edge.sh_susceptance*im)
 				y = edge.sh_susceptance*im
-				Y[edge.source.id, edge.source.id] += (1/z)*abs(edge.s_ratio)^2 
-				Y[edge.target.id, edge.target.id] += abs(edge.t_ratio)^2*(1/z + y)
-				Y[edge.source.id, edge.target.id] += -(1/z)*edge.s_ratio*edge.t_ratio
-				Y[edge.target.id, edge.source.id] += -(1/z)*conj(edge.s_ratio*edge.t_ratio)
+				Y[edge.source.id, edge.source.id] += y*abs(edge.s_ratio)^2 
+				Y[edge.target.id, edge.target.id] += abs(edge.t_ratio)^2*(y + ysh)
+				Y[edge.source.id, edge.target.id] += -y*edge.s_ratio*edge.t_ratio
+				Y[edge.target.id, edge.source.id] += -y*conj(edge.s_ratio*edge.t_ratio)
 			end
         	end
     	end
