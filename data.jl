@@ -339,8 +339,7 @@ function export_graphml(filename::AbstractString, g::Graphs.AbstractGraph{Bus,Li
 		else
 			write(graphmlFile, "	<data key=\"line_status\">0</data>\n")
 		end
-		write(graphmlFile, "	<data key=\"resistance\">" * string(edge.resistance) * "</data>\n")
-		write(graphmlFile, "	<data key=\"reactance\">" * string(edge.reactance) * "</data>\n")
+		write(graphmlFile, "	<data key=\"admittance\">" * string(edge.admittance) * "</data>\n")
 		write(graphmlFile, "	<data key=\"sh_susceptance\">" * string(edge.sh_susceptance) * "</data>\n")
 		write(graphmlFile, "	<data key=\"s_ratio\">" * string(edge.s_ratio) * "</data>\n")
 		write(graphmlFile, "	<data key=\"t_ratio\">" * string(edge.t_ratio) * "</data>\n")
@@ -370,50 +369,31 @@ function load_csv_data(fn::AbstractString)
 	return readtable(fn, header = false)
 end
 
-# TODO: return a graph
-#
-# load P0 and Y matrix from the specified files 
+# load graph from the specified Y and P files
 #
 # CSV files with no-header and comma-separated are expected
-# P0_fn contains one float per line
+# P_fn contains one float per line
 # Y_fn: node_id1, node_id2, G_value (0 in the non-dissipative case), B value
-function load_RK_data(Y_fn::AbstractString, P0_fn::AbstractString)
-	P0_df = load_csv_data(P0_fn)
+function load_graph(Y_fn::AbstractString, P_fn::AbstractString)
+	# load the data from Y and P file
+	P_df = load_csv_data(P_fn)
 	Y_df = load_csv_data(Y_fn)
 
 	# the size of the network is assumed to be the # of rows in P0 
-	P0 = collect(P0_df[1])
-	n = length(P0)
-	Y = zeros(Complex{Float64},n,n)
-	for i in 1:size(Y_df,1)
-		# off-diagonal elements
-		Y[Y_df[i,1],Y_df[i,2]] += -Y_df[i,3]+Y_df[i,4]*im
-		Y[Y_df[i,2],Y_df[i,1]] += -Y_df[i,3]+Y_df[i,4]*im
-		# diagonal elements
-		Y[Y_df[i,1],Y_df[i,1]] -= -Y_df[i,3]+Y_df[i,4]*im
-		Y[Y_df[i,2],Y_df[i,2]] -= -Y_df[i,3]+Y_df[i,4]*im 
+	P = collect(P_df[1])
+	n = length(P)
+
+	vertices = Bus[]
+	for i in 1:n
+		push!(vertices, Bus(i,0.,P[i]))
 	end
-	return Y,P0
+
+	for i in 1:size(Y_df,1)
+		source = vertices[Y_df[i,1]]
+		target = vertices[Y_df[i,2]]
+		y = Y_df[i,3]+Y_df[i,4]*im
+	end
+	
+	return graph(vs, es, is_directed=false)
 end
 
-# TODO: return a graph
-#
-# load P0 and Y matrix from the specified files 
-#
-# CSV files with no-header and comma-separated are expected
-# P0_fn contains one float per line
-# Y_fn: node_id1, node_id2, G_value (0 in the non-dissipative case), B value
-function load_SD_data(Y_fn::AbstractString, P0_fn::AbstractString)
-	P0_df = load_csv_data(P0_fn)# input format [P1, ...,Pn]
-	Y_df = load_csv_data(Y_fn)# input format [site i, sitej, bij, -gij]
-
-	# the size of the network is assumed to be the # of rows in P0 
-	P0 = collect(P0_df[1])
-	n = length(P0)
-	Y = zeros(Complex{Float64},n,n)
-	for i in 1:size(Y_df,1)
-		Y[Y_df[i,1],Y_df[i,2]] = -Y_df[i,3] + Y_df[i,4]*im
-	end
-	Y=Y+Y'
-	return Y,P0
-end

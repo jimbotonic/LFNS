@@ -1,6 +1,5 @@
 using ArgParse
 
-include("init.jl")
 include("data.jl")
 include("solvers.jl")
 include("graphs.jl")
@@ -50,16 +49,14 @@ if solver == "NR"
 	#export_graphml("my_export.graphml", g)
 
 	# initialize simulation data
-	T = zeros(Float64, n)
-	# n-dimensional vector of 0s
-	V = Float64[v.init_voltage for v in vs]
+	Y,P0,Q0,T,V = generate_YPQ(g)
+	
 	# node ids whose bus type is 0
 	PQ_ids = Int64[v.id for v in filter(v -> v.bus_type == 0, vs)]
 	# set PQ bus voltages to 1 pu
 	V[PQ_ids] = 1.
 	# node id whose bus type is 3
 	slack_id = filter(v -> v.bus_type == 3, vs)[1].id
-	Y,P0,Q0 = init_NR_data(g)
 
 	# set of node ids which are part of the connected component containing the slack bus 
 	sc_ids = get_slack_component_ids(g)
@@ -84,9 +81,8 @@ if solver == "NR"
 elseif solver == "RK"
 	p_fn = pargs["p_fn"] # vector of initial powers 
 	y_fn = pargs["y_fn"] # initial admittance matrix
-	Y,P0 = load_RK_data(p_fn,y_fn) # load Admittance matrix and injected/consumed powers
-	V = ones(length(P0)) # set all voltages to 1
-	T = zeros(length(P0)) # flat start all angles set to zero
+	g = load_graph(p_fn,y_fn) # load Admittance matrix and injected/consumed powers
+	Y,P0,Q0,T,V = generate_YPQ(g)
 	h, epsilon, step_max = 0.01, 1e-11, round(Int64,1e5)
 
 	T,Tdot,n_iter=RK_solver1(T, h, V, Y, P0, epsilon, step_max)
