@@ -125,7 +125,7 @@ function load_ENTSOE(filename::AbstractString)
 			s_ratio = 1.
 			t_ratio = 1.
 
-			edge = Line(line_source, line_target, line_type, line_status, admittance, sh_susceptance, s_ratio, t_ratio)
+			edge = Line(line_source, line_target, line_type, line_status, admittance, sh_susceptance, complex(s_ratio), complex(t_ratio))
 			push!(es, edge)
 			@info("adding edge: ", edge)
 
@@ -157,7 +157,7 @@ function load_ENTSOE(filename::AbstractString)
 			t_ratio = (ratio1/ratio2)*(vs[line_target.id].base_voltage/vs[line_source.id].base_voltage)
 			s_ratio = 1.
 
-			edge = Line(line_source, line_target, line_type, line_status, admittance, sh_susceptance, s_ratio, t_ratio)
+			edge = Line(line_source, line_target, line_type, line_status, admittance, sh_susceptance, complex(s_ratio), complex(t_ratio))
 			push!(es, edge)
 			@info("adding edge: ", edge)
 
@@ -246,7 +246,8 @@ function load_IEEE_SLFD(filename::AbstractString)
 			name = strip(l[6:15])
 			bus_type = parse(Int, strip(l[26:26]))
 			final_voltage = float(strip(replace(l[28:33],',','.')))
-			angle = float(strip(replace(l[34:40],',','.')))
+			# convert angles defined in degrees into radians
+			angle = float(strip(replace(l[34:40],',','.')))/(180*pi)
 			# use default value
 			base_voltage = S_BASE^2
 			
@@ -258,7 +259,12 @@ function load_IEEE_SLFD(filename::AbstractString)
 			reactive_generation = -float(strip(replace(l[68:75],',','.')))
 			generation = complex(active_generation, reactive_generation)
 
-			init_voltage = float(strip(replace(l[85:90],',','.')))
+			if bus_type == 0
+				# for PQ bus, bus voltage is set to its base voltage
+				init_voltage = 1.
+			else
+				init_voltage = float(strip(replace(l[85:90],',','.')))
+			end
 			Q_min = float(strip(replace(l[91:98],',','.')))
 			Q_max = float(strip(replace(l[99:106],',','.')))
 			sh_conductance = float(strip(replace(l[107:114],',','.')))
@@ -287,7 +293,7 @@ function load_IEEE_SLFD(filename::AbstractString)
 			end
 			t_ratio = 1.
 
-			edge = Line(id_node[source_id], id_node[target_id], line_type, true, admittance, sh_susceptance, s_ratio, t_ratio)
+			edge = Line(id_node[source_id], id_node[target_id], line_type, true, admittance, sh_susceptance, complex(s_ratio), complex(t_ratio))
 			push!(es, edge)
 			@info("adding edge: ", edge)
 		end

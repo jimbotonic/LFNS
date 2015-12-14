@@ -19,8 +19,13 @@ type Bus
 	P_max::Float64
 	sh_conductance::Float64
 	sh_susceptance::Float64
-
+	
 	# default constructor
+	function Bus(id::Int64, name::AbstractString, bus_type::Int, init_voltage::Float64, final_voltage::Float64, base_voltage::Float64, angle::Float64, load::Complex{Float64}, generation::Complex{Float64}, Q_min::Float64, Q_max::Float64, P_min::Float64, P_max::Float64, sh_conductance::Float64, sh_susceptance::Float64)
+		new(id, name, bus_type, init_voltage, final_voltage, base_voltage, angle, load, generation, Q_min, Q_max, P_min, P_max, sh_conductance, sh_susceptance)
+	end
+
+	# simple constructor
 	function Bus(id::Int64, t::Float64, p::Float64)
 		if p > 0
 			# load
@@ -52,6 +57,11 @@ type Line
 	t_ratio::Complex{Float64}
 
 	# default constructor
+	function Line(source::Bus, target::Bus, line_type::Int, line_status::Bool, admittance::Complex{Float64}, sh_susceptance::Float64, s_ratio::Complex{Float64}, t_ratio::Complex{Float64})
+		new(source, target, line_type, line_status, admittance, sh_susceptance, s_ratio, t_ratio)
+	end
+
+	# simple constructor
 	function Line(source::Bus, target::Bus, y::Complex{Float64})
 		new(source, target, 0, true, y, 0., 1., 1.)
 	end

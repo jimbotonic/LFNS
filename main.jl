@@ -49,7 +49,7 @@ if solver == "NR"
 	#export_graphml("my_export.graphml", g)
 
 	# initialize simulation data
-	Y,P0,Q0,T,V = generate_YPQ(g)
+	Y,P0,Q0,T,V = generate_YPQTV(g)
 	
 	# node ids whose bus type is 0
 	PQ_ids = Int64[v.id for v in filter(v -> v.bus_type == 0, vs)]
@@ -82,7 +82,7 @@ elseif solver == "RK"
 	p_fn = pargs["p_fn"] # vector of initial powers 
 	y_fn = pargs["y_fn"] # initial admittance matrix
 	g = load_graph(p_fn,y_fn) # load Admittance matrix and injected/consumed powers
-	Y,P0,Q0,T,V = generate_YPQ(g)
+	Y,P0,Q0,T,V = generate_YPQTV(g)
 	h, epsilon, step_max = 0.01, 1e-11, round(Int64,1e5)
 
 	T,Tdot,n_iter=RK_solver1(T, h, V, Y, P0, epsilon, step_max)
