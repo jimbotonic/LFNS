@@ -203,41 +203,42 @@ end
 # T: updated thetas
 # n_iter: # of iterations before convergence
 # delta: norm of the last gradient
-function SD_solver(T::Array{Float64,1}, Y::Array{Complex{Float64},2}, P0::Array{Float64,1}, epsilon::Float64=1e-6, iter_max::Int64=1e4)
+function SD_solver(T::Array{Float64,1}, Y::Array{Complex{Float64},2}, P::Array{Float64,1}, epsilon::Float64=1e-6, iter_max::Int64=1e4, del::FLoat64=1e-2)
 	n_iter = 0
-	a = T
-	n = length(a)
-	del = .01
+	n = length(T)
 
 	# We only use the susceptive part of the admittance matrix, with zero diagonal elements	
-	k = imag(Y-diagm(diag(Y)))
+	K = imag(Y-diagm(diag(Y)))
 	
-	da = a*ones(1,n)-ones(n,1)*a'
+	dT = T*ones(1,n)-ones(n,1)*T'
 	
 	# f0 is the potential in the phase space whose extremas are solutions of the PFEs
-	f0 = sum(p.*a) + .5*sum(k.*cos(da))
+	f0 = sum(P.*T) + .5*sum(K.*cos(dT))
 	
 	# nabla is the gradient of this potential
-	nabla = p - sum(k.*sin(da),2)
+	nabla = P - sum(K.*sin(dT),2)
 	delta = norm(nabla)
 	
 	# Follow the path of highest gradient, until the correction is less than delta, to reach the top of a hill
 	while delta > epsilon && n_iter < iter_max
 		n_iter += 1
-		a = T + nabla*del
-		f1 = sum(p.*a) + .5*sum(k.*cos(a*ones(1,n)-ones(n,1)*a'))
+		A = copy(T)
+		T += nabla*del
+		f1 = sum(P.*T) + .5*sum(K.*cos(T*ones(1,n)-ones(n,1)*T'))
 		while f1 < f0 && norm(f1-f0) > epsilon
+			T = A
 			del = del/2
-			a = T + nabla*del
-			f1 = sum(p.*a) + .5*sum(k.*cos(a*ones(1,n)-ones(n,1)*a'))
+			T += nabla*del
+			f1 = sum(P.*T) + .5*sum(K.*cos(T*ones(1,n)-ones(n,1)*T'))
 		end
-		T = a
-		da = a*ones(1,n)-ones(n,1)*a'
+		dT = T*ones(1,n)-ones(n,1)*T'
 		f0 = f1
-		nabla = p - sum(k.*sin(da),2)
+		nabla = P - sum(K.*sin(dT),2)
 		delta = norm(nabla)
 	end
 	
+	# rotate all angles by using the last one as the reference
+	# all angles belong to [-pi,pi] afterward
 	T = mod(T-T[end]+pi,2*pi)-pi
 	
 	return T,n_iter,delta

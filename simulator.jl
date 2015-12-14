@@ -35,8 +35,10 @@ type State
 end
 
 type Simulator
-	# initial conditions (specifiy implicitly P,V,T,Y) 
+	# initial conditions (specifiy implicitly Y,P,Q,V,T) 
 	g::Graphs.AbstractGraph{Bus,Line}
+	# solver
+	solver::Function
 	# convergence criteria
 	epsilon::Float64
 	iter_max::Int64	

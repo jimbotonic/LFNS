@@ -11,6 +11,7 @@ type Bus
 	# base voltage in KV
 	base_voltage::Float64
 	angle::Float64
+	# ENTSOE convention: Re(load) > 0, Re(generation) < 0
 	load::Complex{Float64}
 	generation::Complex{Float64}
 	Q_min::Float64
@@ -100,7 +101,7 @@ function generate_YPQTV(g::Graphs.AbstractGraph{Bus,Line}, Sb::Float64=100.)
 				Y[edge.source.id, edge.target.id] += -y
 				Y[edge.target.id, edge.source.id] += -y
 			elseif edge.line_type == 1
-				#y = (edge.sh_conductance + edge.sh_susceptance*im)
+				#y_sh = (edge.sh_conductance + edge.sh_susceptance*im)
 				y_sh = edge.sh_susceptance*im
 				Y[edge.source.id, edge.source.id] += y*abs(edge.s_ratio)^2 
 				Y[edge.target.id, edge.target.id] += abs(edge.t_ratio)^2*(y + y_sh)
@@ -123,5 +124,44 @@ function generate_YPQTV(g::Graphs.AbstractGraph{Bus,Line}, Sb::Float64=100.)
 	return Y,P,Q,T,V
 end
 
-# TODO
-# function create_double_cycle()
+# generate a double cycle with a bus where p is injected
+function generate_double_cycle(l::Int,c:Int,r::Int,p::Float64)
+	vs = Bus[]
+	es = Line[]
+
+	# left branch 1:l
+	for i in 1:l
+		# t=0., p=0.
+		push!(vs,Bus(i,0.,0.))
+	end
+	for i in 2:l
+		push!(es, Line(vs[i-1],vs[i],1im))
+	end
+	# central branch (l+1):(c+l)
+	for i in (l+1):(c+l)
+		push!(vs,Bus(i,0.,0.))
+	end
+	for i in (l+2):(c+l)
+		push!(es, Line(vs[i-1],vs[i],1im))
+	end
+	# right branch (l+c+1):(c+l+r)
+	for i in (l+c+1):(c+l+r)
+		push!(vs,Bus(i,0.,0.))
+	end
+	for i in (l+c+2):(c+l+r)
+		push!(es, Line(vs[i-1],vs[i],1im))
+	end
+
+	b_in = Bus(l+c+r+1,0.,p)
+	b_out = Bus(l+c+r+2,0.,-p)
+
+	push!(es, Line(vs[l+c+r+1],vs[1],1im))
+	push!(es, Line(vs[l+c+r+1],vs[l+1],1im))
+	push!(es, Line(vs[l+c+r+1],vs[l+c+1],1im))
+	
+	push!(es, Line(vs[l+c+r+2],vs[l],1im))
+	push!(es, Line(vs[l+c+r+2],vs[l+c],1im))
+	push!(es, Line(vs[l+c+r+2],vs[l+c+r],1im))
+	
+	return graph(vs, es, is_directed=false)
+end
