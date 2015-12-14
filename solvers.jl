@@ -88,7 +88,7 @@ function GS_solver(V0::Array{Float64,1}, T::Array{Float64,1}, Y::Array{Complex{F
 	set = setdiff(1:n,slack_id)
 	# define the voltages of the non slack buses
 	V = V0.*exp(T*im)
-	Vnew = V
+	Vnew = copy(V)
 	for ii in 1:iter
 		for i in set
 			if(is_PQ[i] == false)
