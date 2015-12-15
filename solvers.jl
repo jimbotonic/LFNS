@@ -213,26 +213,26 @@ function SD_solver(T::Array{Float64,1}, Y::Array{Complex{Float64},2}, P::Array{F
 	dT = T*ones(1,n)-ones(n,1)*T'
 	
 	# f0 is the potential in the phase space whose extremas are solutions of the PFEs
-	f0 = sum(P.*T) + .5*sum(K.*cos(dT))
+	f0 = sum(P.*T) - .5*sum(K.*cos(dT))
 	
 	# nabla is the gradient of this potential
-	nabla = P - sum(K.*sin(dT),2)
+	nabla = P + sum(K.*sin(dT),2)
 	delta = norm(nabla)
 	
-	# Follow the path of highest gradient, until the correction is less than delta, to reach the top of a hill
+	# Follow the path of most negative gradient, until the correction is less than delta, to reach the bottom of a well
 	while delta > epsilon && n_iter < iter_max
 		n_iter += 1
 		A = copy(T)
-		T += nabla*del
-		f1 = sum(P.*T) + .5*sum(K.*cos(T*ones(1,n)-ones(n,1)*T'))
-		while f1 < f0 && norm(f1-f0) > epsilon
-			T = A
+		T -= nabla*del
+		f1 = sum(P.*T) - .5*sum(K.*cos(T*ones(1,n)-ones(n,1)*T'))
+		while f1 > f0 && norm(f1-f0) > epsilon
+			T = copy(A)
 			del = del/2
-			T += nabla*del
-			f1 = sum(P.*T) + .5*sum(K.*cos(T*ones(1,n)-ones(n,1)*T'))
+			T -= nabla*del
+			f1 = sum(P.*T) - .5*sum(K.*cos(T*ones(1,n)-ones(n,1)*T'))
 		end
 		dT = T*ones(1,n)-ones(n,1)*T'
-		f0 = f1
+		f0 = copy(f1)
 		nabla = P - sum(K.*sin(dT),2)
 		delta = norm(nabla)
 	end
@@ -240,6 +240,5 @@ function SD_solver(T::Array{Float64,1}, Y::Array{Complex{Float64},2}, P::Array{F
 	# rotate all angles by using the last one as the reference
 	# all angles belong to [-pi,pi] afterward
 	T = mod(T-T[end]+pi,2*pi)-pi
-	
 	return T,n_iter,delta
 end

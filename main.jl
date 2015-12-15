@@ -99,7 +99,7 @@ elseif solver == "SD"
 	iter_max = round(Int,1e5)
 	del = 1e-2
 
-	Y,P,Q,T,V = generate_YPQTV(g)
+	Y,P,Q,T,V = generate_YPQTV(g,1.)
 	
 	T,n_iter,delta = SD_solver(T, Y, P, epsilon, iter_max, del)
 	export_csv_data(T, "t.csv")
