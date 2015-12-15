@@ -203,7 +203,7 @@ end
 # T: updated thetas
 # n_iter: # of iterations before convergence
 # delta: norm of the last gradient
-function SD_solver(T::Array{Float64,1}, Y::Array{Complex{Float64},2}, P::Array{Float64,1}, epsilon::Float64=1e-6, iter_max::Int64=1e4, del::FLoat64=1e-2)
+function SD_solver(T::Array{Float64,1}, Y::Array{Complex{Float64},2}, P::Array{Float64,1}, epsilon::Float64=1e-6, iter_max::Int64=1e4, del::Float64=1e-2)
 	n_iter = 0
 	n = length(T)
 

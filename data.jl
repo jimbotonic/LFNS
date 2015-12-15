@@ -380,7 +380,7 @@ end
 # CSV files with no-header and comma-separated are expected
 # P_fn contains one float per line
 # Y_fn: node_id1, node_id2, G_value (0 in the non-dissipative case), B value
-function load_graph(Y_fn::AbstractString, P_fn::AbstractString)
+function load_graph(P_fn::AbstractString, Y_fn::AbstractString)
 	# load the data from Y and P file
 	P_df = load_csv_data(P_fn)
 	Y_df = load_csv_data(Y_fn)
@@ -391,15 +391,17 @@ function load_graph(Y_fn::AbstractString, P_fn::AbstractString)
 
 	vertices = Bus[]
 	for i in 1:n
-		push!(vertices, Bus(i,0.,P[i]))
+		push!(vertices, Bus(i,0.,Float64(P[i])))
 	end
-
+	
+	edges = Line[]
 	for i in 1:size(Y_df,1)
 		source = vertices[Y_df[i,1]]
 		target = vertices[Y_df[i,2]]
-		y = Y_df[i,3]+Y_df[i,4]*im
+		y = Float64(Y_df[i,3])+Float64(Y_df[i,4])*im
+		push!(edges, Line(source, target, y))
 	end
 	
-	return graph(vs, es, is_directed=false)
+	return graph(vertices, edges, is_directed=false)
 end
 

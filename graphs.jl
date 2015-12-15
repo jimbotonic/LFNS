@@ -125,7 +125,7 @@ function generate_YPQTV(g::Graphs.AbstractGraph{Bus,Line}, Sb::Float64=100.)
 end
 
 # generate a double cycle with a bus where p is injected
-function generate_double_cycle(l::Int,c:Int,r::Int,p::Float64)
+function generate_double_cycle(l::Int,c::Int,r::Int,p::Float64)
 	vs = Bus[]
 	es = Line[]
 
