@@ -26,7 +26,7 @@ type Bus
 		new(id, name, bus_type, init_voltage, final_voltage, base_voltage, angle, load, generation, Q_min, Q_max, P_min, P_max, sh_conductance, sh_susceptance)
 	end
 
-	# simple constructor
+	# simple constructors
 	function Bus(id::Int64, t::Float64, p::Float64)
 		if p > 0
 			# load
@@ -35,6 +35,10 @@ type Bus
 			# generation
 			new(id, "$id", 2, 1., 1., 1., t, 0., p, 0., 0., 0., 0., 0., 0.)
 		end
+	end 
+	
+	function Bus(id::Int64, name::AbstractString)
+		new(id, name, 2, 1., 1., 1., 0., 0., 0., 0., 0., 0., 0., 0., 0.)
 	end 
 end
 
