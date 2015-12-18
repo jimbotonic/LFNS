@@ -375,6 +375,21 @@ function load_csv_data(fn::AbstractString)
 	return readtable(fn, header = false)
 end
 
+# load serialized adjacency list
+function load_serialized(filename::String)
+	x = open(filename, "r") do file
+		deserialize(file)
+	end
+	return x
+end
+
+# serialize graph
+function serialize_to_file(x, filename::String)
+	open(filename, "w") do file
+		serialize(file, x)
+	end
+end			
+
 # load graph from the specified Y and P files
 #
 # CSV files with no-header and comma-separated are expected
