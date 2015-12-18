@@ -87,6 +87,11 @@ function get_slack_component_ids(g::Graphs.AbstractGraph{Bus,Line})
 	end
 end
 
+# get the cycle base of the specified graph
+function get_cycle_base(g::Graphs.AbstractGraph{Bus,Line})
+	
+end
+
 # initialize the admittance matrix and the active/reactive  injection vectors
 # Sb: base power (for converting in p.u.)
 function generate_YPQTV(g::Graphs.AbstractGraph{Bus,Line}, Sb::Float64=100.)

@@ -309,7 +309,7 @@ function load_IEEE_SLFD(filename::AbstractString)
 end
 
 # export data in graphml
-function export_graphml(filename::AbstractString, g::Graphs.AbstractGraph{Bus,Line})
+function export_graphml(g::Graphs.AbstractGraph{Bus,Line}, filename::AbstractString)
 	vs = vertices(g)
 	es = edges(g)
 	graphmlFile = open(filename, "w")
