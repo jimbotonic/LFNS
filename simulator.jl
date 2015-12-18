@@ -47,3 +47,14 @@ type Simulator
 	# states history
 	states::Array{State,1}
 end
+
+
+# lead a simulation
+function simulation(s::Simulator)
+
+
+
+
+
+
+end
