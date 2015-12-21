@@ -242,3 +242,13 @@ function SD_solver(T::Array{Float64,1}, Y::Array{Complex{Float64},2}, P::Array{F
 	T = mod(T-T[end]+pi,2*pi)-pi
 	return T,n_iter,delta
 end
+
+# TODO
+function get_stability_matrix(T::Array{Float64,1}, Y::Array{Complex{Float64},2})
+
+end
+
+# TODO
+function get_lambda2(T::Array{Float64,1}, Y::Array{Complex{Float64},2})
+	M = get_stability_matrix(T,Y)
+end

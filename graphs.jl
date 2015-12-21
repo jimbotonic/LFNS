@@ -26,7 +26,7 @@ type Bus
 		new(id, name, bus_type, init_voltage, final_voltage, base_voltage, angle, load, generation, Q_min, Q_max, P_min, P_max, sh_conductance, sh_susceptance)
 	end
 
-	# simple constructor
+	# simple constructors
 	function Bus(id::Int64, t::Float64, p::Float64)
 		if p > 0
 			# load
@@ -35,6 +35,10 @@ type Bus
 			# generation
 			new(id, "$id", 2, 1., 1., 1., t, 0., p, 0., 0., 0., 0., 0., 0.)
 		end
+	end 
+	
+	function Bus(id::Int64, name::AbstractString)
+		new(id, name, 2, 1., 1., 1., 0., 0., 0., 0., 0., 0., 0., 0., 0.)
 	end 
 end
 
@@ -81,6 +85,11 @@ function get_slack_component_ids(g::Graphs.AbstractGraph{Bus,Line})
 			return Int[v.id for v in c]
 		end
 	end
+end
+
+# get the cycle base of the specified graph
+function get_cycle_base(g::Graphs.AbstractGraph{Bus,Line})
+	
 end
 
 # initialize the admittance matrix and the active/reactive  injection vectors

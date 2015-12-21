@@ -39,6 +39,8 @@ type Simulator
 	g::Graphs.AbstractGraph{Bus,Line}
 	# solver
 	solver::Function
+	# solver additional arguments
+	s_args::Dict{AbstractString,Any}
 	# convergence criteria
 	epsilon::Float64
 	iter_max::Int64	
