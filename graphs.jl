@@ -44,6 +44,8 @@ end
 
 # edge type
 type Line
+	id::Int64
+	# source and target bus
 	source::Bus
 	target::Bus
 	# 0: normal, 1: transformer 
@@ -63,19 +65,24 @@ type Line
 
 	# default constructor
 	function Line(source::Bus, target::Bus, line_type::Int, line_status::Bool, admittance::Complex{Float64}, sh_susceptance::Float64, s_ratio::Complex{Float64}, t_ratio::Complex{Float64})
-		new(source, target, line_type, line_status, admittance, sh_susceptance, s_ratio, t_ratio)
+		new(1, source, target, line_type, line_status, admittance, sh_susceptance, s_ratio, t_ratio)
+	end
+	function Line(id::Int64, source::Bus, target::Bus, line_type::Int, line_status::Bool, admittance::Complex{Float64}, sh_susceptance::Float64, s_ratio::Complex{Float64}, t_ratio::Complex{Float64})
+		new(id, source, target, line_type, line_status, admittance, sh_susceptance, s_ratio, t_ratio)
 	end
 
 	# simple constructor
-	function Line(source::Bus, target::Bus, y::Complex{Float64})
-		new(source, target, 0, true, y, 0., 1., 1.)
+	function Line(id::Int64, source::Bus, target::Bus, y::Complex{Float64})
+		new(id, source, target, 0, true, y, 0., 1., 1.)
 	end
 end
 
 # redefine some of the base functions
 Graphs.source(e::Line, g::Graphs.AbstractGraph{Bus,Line}) = e.source
 Graphs.target(e::Line, g::Graphs.AbstractGraph{Bus,Line}) = e.target
-Graphs.revedge(e::Line) = Line(e.target, e.source, e.line_type, e.line_status, e.admittance, e.sh_susceptance, e.s_ratio, e.t_ratio)
+Graphs.revedge(e::Line) = Line(e.id, e.target, e.source, e.line_type, e.line_status, e.admittance, e.sh_susceptance, e.s_ratio, e.t_ratio)
+Graphs.vertex_index(v::Bus) = v.id
+Graphs.edge_index(e::Line) = e.id
 
 # get the connected component ids containing the slack bus
 function get_slack_component_ids(g::Graphs.AbstractGraph{Bus,Line})
@@ -161,6 +168,7 @@ function generate_double_cycle(l::Int,c::Int,r::Int,p::Float64)
 		push!(es, Line(vs[i-1],vs[i],1im))
 	end
 
+	# 2 last remaining vertices
 	b_in = Bus(l+c+r+1,0.,p)
 	b_out = Bus(l+c+r+2,0.,-p)
 

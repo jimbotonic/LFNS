@@ -1,7 +1,7 @@
 using Logging, DataFrames, Graphs
 
-include("graphs.jl")
-include("data.jl")
+include("../graphs.jl")
+include("../data.jl")
 
 @Logging.configure(level=ERROR)
 
@@ -12,7 +12,6 @@ include("data.jl")
 function load_graph(E_fn::AbstractString)
 	# load the data from Y and P file
 	E_df = load_csv_data(E_fn)
-
 	names = AbstractString[]
 	
 	for i in 1:size(E_df,1)
@@ -39,7 +38,7 @@ function load_graph(E_fn::AbstractString)
 		tn = strip(E_df[i,2][1:12])
 		source = vertices[name_id[sn]]
 		target = vertices[name_id[tn]]
-		push!(edges, Line(source, target, 1.im))
+		push!(edges, Line(i, source, target, 1.im))
 	end
 	
 	return graph(vertices, edges, is_directed=false)

@@ -31,8 +31,10 @@ function load_ENTSOE(filename::AbstractString)
 	in_edge_section2 = false
 	in_edge_section3 = false
 
-	# auto-incremented node id
+	# incremented node id
 	nid = 1
+	# incremented edge id
+	eid = 1
 	# number of standard power line
 	nline = 0
 	# transformer id
@@ -125,10 +127,12 @@ function load_ENTSOE(filename::AbstractString)
 			s_ratio = 1.
 			t_ratio = 1.
 
-			edge = Line(line_source, line_target, line_type, line_status, admittance, sh_susceptance, complex(s_ratio), complex(t_ratio))
+			edge = Line(eid, line_source, line_target, line_type, line_status, admittance, sh_susceptance, complex(s_ratio), complex(t_ratio))
 			push!(es, edge)
 			@info("adding edge: ", edge)
 
+			# increment edge id
+			eid += 1
 			# count the number of standard power line
 			nline += 1
 		elseif in_edge_section2
@@ -157,7 +161,7 @@ function load_ENTSOE(filename::AbstractString)
 			t_ratio = (ratio1/ratio2)*(vs[line_target.id].base_voltage/vs[line_source.id].base_voltage)
 			s_ratio = 1.
 
-			edge = Line(line_source, line_target, line_type, line_status, admittance, sh_susceptance, complex(s_ratio), complex(t_ratio))
+			edge = Line(eid, line_source, line_target, line_type, line_status, admittance, sh_susceptance, complex(s_ratio), complex(t_ratio))
 			push!(es, edge)
 			@info("adding edge: ", edge)
 
@@ -165,7 +169,8 @@ function load_ENTSOE(filename::AbstractString)
 			t_name = l[1:19]
 			# complete t_name -> transformer id dictionary
 			trans_name_id[t_name] = tid
-			# increment transformer id
+			# increment edge and transformer id
+			eid += 1
 			tid += 1
 		elseif in_edge_section3
 			# for more information about parameters used in the following,
@@ -224,6 +229,9 @@ function load_IEEE_SLFD(filename::AbstractString)
 
 	vs = Bus[]
 	es = Line[]
+	
+	# incremented edge id
+	eid = 1
 
 	node_section = "BUS DATA FOLLOWS"
 	edge_section = "BRANCH DATA FOLLOWS"
@@ -293,9 +301,12 @@ function load_IEEE_SLFD(filename::AbstractString)
 			end
 			t_ratio = 1.
 
-			edge = Line(id_node[source_id], id_node[target_id], line_type, true, admittance, sh_susceptance, complex(s_ratio), complex(t_ratio))
+			edge = Line(eid, id_node[source_id], id_node[target_id], line_type, true, admittance, sh_susceptance, complex(s_ratio), complex(t_ratio))
 			push!(es, edge)
 			@info("adding edge: ", edge)
+
+			# increment edge id
+			eid += 1
 		end
 
 		if startswith(l, node_section)
@@ -338,7 +349,7 @@ function export_graphml(g::Graphs.AbstractGraph{Bus,Line}, filename::AbstractStr
 	end
 
 	for edge in es
-		write(graphmlFile, "<edge id=\"" * string(edge.source.id) *"|" * string(edge.target.id) *"\" source=\"" * string(edge.source.id) * "\" target=\"" * string(edge.target.id) * "\">\n")
+		write(graphmlFile, "<edge id=\"" * string(edge.id) * "\" source=\"" * string(edge.source.id) * "\" target=\"" * string(edge.target.id) * "\">\n")
 		write(graphmlFile, "	<data key=\"line_type\">" * string(edge.line_type) * "</data>\n")
 		if edge.line_status
 			write(graphmlFile, "	<data key=\"line_status\">1</data>\n")
@@ -376,7 +387,7 @@ function load_csv_data(fn::AbstractString)
 end
 
 # load serialized adjacency list
-function load_serialized(filename::String)
+function load_serialized(filename::AbstractString)
 	x = open(filename, "r") do file
 		deserialize(file)
 	end
@@ -384,7 +395,7 @@ function load_serialized(filename::String)
 end
 
 # serialize graph
-function serialize_to_file(x, filename::String)
+function serialize_to_file(x, filename::AbstractString)
 	open(filename, "w") do file
 		serialize(file, x)
 	end
@@ -406,7 +417,7 @@ function load_graph(P_fn::AbstractString, Y_fn::AbstractString)
 
 	vertices = Bus[]
 	for i in 1:n
-		push!(vertices, Bus(i,0.,Float64(P[i])))
+		push!(vertices, Bus(i, 0., Float64(P[i])))
 	end
 	
 	edges = Line[]
@@ -414,7 +425,7 @@ function load_graph(P_fn::AbstractString, Y_fn::AbstractString)
 		source = vertices[Y_df[i,1]]
 		target = vertices[Y_df[i,2]]
 		y = Float64(Y_df[i,3])+Float64(Y_df[i,4])*im
-		push!(edges, Line(source, target, y))
+		push!(edges, Line(i, source, target, y))
 	end
 	
 	return graph(vertices, edges, is_directed=false)
