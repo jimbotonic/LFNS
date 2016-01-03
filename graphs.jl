@@ -84,7 +84,7 @@ Graphs.revedge(e::Line) = Line(e.id, e.target, e.source, e.line_type, e.line_sta
 Graphs.vertex_index(v::Bus) = v.id
 Graphs.edge_index(e::Line) = e.id
 
-# get the connected component ids containing the slack bus
+# get the connected component vertex ids containing the slack bus
 function get_slack_component_ids(g::Graphs.AbstractGraph{Bus,Line})
 	cs = connected_components(g)
 	for c in cs
@@ -92,6 +92,47 @@ function get_slack_component_ids(g::Graphs.AbstractGraph{Bus,Line})
 			return Int[v.id for v in c]
 		end
 	end
+end
+
+# get the principal component vertex ids
+function get_principal_component(g::Graphs.AbstractGraph{Bus,Line})
+	cs = connected_components(g)
+	return cs[indmax([length(c) for c in cs])]
+end
+
+# get the subgraph induced by the specified vertices
+function get_subgraph(g::Graphs.AbstractGraph{Bus,Line}, vs::Array{Bus,1})
+	# sorted array of subgraph vertex ids
+	svids = sort(Int64[v.id for v in vs])
+	nvs = Bus[]
+	nes = Line[]
+
+	# old to new vertex id mappings
+	o2n_ids = Dict{Int64, Int64}()
+
+	vcounter = 1
+	for v in vs
+		o2n_ids[v.id] = vcounter
+		nv = Bus(vcounter, v.name, v.bus_type, v.init_voltage, v.final_voltage, v.base_voltage, v.angle, v.load, v.generation, v.Q_min, v.Q_max, v.P_min, v.P_max, v.sh_conductance, v.sh_susceptance)
+		push!(nvs, nv)
+		vcounter += 1
+	end
+
+	ecounter = 1
+	for edge in edges(g)
+		sid = edge.source.id
+		tid = edge.target.id
+		# if both endpoints of the edge are in the subgraph
+		if length(searchsorted(svids, sid)) > 0 && length(searchsorted(svids, tid)) > 0
+			source = nvs[o2n_ids[sid]]
+			target = nvs[o2n_ids[tid]]
+			ne = Line(ecounter, source, target, edge.line_type, edge.line_status, edge.admittance, edge.sh_susceptance, edge.s_ratio, edge.t_ratio)
+			push!(nes, ne)
+			ecounter += 1
+		end
+	end
+	
+	return graph(nvs, nes, is_directed=false)
 end
 
 # get the cycle base of the specified graph
