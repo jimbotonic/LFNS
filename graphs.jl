@@ -162,16 +162,32 @@ function get_pruned_graph(g::Graphs.AbstractGraph{Bus,Line}, es::Array{Line,1})
 end
 
 # get the cycle base of the specified graph
+#
 # Paton algorithm: 
 # 	http://www.cs.kent.edu/~dragan/GraphAn/CycleBasis/p514-paton.pdf
 # 	https://code.google.com/p/niographs/source/browse/src/main/java/net/ognyanov/niographs/PatonCycleBase.java
 function get_cycle_base(g::Graphs.AbstractGraph{Bus,Line})
-	# get minimum spanning tree
+	# get minimum spanning tree edges
 	ew = ones(length(edges(g)))
 	re, rw = prim_minimum_spantree(g, ew, vertices(g)[1])
 
+	# extract spanning tree
+	gt = get_pruned_graph(g, re)
+
 	# get edges not belonging to the tree 
-	ses = setdiff(edges(gp),re)
+	ses = setdiff(edges(g),re)
+	
+	# set of fundamental cycles
+	cycles = Array{Array{Int64,1},1}()
+	
+	for edge in ses
+		s,t = sort([edge.source.id,edge.target.id])
+		dsp = dijkstra_shortest_paths(gt, vertices(g)[s])
+		c = enumerate_indices(dsp.parent_indices, t)
+		push!(cycles, c)
+	end
+
+	return cycles
 end
 
 # initialize the admittance matrix and the active/reactive  injection vectors
