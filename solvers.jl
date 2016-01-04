@@ -252,18 +252,38 @@ end
 ## OUTPUT
 # M: stability matrix
 function get_stability_matrix(T::Array{Float64,1}, Y::Array{Complex{Float64},2})
-	# !!! FOR NOW, WE ONLY CONSIDER NON-RESISTIVE NETWORKS !!!
+	# !!! FOR NOW, WE DO NOT CONSIDER THE REACTIVE POWER IN THE DYNAMICS !!!
 	B = imag(Y) 
+	G = real(Y)
 	
 	n = length(T)
 	dT = T*ones(1,n)-ones(n,1)*T'
 	
-	M = B.*cos(dT)
+	M = B.*cos(dT) + G.*sin(dT)
+	M = M-diagm(sum(M,1))
 	
 	return M
 end
 
-# TODO
+# Second eigenvalue
+#
+## INPUT
+# T: thetas
+# Y: admittance matrix
+#
+## OUTPUT
+# l2: second eigenvalue of the stability matrix
 function get_lambda2(T::Array{Float64,1}, Y::Array{Complex{Float64},2})
 	M = get_stability_matrix(T,Y)
+
+	e = eigvals(M)
+	l1 = e[end]
+	
+	if abs(l1) > 1e-12
+		l2 = l1
+	else
+		l2 = e[end-1]
+	end
+	
+	return l2
 end
