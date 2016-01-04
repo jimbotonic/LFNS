@@ -243,9 +243,24 @@ function SD_solver(T::Array{Float64,1}, Y::Array{Complex{Float64},2}, P::Array{F
 	return T,n_iter,delta
 end
 
-# TODO
+# Stability matrix
+#
+## INPUT
+# T: thetas
+# Y: admittance matrix
+#
+## OUTPUT
+# M: stability matrix
 function get_stability_matrix(T::Array{Float64,1}, Y::Array{Complex{Float64},2})
-
+	# !!! FOR NOW, WE ONLY CONSIDER NON-RESISTIVE NETWORKS !!!
+	B = imag(Y) 
+	
+	n = length(T)
+	dT = T*ones(1,n)-ones(n,1)*T'
+	
+	M = B.*cos(dT)
+	
+	return M
 end
 
 # TODO
