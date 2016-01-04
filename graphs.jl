@@ -135,9 +135,43 @@ function get_subgraph(g::Graphs.AbstractGraph{Bus,Line}, vs::Array{Bus,1})
 	return graph(nvs, nes, is_directed=false)
 end
 
-# get the cycle base of the specified graph
-function get_cycle_base(g::Graphs.AbstractGraph{Bus,Line})
+# prune the graph by keeping only the specified list of edges
+function get_pruned_graph(g::Graphs.AbstractGraph{Bus,Line}, es::Array{Line,1})
+	# sorted array of subgraph edge ids
+	seids = sort(Int64[edge.id for edge in es])
+	nvs = Bus[]
+	nes = Line[]
+
+	for v in vertices(g)
+		nv = Bus(v.id, v.name, v.bus_type, v.init_voltage, v.final_voltage, v.base_voltage, v.angle, v.load, v.generation, v.Q_min, v.Q_max, v.P_min, v.P_max, v.sh_conductance, v.sh_susceptance)
+		push!(nvs, nv)
+	end
+
+	ecounter = 1
+	for edge in edges(g)
+		eid = edge.id
+		# if the current edge is in the list
+		if length(searchsorted(seids, eid)) > 0
+			ne = Line(ecounter, edge.source, edge.target, edge.line_type, edge.line_status, edge.admittance, edge.sh_susceptance, edge.s_ratio, edge.t_ratio)
+			push!(nes, ne)
+			ecounter += 1
+		end
+	end
 	
+	return graph(nvs, nes, is_directed=false)
+end
+
+# get the cycle base of the specified graph
+# Paton algorithm: 
+# 	http://www.cs.kent.edu/~dragan/GraphAn/CycleBasis/p514-paton.pdf
+# 	https://code.google.com/p/niographs/source/browse/src/main/java/net/ognyanov/niographs/PatonCycleBase.java
+function get_cycle_base(g::Graphs.AbstractGraph{Bus,Line})
+	# get minimum spanning tree
+	ew = ones(length(edges(g)))
+	re, rw = prim_minimum_spantree(g, ew, vertices(g)[1])
+
+	# get edges not belonging to the tree 
+	ses = setdiff(edges(gp),re)
 end
 
 # initialize the admittance matrix and the active/reactive  injection vectors
