@@ -260,7 +260,7 @@ function get_stability_matrix(T::Array{Float64,1}, Y::Array{Complex{Float64},2})
 	dT = T*ones(1,n)-ones(n,1)*T'
 	
 	M = B.*cos(dT) + G.*sin(dT)
-	M = M-diagm(sum(M,1))
+	M = M-diagm(collect(sum(M,1)))
 	
 	return M
 end
