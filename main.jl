@@ -87,7 +87,7 @@ elseif solver == "RK"
 
 	T,Tdot,n_iter=RK_solver1(T, h, V, Y, P, epsilon, step_max)
 
-	#println(n_iter)
+	println(n_iter)
 	export_csv_data(T, "t.csv")
 	export_csv_data(Tdot, "tdot.csv")
 elseif solver == "SD"
