@@ -82,7 +82,7 @@ elseif solver == "RK"
 	p_fn = pargs["p_fn"] # vector of initial powers 
 	y_fn = pargs["y_fn"] # initial admittance matrix
 	g = load_graph(p_fn,y_fn) # load Admittance matrix and injected/consumed powers
-	Y,P,Q,T,V = generate_YPQTV(g)
+	Y,P,Q,T,V = generate_YPQTV(g,1.)
 	h, epsilon, step_max = 0.01, 1e-11, round(Int64,1e5)
 
 	T,Tdot,n_iter=RK_solver1(T, h, V, Y, P, epsilon, step_max)
@@ -100,7 +100,6 @@ elseif solver == "SD"
 	del = 1e-2
 
 	Y,P,Q,T,V = generate_YPQTV(g,1.)
-	
 	T,n_iter,delta = SD_solver(T, Y, P, epsilon, iter_max, del)
 	export_csv_data(T, "t.csv")
 end

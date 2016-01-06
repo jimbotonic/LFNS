@@ -28,9 +28,9 @@ type Bus
 
 	# simple constructors
 	function Bus(id::Int64, t::Float64, p::Float64)
-		if p > 0
+		if p < 0
 			# load
-			new(id, "$id", 2, 1., 1., 1., t, p, 0., 0., 0., 0., 0., 0., 0.)
+			new(id, "$id", 2, 1., 1., 1., t, -p, 0., 0., 0., 0., 0., 0., 0.)
 		else
 			# generation
 			new(id, "$id", 2, 1., 1., 1., t, 0., p, 0., 0., 0., 0., 0., 0.)
@@ -222,7 +222,7 @@ function generate_YPQTV(g::Graphs.AbstractGraph{Bus,Line}, Sb::Float64=100.)
 	Y = Y + diagm(Float64[v.sh_susceptance for v in vs])*im
     
 	# injections
-	S = Complex{Float64}[-(v.load + v.generation)/Sb for v in vs]
+	S = Complex{Float64}[(-v.load + v.generation)/Sb for v in vs]
 	P = Float64[real(s) for s in S]
 	Q = Float64[imag(s) for s in S]
 	T = Float64[v.angle for v in vs]
