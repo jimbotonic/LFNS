@@ -203,9 +203,10 @@ end
 # T: updated thetas
 # n_iter: # of iterations before convergence
 # delta: norm of the last gradient
-function SD_solver(T::Array{Float64,1}, Y::Array{Complex{Float64},2}, P::Array{Float64,1}, epsilon::Float64=1e-6, iter_max::Int64=1e4, del::Float64=1e-2)
+function SD_solver(T::Array{Float64,1}, Y::Array{Complex{Float64},2}, P::Array{Float64,1}, epsilon::Float64=1e-6, iter_max::Int64=1e4, delt::Float64=1e-2)
 	n_iter = 0
 	n = length(T)
+	del = delt
 
 	# We only use the susceptive part of the admittance matrix, with zero diagonal elements	
 	K = imag(Y-diagm(diag(Y)))
@@ -217,23 +218,25 @@ function SD_solver(T::Array{Float64,1}, Y::Array{Complex{Float64},2}, P::Array{F
 	
 	# nabla is the gradient of this potential
 	nabla = P - sum(K.*sin(dT),2)
+	
 	delta = norm(nabla)
 	
 	# Follow the path of most negative gradient, until the correction is less than delta, to reach the bottom of a well
 	while delta > epsilon && n_iter < iter_max
 		n_iter += 1
 		A = copy(T)
-		T -= nabla*del
+		T += nabla*del
 		f1 = sum(P.*T) + .5*sum(K.*cos(T*ones(1,n)-ones(n,1)*T'))
-		while f1 > f0 && norm(f1-f0) > epsilon
+		while f1 < f0 && norm(f1-f0) > epsilon
 			T = copy(A)
 			del = del/2
-			T -= nabla*del
+			T += nabla*del
 			f1 = sum(P.*T) + .5*sum(K.*cos(T*ones(1,n)-ones(n,1)*T'))
 		end
+		del = delt
 		dT = T*ones(1,n)-ones(n,1)*T'
 		f0 = copy(f1)
-		nabla = P + sum(K.*sin(dT),2)
+		nabla = P - sum(K.*sin(dT),2)
 		delta = norm(nabla)
 	end
 	
