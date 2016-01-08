@@ -103,11 +103,8 @@ function GS_solver(V0::Array{Float64,1}, T::Array{Float64,1}, Y::Array{Complex{F
 		end
 		V = Vnew
 	end
-	Vf = zeros(n,1)
-	theta = zeros(n,1)
-	Vf = abs(Vnew)
-	T = angle(Vnew)
-	return Vf, T
+	# return V and T
+	return abs(Vnew), angle(Vnew)
 end
 
 # RK4 Runge-Kutta method (used to solve y_dot = f(t,y), y(t_0) = y_0)

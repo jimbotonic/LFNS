@@ -53,10 +53,8 @@ end
 
 # lead a simulation
 function simulation(s::Simulator)
+	# initialize simulation data
+	Y,P,Q,T,V = generate_YPQTV(s.g)
 
-
-
-
-
-
+	
 end
