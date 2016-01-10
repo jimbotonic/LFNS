@@ -233,7 +233,7 @@ end
 # T: updated thetas
 # n_iter: # of iterations before convergence
 # delta: norm of the last gradient
-function SD_solver(sp.SParams)
+function SD_solver(sp::SParams)
 	n_iter = 0
 	n = length(sp.T)
 	del = sp.o_args["d"]
