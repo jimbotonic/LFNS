@@ -1,5 +1,7 @@
 using Graphs
 
+include("simulator.jl")
+
 # vertex type
 type Bus
 	id::Int64
@@ -64,9 +66,6 @@ type Line
 	t_ratio::Complex{Float64}
 
 	# default constructor
-	function Line(source::Bus, target::Bus, line_type::Int, line_status::Bool, admittance::Complex{Float64}, sh_susceptance::Float64, s_ratio::Complex{Float64}, t_ratio::Complex{Float64})
-		new(1, source, target, line_type, line_status, admittance, sh_susceptance, s_ratio, t_ratio)
-	end
 	function Line(id::Int64, source::Bus, target::Bus, line_type::Int, line_status::Bool, admittance::Complex{Float64}, sh_susceptance::Float64, s_ratio::Complex{Float64}, t_ratio::Complex{Float64})
 		new(id, source, target, line_type, line_status, admittance, sh_susceptance, s_ratio, t_ratio)
 	end
@@ -190,11 +189,104 @@ function get_cycle_base(g::Graphs.AbstractGraph{Bus,Line})
 	return cycles
 end
 
+# generate a double cycle with a bus where p is injected
+function generate_double_cycle(l::Int,c::Int,r::Int,p::Float64)
+	vs = Bus[]
+	es = Line[]	
+	ecounter = 1
+
+	# left branch 1:l
+	for i in 1:l
+		# t=0., p=0.
+		push!(vs,Bus(i,0.,0.))
+	end
+	for i in 2:l
+		push!(es, Line(ecounter,vs[i-1],vs[i],1im))
+		ecounter += 1
+	end
+	# central branch (l+1):(c+l)
+	for i in (l+1):(c+l)
+		push!(vs,Bus(i,0.,0.))
+	end
+	for i in (l+2):(c+l)
+		push!(es, Line(ecounter,vs[i-1],vs[i],1im))
+		ecounter += 1
+	end
+	# right branch (l+c+1):(c+l+r)
+	for i in (l+c+1):(c+l+r)
+		push!(vs,Bus(i,0.,0.))
+	end
+	for i in (l+c+2):(c+l+r)
+		push!(es, Line(ecounter,vs[i-1],vs[i],1im))
+		ecounter += 1
+	end
+
+	# 2 last remaining vertices
+	b_in = Bus(l+c+r+1,0.,p)
+	b_out = Bus(l+c+r+2,0.,-p)
+
+	push!(es, Line(ecounter,vs[l+c+r+1],vs[1],1im))
+	ecounter += 1
+	push!(es, Line(ecounter,vs[l+c+r+1],vs[l+1],1im))
+	ecounter += 1
+	push!(es, Line(ecounter,vs[l+c+r+1],vs[l+c+1],1im))
+	ecounter += 1
+	
+	push!(es, Line(ecounter,vs[l+c+r+2],vs[l],1im))
+	ecounter += 1
+	push!(es, Line(ecounter,vs[l+c+r+2],vs[l+c],1im))
+	ecounter += 1
+	push!(es, Line(ecounter,vs[l+c+r+2],vs[l+c+r],1im))
+	
+	return graph(vs, es, is_directed=false)
+end
+
 # initialize the admittance matrix and the active/reactive  injection vectors
 # Sb: base power (for converting in p.u.)
-function generate_YPQTV(g::Graphs.AbstractGraph{Bus,Line}, Sb::Float64=100.)
-	vs = vertices(g)
-	es = edges(g)
+#function generate_YPQTV(g::Graphs.AbstractGraph{Bus,Line}, Sb::Float64=100.)
+#	vs = vertices(g)
+#	es = edges(g)
+#	n = length(vs)
+#	Y = zeros(Complex{Float64}, n,n)
+#
+#    	for edge in es
+#        	if edge.line_status
+#			y = edge.admittance
+#			if edge.line_type == 0
+#				y_sh = edge.sh_susceptance*im
+#				Y[edge.source.id, edge.source.id] += y + y_sh/2
+#				Y[edge.target.id, edge.target.id] += y + y_sh/2
+#				Y[edge.source.id, edge.target.id] += -y
+#				Y[edge.target.id, edge.source.id] += -y
+#			elseif edge.line_type == 1
+#				#y_sh = (edge.sh_conductance + edge.sh_susceptance*im)
+#				y_sh = edge.sh_susceptance*im
+#				Y[edge.source.id, edge.source.id] += y*abs(edge.s_ratio)^2 
+#				Y[edge.target.id, edge.target.id] += abs(edge.t_ratio)^2*(y + y_sh)
+#				Y[edge.source.id, edge.target.id] += -y*edge.s_ratio*edge.t_ratio
+#				Y[edge.target.id, edge.source.id] += -y*conj(edge.s_ratio*edge.t_ratio)
+#			end
+#        	end
+#    	end
+#
+#	# add shunt susceptance to each node
+#	Y = Y + diagm(Float64[v.sh_susceptance for v in vs])*im
+#    
+#	# injections
+#	S = Complex{Float64}[(-v.load + v.generation)/Sb for v in vs]
+#	P = Float64[real(s) for s in S]
+#	Q = Float64[imag(s) for s in S]
+#	T = Float64[v.angle for v in vs]
+#	V = Float64[v.init_voltage for v in vs]
+#
+#	return Y,P,Q,T,V
+#end
+	
+# initialize the solvers parameters (admittance matrix, active/reactive  injection vectors, angles, ...)
+# Sb: base power (for converting in p.u.)
+function get_sparams(s::Simulator)
+	vs = vertices(s.g)
+	es = edges(s.g)
 	n = length(vs)
 	Y = zeros(Complex{Float64}, n,n)
 
@@ -222,54 +314,13 @@ function generate_YPQTV(g::Graphs.AbstractGraph{Bus,Line}, Sb::Float64=100.)
 	Y = Y + diagm(Float64[v.sh_susceptance for v in vs])*im
     
 	# injections
-	S = Complex{Float64}[(-v.load + v.generation)/Sb for v in vs]
+	S = Complex{Float64}[(-v.load + v.generation)/s.sb for v in vs]
 	P = Float64[real(s) for s in S]
 	Q = Float64[imag(s) for s in S]
 	T = Float64[v.angle for v in vs]
 	V = Float64[v.init_voltage for v in vs]
 
-	return Y,P,Q,T,V
+	return new SParams(V,T,Y,P,Q,s.epsilon,s.iter_max,s.o_args)
 end
 
-# generate a double cycle with a bus where p is injected
-function generate_double_cycle(l::Int,c::Int,r::Int,p::Float64)
-	vs = Bus[]
-	es = Line[]
 
-	# left branch 1:l
-	for i in 1:l
-		# t=0., p=0.
-		push!(vs,Bus(i,0.,0.))
-	end
-	for i in 2:l
-		push!(es, Line(vs[i-1],vs[i],1im))
-	end
-	# central branch (l+1):(c+l)
-	for i in (l+1):(c+l)
-		push!(vs,Bus(i,0.,0.))
-	end
-	for i in (l+2):(c+l)
-		push!(es, Line(vs[i-1],vs[i],1im))
-	end
-	# right branch (l+c+1):(c+l+r)
-	for i in (l+c+1):(c+l+r)
-		push!(vs,Bus(i,0.,0.))
-	end
-	for i in (l+c+2):(c+l+r)
-		push!(es, Line(vs[i-1],vs[i],1im))
-	end
-
-	# 2 last remaining vertices
-	b_in = Bus(l+c+r+1,0.,p)
-	b_out = Bus(l+c+r+2,0.,-p)
-
-	push!(es, Line(vs[l+c+r+1],vs[1],1im))
-	push!(es, Line(vs[l+c+r+1],vs[l+1],1im))
-	push!(es, Line(vs[l+c+r+1],vs[l+c+1],1im))
-	
-	push!(es, Line(vs[l+c+r+2],vs[l],1im))
-	push!(es, Line(vs[l+c+r+2],vs[l+c],1im))
-	push!(es, Line(vs[l+c+r+2],vs[l+c+r],1im))
-	
-	return graph(vs, es, is_directed=false)
-end

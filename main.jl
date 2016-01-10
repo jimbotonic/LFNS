@@ -48,58 +48,46 @@ if solver == "NR"
 	# export graph to graphml
 	#export_graphml("my_export.graphml", g)
 
-	# initialize simulation data
-	Y,P0,Q0,T,V = generate_YPQTV(g)
+	o_args = Dict{AbstractString,Any}()
+	o_args["g"] = g
+	o_args["bootstrap_iter"] = 3
+	s = Simulator(g,NR_solver,o_args,100.,1e-8,15)
 	
-	# node ids whose bus type is 0
-	PQ_ids = Int64[v.id for v in filter(v -> v.bus_type == 0, vs)]
-	# set PQ bus voltages to 1 pu
-	V[PQ_ids] = 1.
-	# node id whose bus type is 3
-	slack_id = filter(v -> v.bus_type == 3, vs)[1].id
-
-	# set of node ids which are part of the connected component containing the slack bus 
-	sc_ids = get_slack_component_ids(g)
-	Y = Y[sc_ids, sc_ids]
-	V = V[sc_ids]
-	T = T[sc_ids]
-	P0 = P0[sc_ids]
-	Q0 = Q0[sc_ids]
-	# bus types of the slack component 	
-	bus_type = Int64[v.bus_type for v in vs]
-	# PQ bus positions in the slack component
-	PQ_pos = findin(bus_type[sc_ids], 0)
-	# slack position in the slack component
-	slack_pos = findin(bus_type[sc_ids],3)[1]
-	# bootstrap simulation
-	V,T = GS_solver(V, T, Y, P0, Q0, PQ_pos, slack_pos, 3)
-	# Newton-Raphson solver
-	V,T,n_iter = NR_solver(V, T, Y, P0, Q0, PQ_pos, slack_pos, 1e-8, 15)
-	export_csv_data(V, "v.csv")
-	T = T*180/pi
-	export_csv_data(T, "t.csv")
+	# launch the simulation
+	simulate(s)
+	state = s.states[1]
+	
+	export_csv_data(state.V, "v.csv")
+	state.T = state.T*180/pi
+	export_csv_data(state.T, "t.csv")
 elseif solver == "RK"
 	p_fn = pargs["p_fn"] # vector of initial powers 
 	y_fn = pargs["y_fn"] # initial admittance matrix
 	g = load_graph(p_fn,y_fn) # load Admittance matrix and injected/consumed powers
-	Y,P,Q,T,V = generate_YPQTV(g,1.)
-	h, epsilon, step_max = 0.01, 1e-11, round(Int64,1e5)
 
-	T,Tdot,n_iter=RK_solver1(T, h, V, Y, P, epsilon, step_max)
+	o_args = Dict{AbstractString,Any}()
+	o_args["h"] = 1e-2
+	s = Simulator(g,RK_solver1,o_args,1.,1e-11,round(Int64,1e5))
+	
+	# launch the simulation
+	simulate(s)
+	state = s.states[1]
 
-	println(n_iter)
-	export_csv_data(T, "t.csv")
-	export_csv_data(Tdot, "tdot.csv")
+	println(state.n_iter)
+	export_csv_data(state.T, "t.csv")
+	export_csv_data(state.Tdot, "tdot.csv")
 elseif solver == "SD"
 	p_fn = pargs["p_fn"]  
 	y_fn = pargs["y_fn"] 
 	g = load_graph(p_fn,y_fn) 
 
-	epsilon = 1e-6
-	iter_max = round(Int,1e5)
-	del = 1e-2
+	o_args = Dict{AbstractString,Any}()
+	o_args["d"] = 1e-2
+	s = Simulator(g,SD_solver,o_args,1.,1e-6,round(Int64,1e5))
 
-	Y,P,Q,T,V = generate_YPQTV(g,1.)
-	T,n_iter,delta = SD_solver(T, Y, P, epsilon, iter_max, del)
-	export_csv_data(T, "t.csv")
+	# launch the simulation
+	simulate(s)
+	state = s.states[1]
+
+	export_csv_data(state.T, "t.csv")
 end

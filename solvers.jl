@@ -15,27 +15,57 @@ using Distances
 # V: updated voltages
 # T: updated thetas
 # n_iter: # of iterations before convergence
-function NR_solver(V::Array{Float64,1}, T::Array{Float64,1}, Y::Array{Complex{Float64},2}, P0::Array{Float64,1}, Q0::Array{Float64,1}, PQ_ids::Array{Int64,1}, slack_id::Int64, epsilon::Float64=1e-6, iter_max::Int64=50)
-    	n = size(Y)[1]
+function NR_solver(sp::SParams)
+	vs = vertices(sp.o_args["g"])
+	n = length(vs) 
+    	#n = size(sp.Y)[1]
+	
+	# node ids whose bus type is 0
+	PQ_ids = Int64[v.id for v in filter(v -> v.bus_type == 0, vs)]
+	# set PQ bus voltages to 1 pu
+	sp.V[PQ_ids] = 1.
+	# node id whose bus type is 3
+	slack_id = filter(v -> v.bus_type == 3, vs)[1].id
+
+	# set of node ids which are part of the connected component containing the slack bus 
+	sc_ids = get_slack_component_ids(sp.g)
+	sp.Y = sp.Y[sc_ids, sc_ids]
+	sp.V = sp.V[sc_ids]
+	sp.T = sp.T[sc_ids]
+	sp.P = sp.P[sc_ids]
+	sp.Q = sp.Q[sc_ids]
+
+	# bus types of the slack component 	
+	bus_type = Int64[v.bus_type for v in vs]
+	# PQ bus positions in the slack component
+	PQ_pos = findin(bus_type[sc_ids], 0)
+	# slack position in the slack component
+	slack_pos = findin(bus_type[sc_ids],3)[1]
+	
+	# bootstrap simulation
+	sp.o_args["PQ_pos"] = PQ_pos
+	sp.o_args["slack_pos"] = slack_pos
+	GS_solver(sp)
+
 	# compute Y element-wise absolute values
-    	Y_abs = abs(Y)
+    	Y_abs = abs(sp.Y)
 	# compute Y element-wise angle values
-    	Y_angle = angle(Y)
+    	Y_angle = angle(sp.Y)
 	# ids from 1:n except slack_id
 	ids = collect(1:n)
 	deleteat!(ids, slack_id)
     	
-	error  = epsilon
+	error  = sp.epsilon
     	n_iter = 1
 
-    	while(error >= epsilon && n_iter < iter_max)
+    	while(error >= sp.epsilon && n_iter < sp.iter_max)
 		# pre-computations 1
-		M1 = V*V'.*Y_abs 
-		M2 = repmat(T,1,n)-repmat(T',n,1)-Y_angle
+		M1 = sp.V*sp.V'.*Y_abs 
+		M2 = repmat(sp.T,1,n)-repmat(sp.T',n,1)-Y_angle
 		M3 = M1.*sin(M2)
 		M4 = M1.*cos(M2)
-		V1 = diag(Y_abs).*sin(diag(Y_angle)).*V.^2
-		V2 = diag(Y_abs).*cos(diag(Y_angle)).*V.^2
+		V1 = diag(Y_abs).*sin(diag(Y_angle)).*sp.V.^2
+		V2 = diag(Y_abs).*cos(diag(Y_angle)).*sp.V.^2
 
 		# compute P and Q (n-dimensional vectors)
 		# 
@@ -51,8 +81,8 @@ function NR_solver(V::Array{Float64,1}, T::Array{Float64,1}, Y::Array{Complex{Fl
 		V6 = P-V2
 		
 		# compare P and Q with their "known" value to get dPQ ((n-1+m)-dimensional vector)
-		dP = P0[ids] - P[ids]
-		dQ = Q0[PQ_ids] - Q[PQ_ids]
+		dP = sp.P[ids] - P[ids]
+		dQ = sp.Q[PQ_ids] - Q[PQ_ids]
 		dPQ = [dP;dQ]
 		
 		# compute the jacobian matrix
@@ -70,41 +100,44 @@ function NR_solver(V::Array{Float64,1}, T::Array{Float64,1}, Y::Array{Complex{Fl
 		X = J\dPQ
 		
 		# update V and theta
-		T[ids] += X[1:n-1]
-		V[PQ_ids] += X[n:end]
+		sp.T[ids] += X[1:n-1]
+		sp.V[PQ_ids] += X[n:end]
 		error = maximum(abs(dPQ))
 		n_iter += 1
     	end
 
-	return V,T,n_iter
+	return State(sp.V,sp.T,Float64[],n_iter)
 end
 
 # Gauss-Seidel solver for Flow Data networks
 # used to initiate NR solver when flat start diverges
-function GS_solver(V0::Array{Float64,1}, T::Array{Float64,1}, Y::Array{Complex{Float64},2}, P0::Array{Float64,1}, Q0::Array{Float64,1}, PQ_ids::Array{Int64,1}, slack_id::Int64, iter::Int64=5)
-	n = length(V0)
+function GS_solver(sp::SParams)
+	n = length(sp.V)
 	is_PQ = falses(n,1)
-	is_PQ[PQ_ids] = true
-	set = setdiff(1:n,slack_id)
+	is_PQ[sp.o_args["PQ_pos"]] = true
+	set = setdiff(1:n,sp.o_args["slack_pos"])
 	# define the voltages of the non slack buses
-	V = V0.*exp(T*im)
+	V = sp.V.*exp(sp.T*im)
+	# copy V? -> TO BE CHECKED
 	Vnew = copy(V)
-	for ii in 1:iter
+	for ii in 1:sp.o_args["bootstrap_iter"]
 		for i in set
-			if(is_PQ[i] == false)
-				Q = imag(Y[i,:]*V)
-				Vtemp = 1/Y[i,i]*(conj((P0[i]+Q*im)/V[i]) - Y[i,1:i-1]*Vnew[1:i-1] - Y[i,i+1:end]*V[i+1:end])
-				Vnew[i] = V0[i]*exp(angle(Vtemp[1])*im)
+			if (is_PQ[i] == false)
+				Q = imag(sp.Y[i,:]*V)
+				Vtemp = 1/sp.Y[i,i]*(conj((sp.P[i]+Q*im)/V[i]) - sp.Y[i,1:i-1]*Vnew[1:i-1] - sp.Y[i,i+1:end]*V[i+1:end])
+				Vnew[i] = sp.V[i]*exp(angle(Vtemp[1])*im)
 			else
-				Q = Q0[i];
-				Vtemp = 1/Y[i,i]*(conj((P0[i]+Q*im)/V[i]) - Y[i,1:i-1]*Vnew[1:i-1] - Y[i,i+1:end]*V[i+1:end])
+				Q = sp.Q[i]
+				Vtemp = 1/sp.Y[i,i]*(conj((sp.P[i]+Q*im)/V[i]) - sp.Y[i,1:i-1]*Vnew[1:i-1] - sp.Y[i,i+1:end]*V[i+1:end])
 				Vnew[i] = Vtemp[1]
 			end
 		end
+		# TO BE CHECKED
 		V = Vnew
 	end
-	# return V and T
-	return abs(Vnew), angle(Vnew)
+	# update powers and angles vectors
+	sp.V = abs(Vnew)
+	sp.T = angle(Vnew)
 end
 
 # RK4 Runge-Kutta method (used to solve y_dot = f(t,y), y(t_0) = y_0)
@@ -142,7 +175,7 @@ function RK4(f)
 end
 
 # right-hand side of the differential equation 
-function f1(T::Array{Float64,1}, V::Array{Float64,1}, Y::Array{Complex{Float64},2}, P0::Array{Float64,1})
+function f1(T::Array{Float64,1}, V::Array{Float64,1}, Y::Array{Complex{Float64},2}, P::Array{Float64,1})
 	M1 = V*V'
 	M2 = real(Y).*M1 #M2ij=Gij*Vi*Vj
 	M3 = imag(Y).*M1 #M3ij=Bij*Vi*Vj
@@ -153,7 +186,7 @@ function f1(T::Array{Float64,1}, V::Array{Float64,1}, Y::Array{Complex{Float64},
 	M2 = M2 - diagm(diag(M2))
 	M3 = M3 - diagm(diag(M3))
 
-	return (P0 - V1 + (V2.*(-M2*V2 + M3*V3) - V3.*(M2*V3 + M3*V2))) 
+	return (P - V1 + (V2.*(-M2*V2 + M3*V3) - V3.*(M2*V3 + M3*V2))) 
 end
 
 # Runge-Kutta solver for Flow Data networks
@@ -170,23 +203,23 @@ end
 # T: updated thetas
 # Tdot: updated theta_dots
 # n_iter: # of iterations before convergence
-function RK_solver1(T::Array{Float64,1}, h::Float64, V::Array{Float64,1}, Y::Array{Complex{Float64},2}, P0::Array{Float64,1}, epsilon::Float64=1e-6, iter_max::Int64=1e4)
+function RK_solver1(sp::SParams)
 	dU = RK4(f1)
-	nTdot = zeros(Float64, length(T))
-	Tdot = zeros(Float64, length(T))
+	nTdot = zeros(Float64, length(sp.T))
+	Tdot = zeros(Float64, length(sp.T))
 
 	n_iter = 1
-	while n_iter < iter_max
-		(dT, Tdot) = dU(T, h, V, Y, P0)
-		if chebyshev(nTdot, Tdot) < epsilon
+	while n_iter < sp.iter_max
+		(dT, Tdot) = dU(sp.T, sp.o_args["h"], sp.V, sp.Y, sp.P)
+		if chebyshev(nTdot, Tdot) < sp.epsilon
 			break
 		end
 		nTdot = copy(Tdot)
-		T += dT
+		sp.T += dT
 		n_iter += 1
 	end
 
-	return T,Tdot,n_iter
+	return State(Float64[],sp.T,Tdot,n_iter)
 end
 
 # Steepest descent solver for Flow Data networks
@@ -200,47 +233,48 @@ end
 # T: updated thetas
 # n_iter: # of iterations before convergence
 # delta: norm of the last gradient
-function SD_solver(T::Array{Float64,1}, Y::Array{Complex{Float64},2}, P::Array{Float64,1}, epsilon::Float64=1e-6, iter_max::Int64=1e4, delt::Float64=1e-2)
+function SD_solver(sp.SParams)
 	n_iter = 0
-	n = length(T)
-	del = delt
+	n = length(sp.T)
+	del = sp.o_args["d"]
 
 	# We only use the susceptive part of the admittance matrix, with zero diagonal elements	
-	K = imag(Y-diagm(diag(Y)))
-	
-	dT = T*ones(1,n)-ones(n,1)*T'
+	K = imag(sp.Y-diagm(diag(sp.Y)))
+	dT = sp.T*ones(1,n)-ones(n,1)*sp.T'
 	
 	# f0 is the potential in the phase space whose extremas are solutions of the PFEs
-	f0 = -sum(P.*T) - .5*sum(K.*cos(dT))
+	f0 = -sum(sp.P.*sp.T) - .5*sum(K.*cos(dT))
 	
 	# nabla is the gradient of this potential
-	nabla = -P + sum(K.*sin(dT),2)
-	
+	nabla = -sp.P + sum(K.*sin(dT),2)
 	delta = norm(nabla)
 	
 	# Follow the path of most negative gradient, until the correction is less than delta, to reach the bottom of a well
-	while delta > epsilon && n_iter < iter_max
+	while delta > sp.epsilon && n_iter < sp.iter_max
 		n_iter += 1
-		A = copy(T)
+		A = copy(sp.T)
 		T -= nabla*del
-		f1 = -sum(P.*T) - .5*sum(K.*cos(T*ones(1,n)-ones(n,1)*T'))
-		while f1 > f0 && norm(f1-f0) > epsilon
-			T = copy(A)
+		f1 = -sum(sp.P.*sp.T) - .5*sum(K.*cos(sp.T*ones(1,n)-ones(n,1)*sp.T'))
+		while f1 > f0 && norm(f1-f0) > sp.epsilon
+			sp.T = copy(A)
 			del = del/2
-			T -= nabla*del
-			f1 = -sum(P.*T) - .5*sum(K.*cos(T*ones(1,n)-ones(n,1)*T'))
+			sp.T -= nabla*del
+			f1 = -sum(sp.P.*sp.T) - .5*sum(K.*cos(sp.T*ones(1,n)-ones(n,1)*sp.T'))
 		end
-		del = delt
-		dT = T*ones(1,n)-ones(n,1)*T'
+		del = sp.o_args["d"]
+		dT = sp.T*ones(1,n)-ones(n,1)*sp.T'
 		f0 = copy(f1)
-		nabla = -P + sum(K.*sin(dT),2)
+		nabla = -sp.P + sum(K.*sin(dT),2)
 		delta = norm(nabla)
 	end
 	
 	# rotate all angles by using the last one as the reference
 	# all angles belong to [-pi,pi] afterward
-	T = mod(T-T[end]+pi,2*pi)-pi
-	return T,n_iter,delta
+	sp.T = mod(sp.T-sp.T[end]+pi,2*pi)-pi
+
+	o_data = Dict{AbstractString,Any}()
+	o_data["delta"] = delta
+	return State(Float64[],sp.T,Float64[],n_iter,o_data)
 end
 
 # Stability matrix
@@ -274,8 +308,8 @@ end
 ## OUTPUT
 # l2: second eigenvalue of the stability matrix
 function get_lambda2(T::Array{Float64,1}, Y::Array{Complex{Float64},2})
+	# get stability matrix
 	M = get_stability_matrix(T,Y)
-
 	e = eigvals(M)
 	l1 = e[end]
 	
