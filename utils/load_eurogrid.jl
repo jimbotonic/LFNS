@@ -44,7 +44,7 @@ function load_graph(E_fn::AbstractString)
 		if sn != tn
 			h1 = hash(sn*tn)
 			h2 = hash(tn*sn)
-			if !h1 in h && !h2 in h 
+			if !(h1 in h) && !(h2 in h) 
 				source = vertices[name_id[sn]]
 				target = vertices[name_id[tn]]
 				push!(edges, Line(ecounter, source, target, 1.im))
@@ -62,5 +62,5 @@ g = load_graph(ARGS[1])
 
 println(g)
 
-serialize_to_file(g,"eurogrid.jld")
-export_graphml(g,"eurogrid.graphml")
+serialize_to_file(g,"../data/eurogrid.jld")
+export_graphml(g,"../data/eurogrid.graphml")
