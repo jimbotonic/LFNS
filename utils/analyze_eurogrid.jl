@@ -24,7 +24,7 @@ println("---")
 mc = get_principal_component(g)
 println("# vertices of principal component: ", length(mc))
 gp = get_subgraph(g, mc)
-#serialize_to_file(gp, "../data/eurogrid_pc.jld")
+serialize_to_file(gp, "../data/eurogrid_pc.jld")
 
 println("# vertices (pc): ", length(vertices(gp)))
 println("# edges (pc): ", length(edges(gp)))
@@ -36,11 +36,10 @@ ke, kw = prim_minimum_spantree(gp, ew, vertices(gp)[1])
 println("# tree edges: ", length(ke))
 
 reids = setdiff(Int64[edge.id for edge in edges(gp)],Int64[edge.id for edge in ke])
-#res = edges(gp)[reids]
-println("# out-tree edges (#reids): ", length(reids))
+println("# out-tree edges: ", length(reids))
 
 gpt = get_pruned_graph(gp, reids)
-#serialize_to_file(gpt, "../data/eurogrid_pc_st.jld")
+serialize_to_file(gpt, "../data/eurogrid_pc_st.jld")
 
 n = length(vertices(gpt))
 m = length(edges(gpt))

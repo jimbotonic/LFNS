@@ -136,10 +136,8 @@ end
 
 # prune the graph by removing the specified list of  edge ids
 function get_pruned_graph(g::Graphs.AbstractGraph{Bus,Line}, reids::Array{Int64,1})
-	# sorted array of subgraph edge ids to ber removed
-	#reids = sort(Int64[r.id for r in res])
+	# sort array of subgraph edge ids to be removed
 	sort!(reids)
-	# @debug("reids (pruned): ", reids)
 	nvs = Bus[]
 	nes = Line[]
 
@@ -152,9 +150,6 @@ function get_pruned_graph(g::Graphs.AbstractGraph{Bus,Line}, reids::Array{Int64,
 	for edge in edges(g)
 		# if the current edge is not in the sorted list
 		if length(searchsorted(reids, edge.id)) == 0
-			#if edge.source.id == 4849 && edge.target.id == 5031
-			#	@debug("edge (", edge.id ,") not pruned: ", edge)
-			#end
 			ne = Line(ecounter, edge.source, edge.target, edge.line_type, edge.line_status, edge.admittance, edge.sh_susceptance, edge.s_ratio, edge.t_ratio)
 			push!(nes, ne)
 			ecounter += 1
@@ -178,7 +173,6 @@ function get_cycle_base(g::Graphs.AbstractGraph{Bus,Line})
 	
 	# get edges not belonging to the tree (edges(g) \ edges(sp))
 	reids = setdiff(Int64[edge.id for edge in edges(g)],Int64[edge.id for edge in ke])
-	#res = edges(g)[reids]
 
 	# extract spanning tree
 	gt = get_pruned_graph(g, reids)
@@ -189,37 +183,10 @@ function get_cycle_base(g::Graphs.AbstractGraph{Bus,Line})
 	@debug("# vertices (gt): ", length(vertices(gt)))
 	@debug("# edges (gt): ", length(edges(gt)))
 	@debug("---")
-	@debug("# edges in SP: ", length(ke))
 	@debug("# shortcut edges: ", length(reids))
 	
 	# set of fundamental cycles
 	cycles = Array{Array{Int64,1},1}()
-	
-	for edge in edges(g)
-		if edge.source.id == 4849 && edge.target.id == 5031
-			@debug("edge 4839-5031 in G!!!: ", edge)
-		end
-		if edge.source.id == 5031 && edge.target.id == 4839
-			@debug("edge 5031-4839 in G!!!: ", edge)
-		end
-	end
-	for edge in edges(gt)
-		if edge.source.id == 4849 && edge.target.id == 5031
-			@debug("edge 4839-5031 in SP!!!: ", edge)
-		end
-		if edge.source.id == 5031 && edge.target.id == 4839
-			@debug("edge 5031-4839 in SP!!!: ", edge)
-		end
-	end
-	for eid in reids
-		edge = edges(g)[eid]
-		if edge.source.id == 4849 && edge.target.id == 5031
-			@debug("edge 4839-5031 in RES!!!: ", edge)
-		end
-		if edge.source.id == 5031 && edge.target.id == 4839
-			@debug("edge 5031-4839 in RES!!!: ", edge)
-		end
-	end
 
 	for eid in reids
 		edge = edges(g)[eid]
@@ -228,11 +195,6 @@ function get_cycle_base(g::Graphs.AbstractGraph{Bus,Line})
 		# pergorm Djikstra shortest path algorithm from the source s
 		dsp = dijkstra_shortest_paths(gt, vertices(gt)[s])
 		c = enumerate_indices(dsp.parent_indices, t)
-		if s == 4849 && t == 5031
-			@debug("edge: ", edge)
-			@debug("c: ", c)
-			@debug("path: ", enumerate_paths(vertices(gt), dsp.parent_indices, t))
-		end
 		push!(cycles, c)
 	end
 
