@@ -302,14 +302,14 @@ function get_stability_matrix(T::Array{Float64,1}, Y::Array{Complex{Float64},2})
 	return M
 end
 
-# Second eigenvalue
+# get lambda 2
 #
 ## INPUT
 # T: thetas
 # Y: admittance matrix
 #
 ## OUTPUT
-# l2: second eigenvalue of the stability matrix
+# l2: greatest non-null real part of the stability matrix eigenvalues
 function get_lambda2(T::Array{Float64,1}, Y::Array{Complex{Float64},2}, epsilon::Float64=1e-12)
 	# get stability matrix
 	M = get_stability_matrix(T,Y)
