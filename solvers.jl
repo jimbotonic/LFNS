@@ -1,5 +1,7 @@
 using Distances
 
+include("simulator.jl")
+
 # Newton-Raphson solver for Flow Data networks
 #
 ## INPUT
@@ -118,22 +120,23 @@ function GS_solver(sp::SParams)
 	set = setdiff(1:n,sp.o_args["slack_pos"])
 	# define the voltages of the non slack buses
 	V = sp.V.*exp(sp.T*im)
-	# copy V? -> TO BE CHECKED
+	# copy V
 	Vnew = copy(V)
 	for ii in 1:sp.o_args["bootstrap_iter"]
 		for i in set
+			# PV bus
 			if (is_PQ[i] == false)
 				Q = imag(sp.Y[i,:]*V)
 				Vtemp = 1/sp.Y[i,i]*(conj((sp.P[i]+Q*im)/V[i]) - sp.Y[i,1:i-1]*Vnew[1:i-1] - sp.Y[i,i+1:end]*V[i+1:end])
-				Vnew[i] = sp.V[i]*exp(angle(Vtemp[1])*im)
+				Vnew[i] = V[i]*exp(angle(Vtemp[1])*im)
+			# PQ bus
 			else
-				Q = sp.Q[i]
-				Vtemp = 1/sp.Y[i,i]*(conj((sp.P[i]+Q*im)/V[i]) - sp.Y[i,1:i-1]*Vnew[1:i-1] - sp.Y[i,i+1:end]*V[i+1:end])
+				Vtemp = 1/sp.Y[i,i]*(conj((sp.P[i]+sp.Q[i]*im)/V[i]) - sp.Y[i,1:i-1]*Vnew[1:i-1] - sp.Y[i,i+1:end]*V[i+1:end])
 				Vnew[i] = Vtemp[1]
 			end
 		end
-		# TO BE CHECKED
-		V = Vnew
+		# copy Vnew
+		V = copy(Vnew)
 	end
 	# update powers and angles vectors
 	sp.V = abs(Vnew)
@@ -307,16 +310,16 @@ end
 #
 ## OUTPUT
 # l2: second eigenvalue of the stability matrix
-function get_lambda2(T::Array{Float64,1}, Y::Array{Complex{Float64},2})
+function get_lambda2(T::Array{Float64,1}, Y::Array{Complex{Float64},2}, epsilon::Float64=1e-12)
 	# get stability matrix
 	M = get_stability_matrix(T,Y)
-	e = eigvals(M)
-	l1 = e[end]
+	evs = eigvals(M)
+	l1 = evs[end]
 	
-	if abs(l1) > 1e-12
+	if abs(l1) > epsilon
 		l2 = l1
 	else
-		l2 = e[end-1]
+		l2 = evs[end-1]
 	end
 	
 	return l2
