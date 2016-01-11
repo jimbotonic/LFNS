@@ -1,4 +1,6 @@
-using Graphs
+using Graphs, Logging
+
+@Logging.configure(level=DEBUG)
 
 # vertex type
 type Bus
@@ -132,10 +134,12 @@ function get_subgraph(g::Graphs.AbstractGraph{Bus,Line}, vs::Array{Bus,1})
 	return graph(nvs, nes, is_directed=false)
 end
 
-# prune the graph by keeping only the specified list of edges
-function get_pruned_graph(g::Graphs.AbstractGraph{Bus,Line}, es::Array{Line,1})
-	# sorted array of subgraph edge ids
-	seids = sort(Int64[edge.id for edge in es])
+# prune the graph by removing the specified list of  edge ids
+function get_pruned_graph(g::Graphs.AbstractGraph{Bus,Line}, reids::Array{Int64,1})
+	# sorted array of subgraph edge ids to ber removed
+	#reids = sort(Int64[r.id for r in res])
+	sort!(reids)
+	# @debug("reids (pruned): ", reids)
 	nvs = Bus[]
 	nes = Line[]
 
@@ -146,9 +150,11 @@ function get_pruned_graph(g::Graphs.AbstractGraph{Bus,Line}, es::Array{Line,1})
 
 	ecounter = 1
 	for edge in edges(g)
-		eid = edge.id
-		# if the current edge is in the list
-		if length(searchsorted(seids, eid)) > 0
+		# if the current edge is not in the sorted list
+		if length(searchsorted(reids, edge.id)) == 0
+			#if edge.source.id == 4849 && edge.target.id == 5031
+			#	@debug("edge (", edge.id ,") not pruned: ", edge)
+			#end
 			ne = Line(ecounter, edge.source, edge.target, edge.line_type, edge.line_status, edge.admittance, edge.sh_susceptance, edge.s_ratio, edge.t_ratio)
 			push!(nes, ne)
 			ecounter += 1
@@ -159,6 +165,8 @@ function get_pruned_graph(g::Graphs.AbstractGraph{Bus,Line}, es::Array{Line,1})
 end
 
 # get the cycle base of the specified graph
+# 
+# see http://graphsjl-docs.readthedocs.org/en/latest/algorithms.html
 #
 # Paton algorithm: 
 # 	http://www.cs.kent.edu/~dragan/GraphAn/CycleBasis/p514-paton.pdf
@@ -166,25 +174,77 @@ end
 function get_cycle_base(g::Graphs.AbstractGraph{Bus,Line})
 	# get minimum spanning tree edges
 	ew = ones(length(edges(g)))
-	re, rw = prim_minimum_spantree(g, ew, vertices(g)[1])
+	ke, kw = prim_minimum_spantree(g, ew, vertices(g)[1])
+	
+	# get edges not belonging to the tree (edges(g) \ edges(sp))
+	reids = setdiff(Int64[edge.id for edge in edges(g)],Int64[edge.id for edge in ke])
+	#res = edges(g)[reids]
 
 	# extract spanning tree
-	gt = get_pruned_graph(g, re)
+	gt = get_pruned_graph(g, reids)
 
-	# get edges not belonging to the tree 
-	ses = setdiff(edges(g),re)
+	@debug("# vertices (g): ", length(vertices(g)))
+	@debug("# edges (g): ", length(edges(g)))
+	@debug("---")
+	@debug("# vertices (gt): ", length(vertices(gt)))
+	@debug("# edges (gt): ", length(edges(gt)))
+	@debug("---")
+	@debug("# edges in SP: ", length(ke))
+	@debug("# shortcut edges: ", length(reids))
 	
 	# set of fundamental cycles
 	cycles = Array{Array{Int64,1},1}()
 	
-	for edge in ses
+	for edge in edges(g)
+		if edge.source.id == 4849 && edge.target.id == 5031
+			@debug("edge 4839-5031 in G!!!: ", edge)
+		end
+		if edge.source.id == 5031 && edge.target.id == 4839
+			@debug("edge 5031-4839 in G!!!: ", edge)
+		end
+	end
+	for edge in edges(gt)
+		if edge.source.id == 4849 && edge.target.id == 5031
+			@debug("edge 4839-5031 in SP!!!: ", edge)
+		end
+		if edge.source.id == 5031 && edge.target.id == 4839
+			@debug("edge 5031-4839 in SP!!!: ", edge)
+		end
+	end
+	for eid in reids
+		edge = edges(g)[eid]
+		if edge.source.id == 4849 && edge.target.id == 5031
+			@debug("edge 4839-5031 in RES!!!: ", edge)
+		end
+		if edge.source.id == 5031 && edge.target.id == 4839
+			@debug("edge 5031-4839 in RES!!!: ", edge)
+		end
+	end
+
+	for eid in reids
+		edge = edges(g)[eid]
+		# select the least edge vertex
 		s,t = sort([edge.source.id,edge.target.id])
-		dsp = dijkstra_shortest_paths(gt, vertices(g)[s])
+		# pergorm Djikstra shortest path algorithm from the source s
+		dsp = dijkstra_shortest_paths(gt, vertices(gt)[s])
 		c = enumerate_indices(dsp.parent_indices, t)
+		if s == 4849 && t == 5031
+			@debug("edge: ", edge)
+			@debug("c: ", c)
+			@debug("path: ", enumerate_paths(vertices(gt), dsp.parent_indices, t))
+		end
 		push!(cycles, c)
 	end
 
 	return cycles
+end
+
+function direct_cycles(cycles::Array{Array{Int64,1},1})
+	# find least cycle (cycle containing the least vertex whose sum is minimum)
+	cycles1 = filter(x -> 1 in x, cycles)
+	lc = filter(x -> sum(x) == minimum(sum(cycles)))
+
+	
 end
 
 # generate a double cycle with a bus where p is injected
@@ -239,44 +299,3 @@ function generate_double_cycle(l::Int,c::Int,r::Int,p::Float64)
 	return graph(vs, es, is_directed=false)
 end
 
-# initialize the admittance matrix and the active/reactive  injection vectors
-# Sb: base power (for converting in p.u.)
-#function generate_YPQTV(g::Graphs.AbstractGraph{Bus,Line}, Sb::Float64=100.)
-#	vs = vertices(g)
-#	es = edges(g)
-#	n = length(vs)
-#	Y = zeros(Complex{Float64}, n,n)
-#
-#    	for edge in es
-#        	if edge.line_status
-#			y = edge.admittance
-#			if edge.line_type == 0
-#				y_sh = edge.sh_susceptance*im
-#				Y[edge.source.id, edge.source.id] += y + y_sh/2
-#				Y[edge.target.id, edge.target.id] += y + y_sh/2
-#				Y[edge.source.id, edge.target.id] += -y
-#				Y[edge.target.id, edge.source.id] += -y
-#			elseif edge.line_type == 1
-#				#y_sh = (edge.sh_conductance + edge.sh_susceptance*im)
-#				y_sh = edge.sh_susceptance*im
-#				Y[edge.source.id, edge.source.id] += y*abs(edge.s_ratio)^2 
-#				Y[edge.target.id, edge.target.id] += abs(edge.t_ratio)^2*(y + y_sh)
-#				Y[edge.source.id, edge.target.id] += -y*edge.s_ratio*edge.t_ratio
-#				Y[edge.target.id, edge.source.id] += -y*conj(edge.s_ratio*edge.t_ratio)
-#			end
-#        	end
-#    	end
-#
-#	# add shunt susceptance to each node
-#	Y = Y + diagm(Float64[v.sh_susceptance for v in vs])*im
-#    
-#	# injections
-#	S = Complex{Float64}[(-v.load + v.generation)/Sb for v in vs]
-#	P = Float64[real(s) for s in S]
-#	Q = Float64[imag(s) for s in S]
-#	T = Float64[v.angle for v in vs]
-#	V = Float64[v.init_voltage for v in vs]
-#
-#	return Y,P,Q,T,V
-#end
-	

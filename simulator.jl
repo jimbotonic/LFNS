@@ -40,7 +40,7 @@ type SParams
 	epsilon::Float64
 	iter_max::Int64	
 	# solver additional optional arguments
-	o_args::Dict{AbstractString,Any}
+	o_args::Dict{Symbol,Any}
 
 	# default constructor
 	function SParams(V::Array{Float64,1},T::Array{Float64,1},Y::Array{Complex{Float64},2},P::Array{Float64,1},Q::Array{Float64,1},epsilon::Float64,iter_max::Int64,o_args::Dict{AbstractString,Any})
@@ -55,7 +55,7 @@ type State
 	Tdot::Array{Float64,1}
 	n_iter::Int64	
 	# state optional data
-	o_data::Dict{AbstractString,Any}
+	o_data::Dict{Symbol,Any}
 	
 	# default constructor
 	function State(V::Array{Float64,1},T::Array{Float64,1},Tdot::Array{Float64,1},n_iter::Int64,o_data::Dict{AbstractString,Any})
@@ -73,7 +73,7 @@ type Simulator
 	# solver
 	solver::Function
 	# solver additional optional arguments
-	o_args::Dict{AbstractString,Any}
+	o_args::Dict{Symbol,Any}
 	# base line voltage
 	sb::Float64
 	# convergence criteria

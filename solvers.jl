@@ -18,7 +18,7 @@ include("simulator.jl")
 # T: updated thetas
 # n_iter: # of iterations before convergence
 function NR_solver(sp::SParams)
-	vs = vertices(sp.o_args["g"])
+	vs = vertices(sp.o_args[:g])
 	n = length(vs) 
     	#n = size(sp.Y)[1]
 	
@@ -45,8 +45,8 @@ function NR_solver(sp::SParams)
 	slack_pos = findin(bus_type[sc_ids],3)[1]
 	
 	# bootstrap simulation
-	sp.o_args["PQ_pos"] = PQ_pos
-	sp.o_args["slack_pos"] = slack_pos
+	sp.o_args[:PQ_pos] = PQ_pos
+	sp.o_args[:slack_pos] = slack_pos
 	GS_solver(sp)
 
 	# compute Y element-wise absolute values
@@ -116,13 +116,13 @@ end
 function GS_solver(sp::SParams)
 	n = length(sp.V)
 	is_PQ = falses(n,1)
-	is_PQ[sp.o_args["PQ_pos"]] = true
-	set = setdiff(1:n,sp.o_args["slack_pos"])
+	is_PQ[sp.o_args[:PQ_pos]] = true
+	set = setdiff(1:n,sp.o_args[:slack_pos])
 	# define the voltages of the non slack buses
 	V = sp.V.*exp(sp.T*im)
 	# copy V
 	Vnew = copy(V)
-	for ii in 1:sp.o_args["bootstrap_iter"]
+	for ii in 1:sp.o_args[:bootstrap_iter]
 		for i in set
 			# PV bus
 			if (is_PQ[i] == false)
@@ -239,7 +239,7 @@ end
 function SD_solver(sp::SParams)
 	n_iter = 0
 	n = length(sp.T)
-	del = sp.o_args["d"]
+	del = sp.o_args[:d]
 
 	# We only use the susceptive part of the admittance matrix, with zero diagonal elements	
 	K = imag(sp.Y-diagm(diag(sp.Y)))
@@ -275,8 +275,8 @@ function SD_solver(sp::SParams)
 	# all angles belong to [-pi,pi] afterward
 	sp.T = mod(sp.T-sp.T[end]+pi,2*pi)-pi
 
-	o_data = Dict{AbstractString,Any}()
-	o_data["delta"] = delta
+	o_data = Dict{Symbol,Any}()
+	o_data[:delta] = delta
 	return State(Float64[],sp.T,Float64[],n_iter,o_data)
 end
 
@@ -294,21 +294,25 @@ end
 ## OUTPUT
 # M: stability matrix
 #
-function get_stability_matrix(T::Array{Float64,1}, Y::Array{Complex{Float64},2}, approxmation_level::Int64)
+function get_stability_matrix(T::Array{Float64,1}, Y::Array{Complex{Float64},2}, approx_level::Int64)
 	B = imag(Y) 
 	G = real(Y)
 	
 	n = length(T)
 	dT = T*ones(1,n)-ones(n,1)*T'
 	
-	if approximation_level == 1
+	# 1: linearized equations, i.e. the sines are linearized and G=0.
+	if approx_level == 1
 		M = B.*dT
-	else if approximation_level == 2
+	# 2: lossless case, i.e. G=0
+	elseif approx_level == 2
 		M = B.*cos(dT)
-	else if approximation_level == 3
+	# 3: lossy case without reactive power
+	elseif approx_level == 3
 		M = B.*cos(dT) + G.*sin(dT)
+	# 4: full case with reactive power
 	else
-#		TODO
+		# TODO
 	end
 	
 	M = M-diagm(collect(sum(M,1)))

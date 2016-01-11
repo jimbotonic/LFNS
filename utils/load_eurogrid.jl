@@ -23,6 +23,7 @@ function load_graph(E_fn::AbstractString)
 	names = unique(names)
 	n = length(names)
 
+
 	vertices = Bus[]
 	name_id = Dict{AbstractString,Int64}()
 	counter = 1
@@ -32,13 +33,26 @@ function load_graph(E_fn::AbstractString)
 		counter += 1
 	end
 	
+	# remove duplicate edges and loops
+	h = Set()
+	ecounter = 1
+
 	edges = Line[]
 	for i in 1:size(E_df,1)
 		sn = strip(E_df[i,1][1:12])
 		tn = strip(E_df[i,2][1:12])
-		source = vertices[name_id[sn]]
-		target = vertices[name_id[tn]]
-		push!(edges, Line(i, source, target, 1.im))
+		if sn != tn
+			h1 = hash(sn*tn)
+			h2 = hash(tn*sn)
+			if !h1 in h && !h2 in h 
+				source = vertices[name_id[sn]]
+				target = vertices[name_id[tn]]
+				push!(edges, Line(ecounter, source, target, 1.im))
+				push!(h,h1)
+				push!(h,h2)
+				ecounter += 1
+			end
+		end
 	end
 	
 	return graph(vertices, edges, is_directed=false)

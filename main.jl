@@ -48,9 +48,9 @@ if solver == "NR"
 	# export graph to graphml
 	#export_graphml("my_export.graphml", g)
 
-	o_args = Dict{AbstractString,Any}()
-	o_args["g"] = g
-	o_args["bootstrap_iter"] = 3
+	o_args = Dict{Symbol,Any}()
+	o_args[:g] = g
+	o_args[:bootstrap_iter] = 3
 	s = Simulator(g,NR_solver,o_args,100.,1e-8,15)
 	
 	# launch the simulation
@@ -65,8 +65,8 @@ elseif solver == "RK"
 	y_fn = pargs["y_fn"] # initial admittance matrix
 	g = load_graph(p_fn,y_fn) # load Admittance matrix and injected/consumed powers
 
-	o_args = Dict{AbstractString,Any}()
-	o_args["h"] = 1e-2
+	o_args = Dict{Symbol,Any}()
+	o_args[:h] = 1e-2
 	s = Simulator(g,RK_solver1,o_args,1.,1e-11,round(Int64,1e5))
 	
 	# launch the simulation
@@ -82,7 +82,7 @@ elseif solver == "SD"
 	g = load_graph(p_fn,y_fn) 
 
 	o_args = Dict{AbstractString,Any}()
-	o_args["d"] = 1e-2
+	o_args[:d] = 1e-2
 	s = Simulator(g,SD_solver,o_args,1.,1e-6,round(Int64,1e5))
 
 	# launch the simulation
