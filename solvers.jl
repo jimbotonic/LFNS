@@ -285,18 +285,32 @@ end
 ## INPUT
 # T: thetas
 # Y: admittance matrix
+# approximation_level: defines which approximation is used for the stability
+#	1: linearized equations, i.e. the sines are linearized and G=0.
+#	2: lossless case, i.e. G=0
+#	3: lossy case without reactive power
+# TODO	>=4: full case with reactive power
 #
 ## OUTPUT
 # M: stability matrix
-function get_stability_matrix(T::Array{Float64,1}, Y::Array{Complex{Float64},2})
-	# !!! FOR NOW, WE DO NOT CONSIDER THE REACTIVE POWER IN THE DYNAMICS !!!
+#
+function get_stability_matrix(T::Array{Float64,1}, Y::Array{Complex{Float64},2}, approxmation_level::Int64)
 	B = imag(Y) 
 	G = real(Y)
 	
 	n = length(T)
 	dT = T*ones(1,n)-ones(n,1)*T'
 	
-	M = B.*cos(dT) + G.*sin(dT)
+	if approximation_level == 1
+		M = B.*dT
+	else if approximation_level == 2
+		M = B.*cos(dT)
+	else if approximation_level == 3
+		M = B.*cos(dT) + G.*sin(dT)
+	else
+#		TODO
+	end
+	
 	M = M-diagm(collect(sum(M,1)))
 	
 	return M
