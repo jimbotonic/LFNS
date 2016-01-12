@@ -43,7 +43,7 @@ type SParams
 	o_args::Dict{Symbol,Any}
 
 	# default constructor
-	function SParams(V::Array{Float64,1},T::Array{Float64,1},Y::Array{Complex{Float64},2},P::Array{Float64,1},Q::Array{Float64,1},epsilon::Float64,iter_max::Int64,o_args::Dict{AbstractString,Any})
+	function SParams(V::Array{Float64,1},T::Array{Float64,1},Y::Array{Complex{Float64},2},P::Array{Float64,1},Q::Array{Float64,1},epsilon::Float64,iter_max::Int64,o_args::Dict{Symbol,Any})
 		return new(V,T,Y,P,Q,epsilon,iter_max,o_args)
 	end
 end 
@@ -58,12 +58,12 @@ type State
 	o_data::Dict{Symbol,Any}
 	
 	# default constructor
-	function State(V::Array{Float64,1},T::Array{Float64,1},Tdot::Array{Float64,1},n_iter::Int64,o_data::Dict{AbstractString,Any})
+	function State(V::Array{Float64,1},T::Array{Float64,1},Tdot::Array{Float64,1},n_iter::Int64,o_data::Dict{Symbol,Any})
 		return new(V,T,Tdot,n_iter,o_data)
 	end
 	
 	function State(V::Array{Float64,1},T::Array{Float64,1},Tdot::Array{Float64,1},n_iter::Int64)
-		return new(V,T,Tdot,n_iter,Dict{AbstractString,Any}())
+		return new(V,T,Tdot,n_iter,Dict{Symbol,Any}())
 	end
 end
 
@@ -85,11 +85,11 @@ type Simulator
 	states::Array{State,1}
 	
 	# default constructor
-	function Simulator(g::Graphs.AbstractGraph{Bus,Line},solver::Function,o_args::Dict{AbstractString,Any},sb::Float64,epsilon::Float64,iter_max::Int64,changes::Array{Change,1},states::Array{State,1})
+	function Simulator(g::Graphs.AbstractGraph{Bus,Line},solver::Function,o_args::Dict{Symbol,Any},sb::Float64,epsilon::Float64,iter_max::Int64,changes::Array{Change,1},states::Array{State,1})
 		return new(g,solver,o_args,sb,epsilon,iter_max,changes,states)
 	end
 	
-	function Simulator(g::Graphs.AbstractGraph{Bus,Line},solver::Function,o_args::Dict{AbstractString,Any},sb::Float64,epsilon::Float64,iter_max::Int64)
+	function Simulator(g::Graphs.AbstractGraph{Bus,Line},solver::Function,o_args::Dict{Symbol,Any},sb::Float64,epsilon::Float64,iter_max::Int64)
 		return new(g,solver,o_args,sb,epsilon,iter_max,Array{Change,1}(),Array{State,1}())
 	end
 end

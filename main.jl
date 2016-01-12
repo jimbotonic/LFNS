@@ -17,7 +17,7 @@ function parse_cl()
 			help = "file name"
 			required = false
 		"--p_fn"
-			help = "file name for P0 vector"
+			help = "file name for P vector"
 			required = false
 		"--y_fn"
 			help = "file name for admittance matrix Y"
@@ -54,7 +54,7 @@ if solver == "NR"
 	s = Simulator(g,NR_solver,o_args,100.,1e-8,15)
 	
 	# launch the simulation
-	simulate(s)
+	simulation(s)
 	state = s.states[1]
 	
 	export_csv_data(state.V, "v.csv")
@@ -70,7 +70,7 @@ elseif solver == "RK"
 	s = Simulator(g,RK_solver1,o_args,1.,1e-11,round(Int64,1e5))
 	
 	# launch the simulation
-	simulate(s)
+	simulation(s)
 	state = s.states[1]
 
 	println(state.n_iter)
@@ -81,12 +81,12 @@ elseif solver == "SD"
 	y_fn = pargs["y_fn"] 
 	g = load_graph(p_fn,y_fn) 
 
-	o_args = Dict{AbstractString,Any}()
+	o_args = Dict{Symbol,Any}()
 	o_args[:d] = 1e-2
 	s = Simulator(g,SD_solver,o_args,1.,1e-6,round(Int64,1e5))
 
 	# launch the simulation
-	simulate(s)
+	simulation(s)
 	state = s.states[1]
 
 	export_csv_data(state.T, "t.csv")

@@ -30,7 +30,7 @@ function NR_solver(sp::SParams)
 	slack_id = filter(v -> v.bus_type == 3, vs)[1].id
 
 	# set of node ids which are part of the connected component containing the slack bus 
-	sc_ids = get_slack_component_ids(sp.g)
+	sc_ids = get_slack_component_ids(sp.o_args[:g])
 	sp.Y = sp.Y[sc_ids, sc_ids]
 	sp.V = sp.V[sc_ids]
 	sp.T = sp.T[sc_ids]
