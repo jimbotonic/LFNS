@@ -202,11 +202,87 @@ function get_cycle_base(g::Graphs.AbstractGraph{Bus,Line})
 end
 
 function direct_cycles(cycles::Array{Array{Int64,1},1})
-	# find least cycle (cycle containing the least vertex whose sum is minimum)
-	cycles1 = filter(x -> 1 in x, cycles)
-	lc = filter(x -> sum(x) == minimum(sum(cycles)))
+	# permute cycle to put its min element first
+	function permute_cycle(c::Array{Int64,1})
+		p = findmin(c)[2]
+		if p != 1
+			c = append!(c[p:end],c[1:p-1])
+		end
+		return c
+	end	
 
+	# generate cycle -> (edge,orientation) dictionary
+	function get_c_eo_dict(cycles::Array{Array{Int64,1},1})
+		ce = Dict{Int64,Array{Tuple{AbstractString,Bool}}}()
+		for i in 1:length(cycles)
+			c = copy(cycles[i])
+			push!(c,c[1])
+			a = Array{Tuple{AbstractString,Bool}}
+			for j in 1:(length(c)-1)
+				s = c[j]
+				t = c[j+1]
+				if s<t
+					t = (string(s)*"."*string(t),true)
+				else
+					t = (string(t)*"."*string(s),false)
+				end
+				push!(a,t)
+			end
+			ce[i] = t
+		end
+		return ce
+	end
+
+	# generate edge -> (cycle,orientation) dictionary
+	function get_e_co_dict(cycles::Array{Array{Int64,1},1})
+		ec = Dict{AbstractString,Array{Tuple{Int64,Bool}}}()
+		for i in 1:length(cycles)
+			c = copy(cycles[i])
+			push!(c,c[1])
+			for j in 1:(length(c)-1)
+				s = c[j]
+				t = c[j+1]
+				if s<t
+					k = string(s)*"."*string(t)
+					v = (i,true)
+				else
+					k = string(t)*"."*string(s)
+					v = (i,false)
+				end
+				if haskey(ec,k)
+					push!(ec[k],v)
+				else
+					ec[k] = [v]
+				end
+			end
+		end
+		return ec
+	end
+
+	# reverse a cycle orientation
+	function reverse_cycle(c::Array{Int64,1})
+		c = append!(c[1:1],reverse(c[2:end]))
+	end
+
+	# permute all cycles
+	for i in 1:length(cycles)
+		cycles[i] = permute_cycle(cycles[i])
+	end
+
+	cls = [length(c) for c in cycles]
+	@debug("min/max cycle length: ", minimum(cls), "/", maximum(cls))
 	
+	# find least cycle (cycle containing the least vertex whose sum is minimum)
+	c1s = filter(x -> 1 in x, cycles)
+	ms = minimum([sum(c) for c in c1s])
+	lc = filter(x -> sum(x) == ms, c1s)[1]
+	@debug("Least cycle: $lc")
+
+	ec = get_e_co_dict(cycles)	
+	
+	em = Int64[length(ec[k]) for k in keys(ec)]
+	@debug("min/max edge multiplicity: ", minimum(em), "/", maximum(em))
+	@debug("hist: ", hist(em))
 end
 
 # generate a double cycle with a bus where p is injected
