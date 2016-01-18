@@ -93,6 +93,19 @@ function get_slack_component_ids(g::Graphs.AbstractGraph{Bus,Line})
 	end
 end
 
+# get the adjacency matrix
+function get_adjacency_matrix(g::Graphs.AbstractGraph{Bus,Line})
+	n = length(vertices(g))
+	A = zeros(Int64,n,n)
+	for edge in edges(g)
+		s = edge.source.id
+		t = edge.target.id
+		A[s,t] = 1
+		A[t,s] = 1
+	end
+	return A
+end
+
 # get the principal component vertex ids
 function get_principal_component(g::Graphs.AbstractGraph{Bus,Line})
 	cs = connected_components(g)
@@ -159,6 +172,12 @@ function get_pruned_graph(g::Graphs.AbstractGraph{Bus,Line}, reids::Array{Int64,
 	return graph(nvs, nes, is_directed=false)
 end
 
+# get avg / max degree of the specified graph
+function get_avg_min_max_degree(g::Graphs.AbstractGraph{Bus,Line})
+	degrees = Int64[out_degree(v,g) for v in vertices(g)]
+	return mean(degrees), minimum(degrees), maximum(degrees)
+end
+
 # get the cycle base of the specified graph
 # 
 # see http://graphsjl-docs.readthedocs.org/en/latest/algorithms.html
@@ -177,13 +196,13 @@ function get_cycle_base(g::Graphs.AbstractGraph{Bus,Line})
 	# extract spanning tree
 	gt = get_pruned_graph(g, reids)
 
-	@debug("# vertices (g): ", length(vertices(g)))
-	@debug("# edges (g): ", length(edges(g)))
-	@debug("---")
-	@debug("# vertices (gt): ", length(vertices(gt)))
-	@debug("# edges (gt): ", length(edges(gt)))
-	@debug("---")
-	@debug("# shortcut edges: ", length(reids))
+	#@debug("# vertices (g): ", length(vertices(g)))
+	#@debug("# edges (g): ", length(edges(g)))
+	#@debug("---")
+	#@debug("# vertices (mst): ", length(vertices(gt)))
+	#@debug("# edges (mst): ", length(edges(gt)))
+	#@debug("---")
+	#@debug("# shortcut edges: ", length(reids))
 	
 	# set of fundamental cycles
 	cycles = Array{Array{Int64,1},1}()
@@ -201,7 +220,8 @@ function get_cycle_base(g::Graphs.AbstractGraph{Bus,Line})
 	return cycles
 end
 
-function direct_cycles(cycles::Array{Array{Int64,1},1})
+# orient face cycles
+function orient_face_cycles(cycles::Array{Array{Int64,1},1})
 	# permute cycle to put its min element first
 	function permute_cycle(c::Array{Int64,1})
 		p = findmin(c)[2]
@@ -327,13 +347,12 @@ function generate_double_cycle(l::Int,c::Int,r::Int,p::Float64)
 	ecounter += 1
 	push!(es, Line(ecounter,vs[l+c+r+1],vs[l+c+1],1im))
 	ecounter += 1
-	
+
 	push!(es, Line(ecounter,vs[l+c+r+2],vs[l],1im))
 	ecounter += 1
 	push!(es, Line(ecounter,vs[l+c+r+2],vs[l+c],1im))
 	ecounter += 1
 	push!(es, Line(ecounter,vs[l+c+r+2],vs[l+c+r],1im))
-	
+
 	return graph(vs, es, is_directed=false)
 end
-

@@ -46,7 +46,7 @@ if solver == "NR"
 	@info("# edges: ", length(edges(g)))
 	
 	# export graph to graphml
-	#export_graphml("my_export.graphml", g)
+	#export_graphml(g, "my_export.graphml")
 
 	o_args = Dict{Symbol,Any}()
 	o_args[:g] = g
@@ -57,9 +57,9 @@ if solver == "NR"
 	simulation(s)
 	state = s.states[1]
 	
-	export_csv_data(state.V, "v.csv")
+	export_csv_data(state.V, "V_out.csv")
 	state.T = state.T*180/pi
-	export_csv_data(state.T, "t.csv")
+	export_csv_data(state.T, "T_out.csv")
 elseif solver == "RK"
 	p_fn = pargs["p_fn"] # vector of initial powers 
 	y_fn = pargs["y_fn"] # initial admittance matrix
@@ -74,8 +74,8 @@ elseif solver == "RK"
 	state = s.states[1]
 
 	println(state.n_iter)
-	export_csv_data(state.T, "t.csv")
-	export_csv_data(state.Tdot, "tdot.csv")
+	export_csv_data(state.T, "T_out.csv")
+	export_csv_data(state.Tdot, "Tdot_out.csv")
 elseif solver == "SD"
 	p_fn = pargs["p_fn"]  
 	y_fn = pargs["y_fn"] 
@@ -89,5 +89,8 @@ elseif solver == "SD"
 	simulation(s)
 	state = s.states[1]
 
-	export_csv_data(state.T, "t.csv")
+	export_csv_data(state.T, "T_out.csv")
+elseif solver == "KR"
+	g = load_serialized("./data/eurogrid/eurogrid_pc.jld")
+
 end
