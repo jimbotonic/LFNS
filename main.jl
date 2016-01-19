@@ -73,7 +73,7 @@ elseif solver == "RK"
 	simulation(s)
 	state = s.states[1]
 
-	println(state.n_iter)
+	@info("# iteration: ", state.n_iter)
 	export_csv_data(state.T, "T_out.csv")
 	export_csv_data(state.Tdot, "Tdot_out.csv")
 elseif solver == "SD"

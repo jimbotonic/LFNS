@@ -329,9 +329,13 @@ function export_graphml(g::Graphs.AbstractGraph{Bus,Line}, filename::AbstractStr
 	write(graphmlFile, "<graphml xmlns=\"http://graphml.graphdrawing.org/xmlns/graphml\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"  xsi:schemaLocation=\"http://graphml.graphdrawing.org/xmlns/graphml\">\n")
 	write(graphmlFile, "<graph edgedefault=\"undirected\">\n")
 
+	# strip non-standard characters
+	stripc0{T<:AbstractString}(a::T) = replace(a, r"[\x00-\x1f\x7f]", "")
+	stripc0x{T<:AbstractString}(a::T) = replace(a, r"[^\x20-\x7e]", "")
+
 	for n in vs
 		write(graphmlFile, "<node id=\"" * string(n.id) * "\">\n")
-		write(graphmlFile, "	<data key=\"name\">" * n.name * "</data>\n")
+		write(graphmlFile, "	<data key=\"name\">" * stripc0x(n.name) * "</data>\n")
 		write(graphmlFile, "	<data key=\"bus_type\">" * string(n.bus_type) * "</data>\n")
 		write(graphmlFile, "	<data key=\"init_voltage\">" * string(n.init_voltage) * "</data>\n")
 		write(graphmlFile, "	<data key=\"final_voltage\">" * string(n.final_voltage) * "</data>\n")
