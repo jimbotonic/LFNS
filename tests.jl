@@ -12,9 +12,7 @@ BASE_FOLDER = "./data/tests"
 # test RK solver
 ###
 
-###
-# test SD solver
-###
+@info("### Testing RK solver")
 
 p_fn = BASE_FOLDER * "/RK/UK1/P_in.csv"
 y_fn = BASE_FOLDER * "/RK/UK1/Y_in.csv"
@@ -25,7 +23,7 @@ T_out = collect(load_csv_data(t_fn)[1])
 
 o_args = Dict{Symbol,Any}()
 o_args[:h] = 1e-2
-s = Simulator(g,RK_solver1,o_args,1.,1e-11,round(Int64,1e5))
+s = Simulator(g,RK_solver1,o_args,1.,1e-6,round(Int64,1e5))
 
 # launch the simulation
 tic()
@@ -46,6 +44,8 @@ d = euclidean(state.T, T_out)
 # test SD solver
 ###
 
+@info("### Testing SD solver")
+
 p_fn = BASE_FOLDER * "/RK/UK1/P_in.csv"
 y_fn = BASE_FOLDER * "/RK/UK1/Y_in.csv"
 t_fn = BASE_FOLDER * "/RK/UK1/T_out.csv"
@@ -55,7 +55,7 @@ T_out = collect(load_csv_data(t_fn)[1])
 
 o_args = Dict{Symbol,Any}()
 o_args[:d] = 1e-2
-s = Simulator(g,SD_solver,o_args,1.,1e-6,round(Int64,1e1))
+s = Simulator(g,SD_solver,o_args,1.,1e-6,round(Int64,1e5))
 
 # launch the simulation
 tic()
@@ -70,12 +70,13 @@ d = euclidean(state.T, T_out)
 @info("distance $d")
 @info("# iter: ", state.n_iter)
 
-#@test_approx_eq_eps d 0. 1e-4
-
+@test_approx_eq_eps d 0. 1e-4
 
 ###
 # test NR solver
 ###
+
+@info("### Testing NR solver")
 
 sys_fn = BASE_FOLDER * "/NR/IEEE/ieee14cdf.txt"
 T_fn = BASE_FOLDER * "/NR/IEEE/T_out.csv"
