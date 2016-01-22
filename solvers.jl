@@ -31,11 +31,11 @@ function NR_solver(sp::SParams)
 
 	# set of node ids which are part of the connected component containing the slack bus 
 	sc_ids = get_slack_component_ids(sp.o_args[:g])
-	sp.Y = sp.Y[sc_ids, sc_ids]
-	sp.V = sp.V[sc_ids]
-	sp.T = sp.T[sc_ids]
-	sp.P = sp.P[sc_ids]
-	sp.Q = sp.Q[sc_ids]
+	#sp.Y = sp.Y[sc_ids, sc_ids]
+	#sp.V = sp.V[sc_ids]
+	#sp.T = sp.T[sc_ids]
+	#sp.P = sp.P[sc_ids]
+	#sp.Q = sp.Q[sc_ids]
 
 	# bus types of the slack component 	
 	bus_type = Int64[v.bus_type for v in vs]
@@ -45,9 +45,9 @@ function NR_solver(sp::SParams)
 	slack_pos = findin(bus_type[sc_ids],3)[1]
 	
 	# bootstrap simulation
-	sp.o_args[:PQ_pos] = PQ_pos
-	sp.o_args[:slack_pos] = slack_pos
-	GS_solver(sp)
+	#sp.o_args[:PQ_pos] = PQ_pos
+	#sp.o_args[:slack_pos] = slack_pos
+	#GS_solver(sp)
 
 	# compute Y element-wise absolute values
     	Y_abs = abs(sp.Y)
