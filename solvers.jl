@@ -249,14 +249,14 @@ function SD_solver(sp::SParams)
 	f0 = -sum(sp.P.*sp.T) - .5*sum(K.*cos(dT))
 	
 	# nabla is the gradient of this potential
-	nabla = -sp.P + sum(K.*sin(dT),2)
+	nabla = -sp.P + sum(K.*sin(dT),2)[:] # sum rows 
 	delta = norm(nabla)
 	
 	# Follow the path of most negative gradient, until the correction is less than delta, to reach the bottom of a well
 	while delta > sp.epsilon && n_iter < sp.iter_max
 		n_iter += 1
 		A = copy(sp.T)
-		T -= nabla*del
+		sp.T -= nabla*del
 		f1 = -sum(sp.P.*sp.T) - .5*sum(K.*cos(sp.T*ones(1,n)-ones(n,1)*sp.T'))
 		while f1 > f0 && norm(f1-f0) > sp.epsilon
 			sp.T = copy(A)
@@ -264,10 +264,10 @@ function SD_solver(sp::SParams)
 			sp.T -= nabla*del
 			f1 = -sum(sp.P.*sp.T) - .5*sum(K.*cos(sp.T*ones(1,n)-ones(n,1)*sp.T'))
 		end
-		del = sp.o_args["d"]
+		del = sp.o_args[:d]
 		dT = sp.T*ones(1,n)-ones(n,1)*sp.T'
 		f0 = copy(f1)
-		nabla = -sp.P + sum(K.*sin(dT),2)
+		nabla = -sp.P + sum(K.*sin(dT),2)[:]
 		delta = norm(nabla)
 	end
 	

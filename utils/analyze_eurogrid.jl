@@ -17,7 +17,7 @@ cs = connected_components(g)
 
 println("-> COMPONENTS")
 println("# components: ", length(cs))
-println("components size: ", [length(c) for c in cs])
+println("components size: ", Int64[length(c) for c in cs])
 println("---")
 
 mc = get_principal_component(g)
@@ -25,6 +25,7 @@ mc = get_principal_component(g)
 gp = get_subgraph(g, mc)
 SAVE && serialize_to_file(gp, "../data/eurogrid/eurogrid_pc.jld")
 SAVE && export_graphml(gp, "../data/eurogrid/eurogrid_pc.graphml")
+SAVE && export_topology_graphml(gp, "../data/eurogrid/eurogrid_pc_topology.graphml")
 
 avg_deg,min_deg,max_deg = get_avg_min_max_degree(gp)
 

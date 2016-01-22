@@ -319,52 +319,81 @@ function load_IEEE_SLFD(filename::AbstractString)
 	return graph(vs, es, is_directed=false)
 end
 
-# export data in graphml
+# export graph to graphml
 function export_graphml(g::Graphs.AbstractGraph{Bus,Line}, filename::AbstractString)
 	vs = vertices(g)
 	es = edges(g)
 	graphmlFile = open(filename, "w")
 
 	write(graphmlFile, "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n")
-	write(graphmlFile, "<graphml xmlns=\"http://graphml.graphdrawing.org/xmlns/graphml\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"  xsi:schemaLocation=\"http://graphml.graphdrawing.org/xmlns/graphml\">\n")
-	write(graphmlFile, "<graph edgedefault=\"undirected\">\n")
+	write(graphmlFile, "<graphml xmlns=\"http://graphml.graphdrawing.org/xmlns\"\n")
+	write(graphmlFile, "	xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\n")  
+	write(graphmlFile, "	xsi:schemaLocation=\"http://graphml.graphdrawing.org/xmlns\n")
+        write(graphmlFile, "	http://graphml.graphdrawing.org/xmlns/1.0/graphml.xsd\">\n")
+	write(graphmlFile, "<graph id=\"G\" edgedefault=\"undirected\">\n")
 
 	# strip non-standard characters
-	stripc0{T<:AbstractString}(a::T) = replace(a, r"[\x00-\x1f\x7f]", "")
+	# stripc0{T<:AbstractString}(a::T) = replace(a, r"[\x00-\x1f\x7f]", "")
 	stripc0x{T<:AbstractString}(a::T) = replace(a, r"[^\x20-\x7e]", "")
 
 	for n in vs
-		write(graphmlFile, "<node id=\"" * string(n.id) * "\">\n")
-		write(graphmlFile, "	<data key=\"name\">" * stripc0x(n.name) * "</data>\n")
-		write(graphmlFile, "	<data key=\"bus_type\">" * string(n.bus_type) * "</data>\n")
-		write(graphmlFile, "	<data key=\"init_voltage\">" * string(n.init_voltage) * "</data>\n")
-		write(graphmlFile, "	<data key=\"final_voltage\">" * string(n.final_voltage) * "</data>\n")
-		write(graphmlFile, "	<data key=\"base_voltage\">" * string(n.base_voltage) * "</data>\n")
-		write(graphmlFile, "	<data key=\"angle\">" * string(n.angle) * "</data>\n")
-		write(graphmlFile, "	<data key=\"load\">" * string(n.load) * "</data>\n")
-		write(graphmlFile, "	<data key=\"generation\">" * string(n.generation) * "</data>\n")
-		write(graphmlFile, "	<data key=\"Q_min\">" * string(n.Q_min) * "</data>\n")
-		write(graphmlFile, "	<data key=\"Q_max\">" * string(n.Q_max) * "</data>\n")
-		write(graphmlFile, "	<data key=\"P_min\">" * string(n.P_min) * "</data>\n")
-		write(graphmlFile, "	<data key=\"P_max\">" * string(n.P_max) * "</data>\n")
-		write(graphmlFile, "	<data key=\"sh_conductance\">" * string(n.sh_conductance) * "</data>\n")
-		write(graphmlFile, "	<data key=\"sh_susceptance\">" * string(n.sh_susceptance) * "</data>\n")
-		write(graphmlFile, "</node>\n")
+		write(graphmlFile, "	<node id=\"" * string(n.id) * "\">\n")
+		write(graphmlFile, "		<data key=\"name\">" * stripc0x(n.name) * "</data>\n")
+		write(graphmlFile, "		<data key=\"bus_type\">" * string(n.bus_type) * "</data>\n")
+		write(graphmlFile, "		<data key=\"init_voltage\">" * string(n.init_voltage) * "</data>\n")
+		write(graphmlFile, "		<data key=\"final_voltage\">" * string(n.final_voltage) * "</data>\n")
+		write(graphmlFile, "		<data key=\"base_voltage\">" * string(n.base_voltage) * "</data>\n")
+		write(graphmlFile, "		<data key=\"angle\">" * string(n.angle) * "</data>\n")
+		write(graphmlFile, "		<data key=\"load\">" * string(n.load) * "</data>\n")
+		write(graphmlFile, "		<data key=\"generation\">" * string(n.generation) * "</data>\n")
+		write(graphmlFile, "		<data key=\"Q_min\">" * string(n.Q_min) * "</data>\n")
+		write(graphmlFile, "		<data key=\"Q_max\">" * string(n.Q_max) * "</data>\n")
+		write(graphmlFile, "		<data key=\"P_min\">" * string(n.P_min) * "</data>\n")
+		write(graphmlFile, "		<data key=\"P_max\">" * string(n.P_max) * "</data>\n")
+		write(graphmlFile, "		<data key=\"sh_conductance\">" * string(n.sh_conductance) * "</data>\n")
+		write(graphmlFile, "		<data key=\"sh_susceptance\">" * string(n.sh_susceptance) * "</data>\n")
+		write(graphmlFile, "	</node>\n")
 	end
 
 	for edge in es
-		write(graphmlFile, "<edge id=\"" * string(edge.id) * "\" source=\"" * string(edge.source.id) * "\" target=\"" * string(edge.target.id) * "\">\n")
-		write(graphmlFile, "	<data key=\"line_type\">" * string(edge.line_type) * "</data>\n")
+		write(graphmlFile, "	<edge source=\"" * string(edge.source.id) * "\" target=\"" * string(edge.target.id) * "\">\n")
+		write(graphmlFile, "		<data key=\"line_type\">" * string(edge.line_type) * "</data>\n")
 		if edge.line_status
-			write(graphmlFile, "	<data key=\"line_status\">1</data>\n")
+			write(graphmlFile, "		<data key=\"line_status\">1</data>\n")
 		else
-			write(graphmlFile, "	<data key=\"line_status\">0</data>\n")
+			write(graphmlFile, "		<data key=\"line_status\">0</data>\n")
 		end
-		write(graphmlFile, "	<data key=\"admittance\">" * string(edge.admittance) * "</data>\n")
-		write(graphmlFile, "	<data key=\"sh_susceptance\">" * string(edge.sh_susceptance) * "</data>\n")
-		write(graphmlFile, "	<data key=\"s_ratio\">" * string(edge.s_ratio) * "</data>\n")
-		write(graphmlFile, "	<data key=\"t_ratio\">" * string(edge.t_ratio) * "</data>\n")
-		write(graphmlFile, "</edge>\n")
+		write(graphmlFile, "		<data key=\"admittance\">" * string(edge.admittance) * "</data>\n")
+		write(graphmlFile, "		<data key=\"sh_susceptance\">" * string(edge.sh_susceptance) * "</data>\n")
+		write(graphmlFile, "		<data key=\"s_ratio\">" * string(edge.s_ratio) * "</data>\n")
+		write(graphmlFile, "		<data key=\"t_ratio\">" * string(edge.t_ratio) * "</data>\n")
+		write(graphmlFile, "	</edge>\n")
+	end
+
+	write(graphmlFile, "</graph>\n")
+	write(graphmlFile, "</graphml>\n")
+	close(graphmlFile)									
+end
+
+# export graph topology to graphml
+function export_topology_graphml(g::Graphs.AbstractGraph{Bus,Line}, filename::AbstractString)
+	vs = vertices(g)
+	es = edges(g)
+	graphmlFile = open(filename, "w")
+
+	write(graphmlFile, "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n")
+	write(graphmlFile, "<graphml xmlns=\"http://graphml.graphdrawing.org/xmlns\"\n")
+	write(graphmlFile, "	xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\n")  
+	write(graphmlFile, "	xsi:schemaLocation=\"http://graphml.graphdrawing.org/xmlns\n")
+        write(graphmlFile, "	http://graphml.graphdrawing.org/xmlns/1.0/graphml.xsd\">\n")
+	write(graphmlFile, "<graph id=\"G\" edgedefault=\"undirected\">\n")
+
+	for n in vs
+		write(graphmlFile, "	<node id=\"" * string(n.id) * "\"/>\n")
+	end
+
+	for edge in es
+		write(graphmlFile, "	<edge source=\"" * string(edge.source.id) * "\" target=\"" * string(edge.target.id) * "\"/>\n")
 	end
 
 	write(graphmlFile, "</graph>\n")
