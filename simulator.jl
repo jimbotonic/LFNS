@@ -136,12 +136,11 @@ function get_sparams(s::Simulator)
 	Y = Y + diagm(Float64[v.sh_susceptance for v in vs])*im
     
 	# injections
-	#S = Complex{Float64}[(-v.load + v.generation)/s.sb for v in vs]
-	S = Complex{Float64}[-(v.load + v.generation)/s.sb for v in vs]
+	S = Complex{Float64}[(-v.load + v.generation)/s.sb for v in vs]
 	P = Float64[real(s) for s in S]
 	Q = Float64[imag(s) for s in S]
-	#T = Float64[v.angle for v in vs]
-	T = zeros(length(P))
+	T = Float64[v.angle for v in vs]
 	V = Float64[v.init_voltage for v in vs]
+
 	return SParams(V,T,Y,P,Q,s.epsilon,s.iter_max,s.o_args)
 end
