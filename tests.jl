@@ -2,7 +2,9 @@ include("data.jl")
 include("solvers.jl")
 include("graphs.jl")
 
-using Base.Test
+using Base.Test, Logging
+
+@Logging.configure(level=INFO)
 
 BASE_FOLDER = "./data/tests"
 # test RK solver
@@ -26,8 +28,11 @@ s = Simulator(g,SD_solver,o_args,1.,1e-6,round(Int64,1e5))
 simulation(s)
 state = s.states[1]
 
-println("T_sim: ", state.T[1:20])
-println("T_ref: ", T_out[1:20])
+@info("T_sim: ", state.T[1:20])
+@info("T_ref: ", T_out[1:20])
 
 d = euclidean(state.T, T_out)
-println("distance $d")
+@info("distance $d")
+@info("# iter: ", state.n_iter)
+
+@test_approx_eq_eps d 0. 1e-4

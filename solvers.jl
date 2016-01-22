@@ -273,7 +273,7 @@ function SD_solver(sp::SParams)
 	
 	# rotate all angles by using the last one as the reference
 	# all angles belong to [-pi,pi] afterward
-	sp.T = mod(sp.T-sp.T[end]+pi,2*pi)-pi
+	#sp.T = mod(sp.T-sp.T[end]+pi,2*pi)-pi
 
 	o_data = Dict{Symbol,Any}()
 	o_data[:delta] = delta
