@@ -7,10 +7,43 @@ using Base.Test, Logging
 @Logging.configure(level=INFO)
 
 BASE_FOLDER = "./data/tests"
-# test RK solver
 
 ###
-# test RG solver
+# test RK solver
+###
+
+###
+# test SD solver
+###
+
+p_fn = BASE_FOLDER * "/RK/UK1/P_in.csv"
+y_fn = BASE_FOLDER * "/RK/UK1/Y_in.csv"
+t_fn = BASE_FOLDER * "/RK/UK1/T_out.csv"
+
+g = load_graph(p_fn,y_fn) 
+T_out = collect(load_csv_data(t_fn)[1])
+
+o_args = Dict{Symbol,Any}()
+o_args[:h] = 1e-2
+s = Simulator(g,RK_solver1,o_args,1.,1e-11,round(Int64,1e5))
+
+# launch the simulation
+tic()
+simulation(s)
+toc()
+state = s.states[1]
+
+@info("T_sim: ", state.T[1:20])
+@info("T_ref: ", T_out[1:20])
+
+d = euclidean(state.T, T_out)
+@info("distance $d")
+@info("# iter: ", state.n_iter)
+
+@test_approx_eq_eps d 0. 1e-4
+
+###
+# test SD solver
 ###
 
 p_fn = BASE_FOLDER * "/RK/UK1/P_in.csv"
@@ -25,7 +58,9 @@ o_args[:d] = 1e-2
 s = Simulator(g,SD_solver,o_args,1.,1e-6,round(Int64,1e5))
 
 # launch the simulation
+tic()
 simulation(s)
+toc()
 state = s.states[1]
 
 @info("T_sim: ", state.T[1:20])

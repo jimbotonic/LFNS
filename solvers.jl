@@ -213,7 +213,7 @@ function RK_solver1(sp::SParams)
 
 	n_iter = 1
 	while n_iter < sp.iter_max
-		(dT, Tdot) = dU(sp.T, sp.o_args["h"], sp.V, sp.Y, sp.P)
+		(dT, Tdot) = dU(sp.T, sp.o_args[:h], sp.V, sp.Y, sp.P)
 		if chebyshev(nTdot, Tdot) < sp.epsilon
 			break
 		end
