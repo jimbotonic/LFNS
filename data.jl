@@ -263,8 +263,8 @@ function load_IEEE_SLFD(filename::AbstractString)
 			reactive_load = float(strip(replace(l[50:58],',','.')))
 			load = complex(active_load, reactive_load)
 
-			active_generation = -float(strip(replace(l[59:67],',','.')))
-			reactive_generation = -float(strip(replace(l[68:75],',','.')))
+			active_generation = float(strip(replace(l[59:67],',','.')))
+			reactive_generation = float(strip(replace(l[68:75],',','.')))
 			generation = complex(active_generation, reactive_generation)
 
 			if bus_type == 0
