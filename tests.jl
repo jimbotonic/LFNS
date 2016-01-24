@@ -31,8 +31,8 @@ simulation(s)
 toc()
 state = s.states[1]
 
-@info("T_sim: ", state.T[1:20])
-@info("T_ref: ", T_out[1:20])
+#@info("T_sim: ", state.T[1:20])
+#@info("T_ref: ", T_out[1:20])
 
 d = euclidean(state.T, T_out)
 @info("distance $d")
@@ -63,8 +63,8 @@ simulation(s)
 toc()
 state = s.states[1]
 
-@info("T_sim: ", state.T[1:20])
-@info("T_ref: ", T_out[1:20])
+#@info("T_sim: ", state.T[1:20])
+#@info("T_ref: ", T_out[1:20])
 
 d = euclidean(state.T, T_out)
 @info("distance $d")

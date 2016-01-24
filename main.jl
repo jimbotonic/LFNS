@@ -1,5 +1,6 @@
 using ArgParse
 
+include("init.jl")
 include("data.jl")
 include("solvers.jl")
 include("graphs.jl")
@@ -52,13 +53,14 @@ if solver == "NR"
 	o_args[:g] = g
 	o_args[:bootstrap_iter] = 0
 	s = Simulator(g,NR_solver,o_args,100.,1e-8,15)
+	
 	# launch the simulation
 	simulation(s)
 	state = s.states[1]
+	
 	export_csv_data(state.V, "V_out.csv")
 	state.T = state.T*180/pi
 	export_csv_data(state.T, "T_out.csv")
-	
 elseif solver == "RK"
 	p_fn = pargs["p_fn"] # vector of initial powers 
 	y_fn = pargs["y_fn"] # initial admittance matrix
@@ -84,6 +86,7 @@ elseif solver == "SD"
 	o_args[:d] = 1e-2
 	s = Simulator(g,SD_solver,o_args,1.,1e-6,round(Int64,1e5))
 	export_csv_data(imag(s.Y), "B.csv")
+	
 	# launch the simulation
 	simulation(s)
 	state = s.states[1]
@@ -91,5 +94,7 @@ elseif solver == "SD"
 	export_csv_data(state.T, "T_out.csv")
 elseif solver == "KR"
 	g = load_serialized("./data/eurogrid/eurogrid_pc.jld")
+	n = length(vertices(g))
+	P = init_P1(n,0.5,17.)
 
 end
