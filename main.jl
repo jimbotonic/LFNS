@@ -54,7 +54,7 @@ if solver == "NR"
 
 	o_args = Dict{Symbol,Any}()
 	o_args[:g] = g
-	o_args[:bootstrap_iter] = 0
+	o_args[:bootstrap_iter] = 3
 	s = Simulator(g,NR_solver,o_args,100.,1e-8,15)
 	
 	# launch the simulation
@@ -101,15 +101,19 @@ elseif solver == "KR"
 	sb = 1.
 	max_iter = round(Int64,1e5)
 
-	#o_args = Dict{Symbol,Any}()
-	#o_args[:d] = 1e-2
-	#epsilon = 1e-6
-	#s = Simulator(g,SD_solver,o_args,sb,epsilon,max_iter)
-	
-	o_args = Dict{Symbol,Any}()
-	o_args[:h] = 1e-2
-	epsilon = 1e-11
-	s = Simulator(g,RK_solver1,o_args,sb,epsilon,max_iter)
+	method = "SD"
+
+	if method == "SD"
+		o_args = Dict{Symbol,Any}()
+		o_args[:d] = 1e-2
+		epsilon = 1e-6
+		s = Simulator(g,SD_solver,o_args,sb,epsilon,max_iter)
+	elseif method == "RK"
+		o_args = Dict{Symbol,Any}()
+		o_args[:h] = 1e-2
+		epsilon = 1e-11
+		s = Simulator(g,RK_solver1,o_args,sb,epsilon,max_iter)
+	end
 	
 	max_degree = 17.
 	alpha = 0.16

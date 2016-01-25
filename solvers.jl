@@ -2,6 +2,13 @@ using Distances
 
 include("simulator.jl")
 
+# shift angles
+function uniform_phase_shift(T::Array{Float64,1})
+	# rotate all angles by using the last one as the reference
+	# all angles belong to [-pi,pi] afterward
+	T = mod(T-T[end]+pi,2*pi)-pi
+end
+
 # Newton-Raphson solver for Flow Data networks
 #
 ## INPUT
@@ -23,10 +30,6 @@ function NR_solver(sp::SParams)
 	
 	# node ids whose bus type is 0
 	PQ_ids = Int64[v.id for v in filter(v -> v.bus_type == 0, vs)]
-	# set PQ bus voltages to 1 pu
-	sp.V[PQ_ids] = 1.
-	# node id whose bus type is 3
-	slack_id = filter(v -> v.bus_type == 3, vs)[1].id
 
 	# bus types of the slack component 	
 	bus_type = Int64[v.bus_type for v in vs]
@@ -44,6 +47,9 @@ function NR_solver(sp::SParams)
     	Y_abs = abs(sp.Y)
 	# compute Y element-wise angle values
     	Y_angle = angle(sp.Y)
+	
+	# node id whose bus type is 3
+	slack_id = filter(v -> v.bus_type == 3, vs)[1].id
 	# ids from 1:n except slack_id
 	ids = collect(1:n)
 	deleteat!(ids, slack_id)
@@ -264,10 +270,6 @@ function SD_solver(sp::SParams)
 		delta = norm(nabla)
 		@debug("# iter $n_iter with error=$delta")
 	end
-	
-	# rotate all angles by using the last one as the reference
-	# all angles belong to [-pi,pi] afterward
-	#sp.T = mod(sp.T-sp.T[end]+pi,2*pi)-pi
 
 	o_data = Dict{Symbol,Any}()
 	o_data[:delta] = delta
