@@ -20,7 +20,6 @@ include("simulator.jl")
 function NR_solver(sp::SParams)
 	vs = vertices(sp.o_args[:g])
 	n = length(vs) 
-    	#n = size(sp.Y)[1]
 	
 	# node ids whose bus type is 0
 	PQ_ids = Int64[v.id for v in filter(v -> v.bus_type == 0, vs)]
@@ -29,25 +28,17 @@ function NR_solver(sp::SParams)
 	# node id whose bus type is 3
 	slack_id = filter(v -> v.bus_type == 3, vs)[1].id
 
-	# set of node ids which are part of the connected component containing the slack bus 
-	sc_ids = get_slack_component_ids(sp.o_args[:g])
-	#sp.Y = sp.Y[sc_ids, sc_ids]
-	#sp.V = sp.V[sc_ids]
-	#sp.T = sp.T[sc_ids]
-	#sp.P = sp.P[sc_ids]
-	#sp.Q = sp.Q[sc_ids]
-
 	# bus types of the slack component 	
 	bus_type = Int64[v.bus_type for v in vs]
 	# PQ bus positions in the slack component
-	PQ_pos = findin(bus_type[sc_ids], 0)
+	PQ_pos = findin(bus_type, 0)
 	# slack position in the slack component
-	slack_pos = findin(bus_type[sc_ids],3)[1]
+	slack_pos = findin(bus_type,3)[1]
 	
 	# bootstrap simulation
-	#sp.o_args[:PQ_pos] = PQ_pos
-	#sp.o_args[:slack_pos] = slack_pos
-	#GS_solver(sp)
+	sp.o_args[:PQ_pos] = PQ_pos
+	sp.o_args[:slack_pos] = slack_pos
+	GS_solver(sp)
 
 	# compute Y element-wise absolute values
     	Y_abs = abs(sp.Y)
@@ -214,9 +205,11 @@ function RK_solver1(sp::SParams)
 	n_iter = 1
 	while n_iter < sp.iter_max
 		(dT, Tdot) = dU(sp.T, sp.o_args[:h], sp.V, sp.Y, sp.P)
-		if chebyshev(nTdot, Tdot) < sp.epsilon
+		error=chebyshev(nTdot, Tdot)
+		if error < sp.epsilon
 			break
 		end
+		@debug("# iter $n_iter with error=$error")
 		nTdot = copy(Tdot)
 		sp.T += dT
 		n_iter += 1
@@ -269,6 +262,7 @@ function SD_solver(sp::SParams)
 		f0 = copy(f1)
 		nabla = -sp.P + sum(K.*sin(dT),2)[:]
 		delta = norm(nabla)
+		@debug("# iter $n_iter with error=$delta")
 	end
 	
 	# rotate all angles by using the last one as the reference

@@ -9,14 +9,14 @@ abstract LChange <: Change
 
 # change powers
 type PChange <: BChange
-	# index -> new value
-	nvs::Dict{Int,Float64}	
+	# array of new values
+	nvs::Array{Float64,1}	
 end
 
 # change of angle 
 type TChange <: BChange
-	# index -> new value
-	nvs::Dict{Int,Float64}	
+	# array of new values
+	nvs::Array{Float64,1}	
 end
 
 # change of admittance
@@ -143,4 +143,16 @@ function get_sparams(s::Simulator)
 	V = Float64[v.init_voltage for v in vs]
 
 	return SParams(V,T,Y,P,Q,s.epsilon,s.iter_max,s.o_args)
+end
+
+# change the value of P
+function change_P(g::Graphs.AbstractGraph{Bus,Line},P::Array{Float64,1})
+	vs = vertices(g)
+	for i in 1:length(vs)
+		if P[i] >= 0
+			vs[i].generation = P[i]
+		else
+			vs[i].load = -P[i]
+		end
+	end
 end

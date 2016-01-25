@@ -23,6 +23,9 @@ function parse_cl()
 		"--y_fn"
 			help = "file name for admittance matrix Y"
 			required = false
+		"--g_fn"
+			help = "file name for serialized graph"
+			required = false
 	end
 	return parse_args(s)
 end
@@ -93,8 +96,31 @@ elseif solver == "SD"
 
 	export_csv_data(state.T, "T_out.csv")
 elseif solver == "KR"
-	g = load_serialized("./data/eurogrid/eurogrid_pc.jld")
+	g = load_serialized(pargs["g_fn"])
 	n = length(vertices(g))
-	P = init_P1(n,0.5,17.)
+	sb = 1.
+	max_iter = round(Int64,1e5)
 
+	#o_args = Dict{Symbol,Any}()
+	#o_args[:d] = 1e-2
+	#epsilon = 1e-6
+	#s = Simulator(g,SD_solver,o_args,sb,epsilon,max_iter)
+	
+	o_args = Dict{Symbol,Any}()
+	o_args[:h] = 1e-2
+	epsilon = 1e-11
+	s = Simulator(g,RK_solver1,o_args,sb,epsilon,max_iter)
+	
+	max_degree = 17.
+	alpha = 0.16
+	A = init_unif_dist(n)
+	counter = 1
+	step = 1e-3
+	for t in 0:step:alpha
+		P = init_P1(A,t,max_degree)
+		change_P(s.g,P)
+		simulation(s)
+		@info("step $counter/", (alpha/step))
+		counter += 1
+	end
 end
