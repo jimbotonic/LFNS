@@ -290,7 +290,7 @@ end
 ## OUTPUT
 # M: stability matrix
 #
-function get_stability_matrix(T::Array{Float64,1}, Y::Array{Complex{Float64},2}, approx_level::Int64)
+function get_stability_matrix(T::Array{Float64,1}, Y::Array{Complex{Float64},2}, approx_level::Int64=3)
 	B = imag(Y) 
 	G = real(Y)
 	
@@ -337,4 +337,61 @@ function get_lambda2(T::Array{Float64,1}, Y::Array{Complex{Float64},2}, epsilon:
 	end
 	
 	return l2
+end
+
+# computes the flows at each node and on every line
+#
+## INPUT
+# T: thetas
+# Y: admittance matrix
+# 
+## OUTPUT
+# P: vector of power balance at each node
+# F: matrix of power flows on every line
+# L: matrix of losses on every line
+#
+function flow_test(T::Array{Float64,1}, Y::Array{Complex{Float64},2})
+	n = length(T)
+	
+	YY = Y.*(1-eye(n))
+	YY = YY-diagm(collect(sum(YY,2)))
+	
+	G = real(YY)
+	B = imag(YY)
+	
+	dT = T*ones(1,n)-ones(n,1)*T'
+	
+	F = B.*sin(dT)+G.*cos(dT)
+	
+	P = collect(sum(F.*(1-eye(n)),2))
+	
+	L = F+F'
+	
+	return P,F,L
+end
+
+# computes the winding number along the given sequence of nodes
+# it is assumed that the given sites form a cycle
+#
+## INPUT
+# T: thetas
+#
+## OUPUT
+# q: winding number
+#
+function winding_number(T::Array{Float64,1})
+	# dT[i] = T[i-1]-T[i]
+	dT = [T[end]-T[1],]
+	
+	n = length(T)
+	
+	for i in 2:n
+		push!(dT,T[i-1]-T[i])
+	end
+	
+	dT = mod(dT+pi,2*pi)-pi
+	
+	q = sum(dT)/(2*pi)
+	
+	return q
 end
