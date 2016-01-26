@@ -93,6 +93,17 @@ function get_slack_component_ids(g::Graphs.AbstractGraph{Bus,Line})
 	end
 end
 
+# get the vector of active powers
+function get_active_power(g::Graphs.AbstractGraph{Bus,Line})
+	n = length(vertices(g))
+	P = zeros(Float64,n)
+	for v in vertices(g)
+		P[v.id] = v.generation-v.load
+	end
+	
+	return P
+end
+		
 # get the adjacency matrix
 function get_adjacency_matrix(g::Graphs.AbstractGraph{Bus,Line})
 	n = length(vertices(g))
