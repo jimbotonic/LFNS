@@ -243,7 +243,7 @@ function SD_solver(sp::SParams)
 	# We only use the susceptive part of the admittance matrix, with zero diagonal elements	
 	K = imag(sp.Y-diagm(diag(sp.Y)))
 	dT = sp.T*ones(1,n)-ones(n,1)*sp.T'
-	
+		
 	# f0 is the potential in the phase space whose extremas are solutions of the PFEs
 	f0 = -sum(sp.P.*sp.T) - .5*sum(K.*cos(dT))
 	
@@ -263,12 +263,12 @@ function SD_solver(sp::SParams)
 			sp.T -= nabla*del
 			f1 = -sum(sp.P.*sp.T) - .5*sum(K.*cos(sp.T*ones(1,n)-ones(n,1)*sp.T'))
 		end
-		del = sp.o_args[:d]
 		dT = sp.T*ones(1,n)-ones(n,1)*sp.T'
 		f0 = copy(f1)
 		nabla = -sp.P + sum(K.*sin(dT),2)[:]
 		delta = norm(nabla)
-		@debug("# iter $n_iter with error=$delta")
+		delta2 = maximum(abs(nabla))
+		@debug("# iter $n_iter with error=$delta, nabla_max=$delta2")
 	end
 
 	o_data = Dict{Symbol,Any}()

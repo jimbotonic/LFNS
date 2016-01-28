@@ -4,9 +4,9 @@ include("graphs.jl")
 
 using Base.Test, Logging
 
-@Logging.configure(level=INFO)
+#@Logging.configure(level=INFO)
 
-BASE_FOLDER = "./data/tests"
+BASE_FOLDER = "./lfns_data/tests"
 
 ###
 # test RK solver
@@ -54,7 +54,7 @@ g = load_graph(p_fn,y_fn)
 T_out = collect(load_csv_data(t_fn)[1])
 
 o_args = Dict{Symbol,Any}()
-o_args[:d] = 1e-2
+o_args[:d] = 1
 s = Simulator(g,SD_solver,o_args,1.,1e-6,round(Int64,1e5))
 
 # launch the simulation

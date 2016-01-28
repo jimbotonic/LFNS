@@ -105,7 +105,7 @@ elseif solver == "KR"
 
 	if method == "SD"
 		o_args = Dict{Symbol,Any}()
-		o_args[:d] = 1e-2
+		o_args[:d] = 1
 		epsilon = 1e-6
 		s = Simulator(g,SD_solver,o_args,sb,epsilon,max_iter)
 	elseif method == "RK"
@@ -121,10 +121,14 @@ elseif solver == "KR"
 	counter = 1
 	step = 1e-3
 	for t in 0:step:alpha
+#		t = 3e-3
 		P = init_P1(A,t,max_degree)
+#		writecsv("P.csv",P)
 		change_P(s.g,P)
 		simulation(s)
 		@info("step $counter/", (alpha/step))
 		counter += 1
+#		state = s.states[1]
+#		export_csv_data(state.T, "T_out.csv")
 	end
 end
