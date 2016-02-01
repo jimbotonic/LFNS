@@ -101,7 +101,7 @@ function NR_solver(sp::SParams)
 		# update V and theta
 		sp.T[ids] += X[1:n-1]
 		sp.V[PQ_ids] += X[n:end]
-		error = maximum(abs(dPQ))
+		error = norm(dPQ,Inf)
 		n_iter += 1
     	end
 
@@ -266,9 +266,8 @@ function SD_solver(sp::SParams)
 		dT = sp.T*ones(1,n)-ones(n,1)*sp.T'
 		f0 = copy(f1)
 		nabla = -sp.P + sum(K.*sin(dT),2)[:]
-		delta = norm(nabla)
-		delta2 = maximum(abs(nabla))
-		@debug("# iter $n_iter with error=$delta, nabla_max=$delta2")
+		delta = norm(nabla,Inf)
+		@debug("# iter $n_iter with error=$delta")
 	end
 
 	o_data = Dict{Symbol,Any}()

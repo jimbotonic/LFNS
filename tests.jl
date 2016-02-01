@@ -2,11 +2,11 @@ include("data.jl")
 include("solvers.jl")
 include("graphs.jl")
 
-using Base.Test, Logging
+using Base.Test, Logging, Distances
 
-#@Logging.configure(level=INFO)
+@Logging.configure(level=DEBUG)
 
-BASE_FOLDER = "./lfns_data/tests"
+BASE_FOLDER = "./data/tests"
 
 ###
 # test RK solver
@@ -34,7 +34,7 @@ state = s.states[1]
 #@info("T_sim: ", state.T[1:20])
 #@info("T_ref: ", T_out[1:20])
 
-d = euclidean(state.T, T_out)
+d = chebyshev(state.T, T_out)
 @info("distance $d")
 @info("# iter: ", state.n_iter)
 
@@ -52,6 +52,7 @@ t_fn = BASE_FOLDER * "/RK/UK1/T_out.csv"
 
 g = load_graph(p_fn,y_fn) 
 T_out = collect(load_csv_data(t_fn)[1])
+T_out = uniform_phase_shift(T_out)
 
 o_args = Dict{Symbol,Any}()
 o_args[:d] = 1
@@ -63,10 +64,12 @@ simulation(s)
 toc()
 state = s.states[1]
 
-#@info("T_sim: ", state.T[1:20])
-#@info("T_ref: ", T_out[1:20])
+state.T = uniform_phase_shift(state.T)
 
-d = euclidean(state.T, T_out)
+@info("T_sim: ", state.T[1:20])
+@info("T_ref: ", T_out[1:20])
+
+d = chebyshev(state.T, T_out)
 @info("distance $d")
 @info("# iter: ", state.n_iter)
 
@@ -97,9 +100,9 @@ simulation(s)
 toc()
 state = s.states[1]
 
-error_V = maximum(abs(state.V-V_ref))
+error_V = chebyshev(state.V,V_ref)
 state.T = state.T*180/pi
-error_T = maximum(abs(state.T-T_ref))
+error_T = chebyshev(state.T,T_ref)
 
 @info("Max error in V: $error_V")
 @info("Max error in theta: $error_T")

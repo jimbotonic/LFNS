@@ -110,7 +110,8 @@ function get_sparams(s::Simulator)
 	vs = vertices(s.g)
 	es = edges(s.g)
 	n = length(vs)
-	Y = zeros(Complex{Float64}, n,n)
+	#Y = zeros(Complex{Float64},n,n)
+	Y = spzeros(Complex{Float64},n,n)
 
     	for edge in es
         	if edge.line_status
