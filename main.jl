@@ -106,12 +106,12 @@ elseif solver == "KR"
 	if method == "SD"
 		o_args = Dict{Symbol,Any}()
 		o_args[:d] = 1
-		epsilon = 1e-6
+		epsilon = 1e-8
 		s = Simulator(g,SD_solver,o_args,sb,epsilon,max_iter)
 	elseif method == "RK"
 		o_args = Dict{Symbol,Any}()
-		o_args[:h] = 1e-2
-		epsilon = 1e-11
+		o_args[:h] = 3e-2
+		epsilon = 1e-8
 		s = Simulator(g,RK_solver1,o_args,sb,epsilon,max_iter)
 	end
 	

@@ -4,7 +4,7 @@ include("graphs.jl")
 
 using Base.Test, Logging, Distances
 
-@Logging.configure(level=DEBUG)
+@Logging.configure(level=INFO)
 
 BASE_FOLDER = "./data/tests"
 
@@ -12,7 +12,7 @@ BASE_FOLDER = "./data/tests"
 # test RK solver
 ###
 
-@info("### Testing RK solver")
+@info("######## Testing RK solver")
 
 p_fn = BASE_FOLDER * "/RK/UK1/P_in.csv"
 y_fn = BASE_FOLDER * "/RK/UK1/Y_in.csv"
@@ -22,8 +22,8 @@ g = load_graph(p_fn,y_fn)
 T_out = collect(load_csv_data(t_fn)[1])
 
 o_args = Dict{Symbol,Any}()
-o_args[:h] = 1e-2
-s = Simulator(g,RK_solver1,o_args,1.,1e-11,round(Int64,1e5))
+o_args[:h] = 3e-2
+s = Simulator(g,RK_solver1,o_args,1.,1e-10,round(Int64,1e5))
 
 # launch the simulation
 tic()
@@ -44,7 +44,7 @@ d = chebyshev(state.T, T_out)
 # test SD solver
 ###
 
-@info("### Testing SD solver")
+@info("######## Testing SD solver")
 
 p_fn = BASE_FOLDER * "/RK/UK1/P_in.csv"
 y_fn = BASE_FOLDER * "/RK/UK1/Y_in.csv"
@@ -56,7 +56,7 @@ T_out = uniform_phase_shift(T_out)
 
 o_args = Dict{Symbol,Any}()
 o_args[:d] = 1
-s = Simulator(g,SD_solver,o_args,1.,1e-6,round(Int64,1e5))
+s = Simulator(g,SD_solver,o_args,1.,1e-10,round(Int64,1e5))
 
 # launch the simulation
 tic()
@@ -79,7 +79,7 @@ d = chebyshev(state.T, T_out)
 # test NR solver
 ###
 
-@info("### Testing NR solver")
+@info("######## Testing NR solver")
 
 sys_fn = BASE_FOLDER * "/NR/IEEE/ieee14cdf.txt"
 T_fn = BASE_FOLDER * "/NR/IEEE/T_out.csv"

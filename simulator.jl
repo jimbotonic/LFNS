@@ -33,7 +33,8 @@ type SParams
 	# angles
 	T::Array{Float64,1}
 	# admittance matrix
-	Y::Array{Complex{Float64},2}
+	Y::SparseMatrixCSC{Complex{Float64},Int64}
+	#Y::Array{Complex{Float64},2}
 	P::Array{Float64,1}
 	Q::Array{Float64,1}
 	# convergence criteria
@@ -110,7 +111,6 @@ function get_sparams(s::Simulator)
 	vs = vertices(s.g)
 	es = edges(s.g)
 	n = length(vs)
-	#Y = zeros(Complex{Float64},n,n)
 	Y = spzeros(Complex{Float64},n,n)
 
     	for edge in es
