@@ -11,6 +11,8 @@ function parse_cl()
 	@add_arg_table s begin
 		"--solver"
 			help = "solver to be used (e.g., NR, RK, ...)"
+		"--ssolver"
+			help = "sub solver to be used (e.g., NR, RK, ...)"
 		"--ft"
 			help = "file type to be loaded (e.g., IEEE, ENTSOE)"
 			required = false
@@ -22,6 +24,12 @@ function parse_cl()
 			required = false
 		"--y_fn"
 			help = "file name for admittance matrix Y"
+			required = false
+		"--u_fn"
+			help = "file name for uniform random distribution in [-1,1]"
+			required = false
+		"--iter"
+			help = "iteration number"
 			required = false
 		"--g_fn"
 			help = "file name for serialized graph"
@@ -58,8 +66,7 @@ if solver == "NR"
 	s = Simulator(g,NR_solver,o_args,100.,1e-8,15)
 	
 	# launch the simulation
-	simulation(s)
-	state = s.states[1]
+	state = simulation(s)
 	
 	export_csv_data(state.V, "V_out.csv")
 	state.T = state.T*180/pi
@@ -74,8 +81,7 @@ elseif solver == "RK"
 	s = Simulator(g,RK_solver1,o_args,1.,1e-11,round(Int64,1e5))
 	
 	# launch the simulation
-	simulation(s)
-	state = s.states[1]
+	state = simulation(s)
 
 	@info("# iteration: ", state.n_iter)
 	export_csv_data(state.T, "T_out.csv")
@@ -91,44 +97,42 @@ elseif solver == "SD"
 	export_csv_data(imag(s.Y), "B.csv")
 	
 	# launch the simulation
-	simulation(s)
-	state = s.states[1]
+	state = simulation(s)
 
 	export_csv_data(state.T, "T_out.csv")
 elseif solver == "KR"
+	function get_state(s::Simulator,A::Array{Float64,1},alpha::Float64,max_value::Float64)
+		P = init_P1(A,alpha,max_value)
+		change_P(s.g,P)
+		return simulation(s)
+	end
+
 	g = load_serialized(pargs["g_fn"])
 	n = length(vertices(g))
+	
+	# initialize simulation parameters
 	sb = 1.
 	max_iter = round(Int64,1e5)
+	epsilon = 1e-8
+	max_degree = 17.
 
-	method = "SD"
-
-	if method == "SD"
+	ssolver = pargs["ssolver"]
+	if ssolver == "SD"
 		o_args = Dict{Symbol,Any}()
 		o_args[:d] = 1
-		epsilon = 1e-8
 		s = Simulator(g,SD_solver,o_args,sb,epsilon,max_iter)
-	elseif method == "RK"
+	elseif ssolver == "RK"
 		o_args = Dict{Symbol,Any}()
 		o_args[:h] = 3e-2
-		epsilon = 1e-8
 		s = Simulator(g,RK_solver1,o_args,sb,epsilon,max_iter)
 	end
 	
-	max_degree = 17.
-	alpha = 0.16
-	A = init_unif_dist(n)
-	counter = 1
-	step = 1e-3
-	for t in 0:step:alpha
-#		t = 3e-3
-		P = init_P1(A,t,max_degree)
-#		writecsv("P.csv",P)
-		change_P(s.g,P)
-		simulation(s)
-		@info("step $counter/", (alpha/step))
-		counter += 1
-#		state = s.states[1]
-#		export_csv_data(state.T, "T_out.csv")
-	end
+	#U = init_unif_dist(n)
+	#export_csv_data(U, "U.csv")
+	U = collect(load_csv_data(pargs["u_fn"])[1])
+	iter = parse(Int,pargs["iter"])
+
+	t = (iter-1)/1000
+	state = get_state(s,U,t,max_degree)
+	export_csv_data(state.T, "T_$iter.csv")
 end

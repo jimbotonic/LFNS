@@ -241,7 +241,7 @@ function SD_solver(sp::SParams)
 	del = sp.o_args[:d]
 
 	# We only use the susceptive part of the admittance matrix, with zero diagonal elements	
-	K = imag(sp.Y-diagm(diag(sp.Y)))
+	K = imag(sp.Y-spdiagm(diag(sp.Y)))
 	dT = sp.T*ones(1,n)-ones(n,1)*sp.T'
 		
 	# f0 is the potential in the phase space whose extremas are solutions of the PFEs

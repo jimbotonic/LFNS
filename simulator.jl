@@ -44,7 +44,7 @@ type SParams
 	o_args::Dict{Symbol,Any}
 
 	# default constructor
-	function SParams(V::Array{Float64,1},T::Array{Float64,1},Y::Array{Complex{Float64},2},P::Array{Float64,1},Q::Array{Float64,1},epsilon::Float64,iter_max::Int64,o_args::Dict{Symbol,Any})
+	function SParams(V::Array{Float64,1},T::Array{Float64,1},Y::SparseMatrixCSC{Complex{Float64},Int64},P::Array{Float64,1},Q::Array{Float64,1},epsilon::Float64,iter_max::Int64,o_args::Dict{Symbol,Any})
 		return new(V,T,Y,P,Q,epsilon,iter_max,o_args)
 	end
 end 
@@ -102,7 +102,7 @@ function simulation(s::Simulator)
 	sp = get_sparams(s)
 	state = s.solver(sp)
 	push!(s.states,state)
-	# iterate over all changes and store state at each iteration
+	return state
 end
 
 # initialize the solvers parameters (admittance matrix, active/reactive  injection vectors, angles, ...)
@@ -134,7 +134,7 @@ function get_sparams(s::Simulator)
     	end
 
 	# add shunt susceptance to each node
-	Y = Y + diagm(Float64[v.sh_susceptance for v in vs])*im
+	Y = Y + spdiagm(Float64[v.sh_susceptance for v in vs])*im
     
 	# injections
 	S = Complex{Float64}[(-v.load + v.generation)/s.sb for v in vs]

@@ -27,9 +27,8 @@ s = Simulator(g,RK_solver1,o_args,1.,1e-10,round(Int64,1e5))
 
 # launch the simulation
 tic()
-simulation(s)
+state = simulation(s)
 toc()
-state = s.states[1]
 
 #@info("T_sim: ", state.T[1:20])
 #@info("T_ref: ", T_out[1:20])
@@ -56,13 +55,12 @@ T_out = uniform_phase_shift(T_out)
 
 o_args = Dict{Symbol,Any}()
 o_args[:d] = 1
-s = Simulator(g,SD_solver,o_args,1.,1e-10,round(Int64,1e5))
+s = Simulator(g,SD_solver,o_args,1.,1e-8,round(Int64,1e5))
 
 # launch the simulation
 tic()
-simulation(s)
+state = simulation(s)
 toc()
-state = s.states[1]
 
 state.T = uniform_phase_shift(state.T)
 
@@ -96,9 +94,8 @@ o_args[:bootstrap_iter] = 0
 s = Simulator(g,NR_solver,o_args,100.,1e-8,15)
 
 tic()
-simulation(s)
+state = simulation(s)
 toc()
-state = s.states[1]
 
 error_V = chebyshev(state.V,V_ref)
 state.T = state.T*180/pi
