@@ -64,8 +64,8 @@ toc()
 
 state.T = uniform_phase_shift(state.T)
 
-@info("T_sim: ", state.T[1:20])
-@info("T_ref: ", T_out[1:20])
+#@info("T_sim: ", state.T[1:20])
+#@info("T_ref: ", T_out[1:20])
 
 d = chebyshev(state.T, T_out)
 @info("distance $d")
