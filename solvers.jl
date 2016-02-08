@@ -176,8 +176,8 @@ end
 
 # right-hand side of the differential equation 
 function f1(T::Array{Float64,1}, V::Array{Float64,1}, Y::SparseMatrixCSC{Complex{Float64},Int64}, P::Array{Float64,1})
-	M1 = V'.*real(Y).*V #M2ij=Gij*Vi*Vj
-	M2 = V'.*imag(Y).*V #M3ij=Bij*Vi*Vj
+	M1 = V'.*real(Y).*V #M1ij=Gij*Vi*Vj
+	M2 = V'.*imag(Y).*V #M2ij=Bij*Vi*Vj
 	V1 = diag(M1)
 	V2 = cos(T)
 	V3 = sin(T)
