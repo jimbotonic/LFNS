@@ -176,17 +176,16 @@ end
 
 # right-hand side of the differential equation 
 function f1(T::Array{Float64,1}, V::Array{Float64,1}, Y::SparseMatrixCSC{Complex{Float64},Int64}, P::Array{Float64,1})
-	M1 = V*V'
-	M2 = real(Y).*M1 #M2ij=Gij*Vi*Vj
-	M3 = imag(Y).*M1 #M3ij=Bij*Vi*Vj
-	V1 = diag(M2)
+	M1 = V'.*real(Y).*V #M2ij=Gij*Vi*Vj
+	M2 = V'.*imag(Y).*V #M3ij=Bij*Vi*Vj
+	V1 = diag(M1)
 	V2 = cos(T)
 	V3 = sin(T)
 	# set diagonal elements to 0
-	M2 = M2 - diagm(diag(M2))
-	M3 = M3 - diagm(diag(M3))
+	M1 = M1 - spdiagm(diag(M1))
+	M2 = M2 - spdiagm(diag(M2))
 
-	return (P - V1 + (V2.*(-M2*V2 + M3*V3) - V3.*(M2*V3 + M3*V2))) 
+	return (P - V1 + (V2.*(-M1*V2 + M2*V3) - V3.*(M1*V3 + M2*V2))) 
 end
 
 # Runge-Kutta solver for Flow Data networks
