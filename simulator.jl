@@ -146,7 +146,7 @@ function get_sparams(s::Simulator)
 	return SParams(V,T,Y,P,Q,s.epsilon,s.iter_max,s.o_args)
 end
 
-# change the value of P
+# change the injection values
 function change_P(g::Graphs.AbstractGraph{Bus,Line},P::Array{Float64,1})
 	vs = vertices(g)
 	for i in 1:length(vs)
@@ -155,5 +155,13 @@ function change_P(g::Graphs.AbstractGraph{Bus,Line},P::Array{Float64,1})
 		else
 			vs[i].load = -P[i]
 		end
+	end
+end
+
+# change the angle values
+function change_T(g::Graphs.AbstractGraph{Bus,Line},T::Array{Float64,1})
+	vs = vertices(g)
+	for i in 1:length(vs)
+		vs[i].angle = T[i]
 	end
 end

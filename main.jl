@@ -28,6 +28,9 @@ function parse_cl()
 		"--u_fn"
 			help = "file name for uniform random distribution in [-1,1]"
 			required = false
+		"--bt_fn"
+			help = "file name of the boostrap T vector"
+			required = false
 		"--iter"
 			help = "iteration number"
 			required = false
@@ -134,7 +137,17 @@ elseif solver == "KR"
 	iter = parse(Int,pargs["iter"])
 	u_name = basename(u_fn)[1:end-4]
 	
+	# start at 0 (ie, "flat start")
 	t = (iter-1)/1000
+
+	# if we have a bootsraping T
+	bt_fn = pargs["bt_fn"]
+	if typeof(bt_fn) != Void
+		bT = collect(load_csv_data(bt_fn)[1])
+		change_T(s.g,bT)
+	end
+	
 	state = get_state(s,U,t,max_degree)
-	export_csv_data(state.T, "T_$iter_$ssolver_$epsilon_$u_name.csv")
+	export_fn = "T_" * "$iter" * "_" * "$ssolver" * "_" * "$epsilon" * "_" * "$u_name" * ".csv"
+    	export_csv_data(state.T, export_fn)
 end

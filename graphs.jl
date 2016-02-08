@@ -340,4 +340,3 @@ function my_pagerank(g::Graphs.AbstractGraph{Bus,Line},pr::Array{Float64,1},damp
 	return pr2
 end
 
-
