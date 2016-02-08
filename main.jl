@@ -58,12 +58,12 @@ if solver == "NR"
 	@info("# edges: ", length(edges(g)))
 	
 	# export graph to graphml
-	#export_graphml(g, "my_export.graphml")
+	export_graphml(g, "my_export.graphml")
 
 	o_args = Dict{Symbol,Any}()
 	o_args[:g] = g
-	o_args[:bootstrap_iter] = 3
-	s = Simulator(g,NR_solver,o_args,100.,1e-8,15)
+	o_args[:bootstrap_iter] = 0
+	s = Simulator(g,NR_solver,o_args,100.,1e-8,50)
 	
 	# launch the simulation
 	state = simulation(s)
@@ -129,10 +129,12 @@ elseif solver == "KR"
 	
 	#U = init_unif_dist(n)
 	#export_csv_data(U, "U.csv")
-	U = collect(load_csv_data(pargs["u_fn"])[1])
+	u_fn = pargs["u_fn"]
+	U = collect(load_csv_data(u_fn)[1])
 	iter = parse(Int,pargs["iter"])
-
+	u_name = basename(u_fn)[1:end-4]
+	
 	t = (iter-1)/1000
 	state = get_state(s,U,t,max_degree)
-	export_csv_data(state.T, "T_$iter.csv")
+	export_csv_data(state.T, "T_$iter_$ssolver_$epsilon_$u_name.csv")
 end
