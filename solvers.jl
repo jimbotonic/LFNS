@@ -176,14 +176,13 @@ end
 
 # right-hand side of the differential equation 
 function f1(T::Array{Float64,1}, V::Array{Float64,1}, Y::SparseMatrixCSC{Complex{Float64},Int64}, P::Array{Float64,1})
-	M1 = V'.*real(Y).*V #M1ij=Gij*Vi*Vj
-	M2 = V'.*imag(Y).*V #M2ij=Bij*Vi*Vj
-	V1 = diag(M1)
+	M = V'.*Y.*V 
 	V2 = cos(T)
 	V3 = sin(T)
-	# set diagonal elements to 0
-	M1 = M1 - spdiagm(diag(M1))
-	M2 = M2 - spdiagm(diag(M2))
+	M = M - spdiagm(diag(M))
+	M1 = real(M)
+	M2 = imag(M)
+	V1 = diag(M1)
 
 	return (P - V1 + (V2.*(-M1*V2 + M2*V3) - V3.*(M1*V3 + M2*V2))) 
 end

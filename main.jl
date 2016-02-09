@@ -116,8 +116,10 @@ elseif solver == "KR"
 	# initialize simulation parameters
 	sb = 1.
 	max_iter = round(Int64,1e5)
-	epsilon = 1e-8
-	max_degree = 17.
+	
+	epsilon = 1e-6
+	# max degree of Eurogrid is 17
+	max_value = 1.
 
 	ssolver = pargs["ssolver"]
 	if ssolver == "SD"
@@ -137,17 +139,27 @@ elseif solver == "KR"
 	iter = parse(Int,pargs["iter"])
 	u_name = basename(u_fn)[1:end-4]
 	
-	# start at 0 (ie, "flat start")
-	t = (iter-1)/1000
-
-	# if we have a bootsraping T
+	# if we have an initial bootstraping vector T
 	bt_fn = pargs["bt_fn"]
 	if typeof(bt_fn) != Void
 		bT = collect(load_csv_data(bt_fn)[1])
 		change_T(s.g,bT)
 	end
-	
-	state = get_state(s,U,t,max_degree)
-	export_fn = "T_" * "$iter" * "_" * "$ssolver" * "_" * "$epsilon" * "_" * "$u_name" * ".csv"
-    	export_csv_data(state.T, export_fn)
+
+	states = Array{Array{Float64,1},1}()
+
+	for j in 1:iter
+		# start at 0 (ie, "flat start")
+		t = (iter-1)/1000
+		state = get_state(s,U,t,max_value)
+		
+		@debug("# simulation $j (alpha=$t)")
+		@debug("----------")
+
+		push!(states,state.T)
+		#export_fn = "T_" * "$iter" * "_" * "$ssolver" * "_" * "$epsilon" * "_" * "$u_name" * ".csv"
+    		#export_csv_data(state.T, export_fn)
+	end
+
+	serialize_to_file(states, "states_$max_value.jld")
 end
