@@ -240,13 +240,14 @@ function SD_solver(sp::SParams)
 
 	# We only use the susceptive part of the admittance matrix, with zero diagonal elements	
 	K = imag(sp.Y-spdiagm(diag(sp.Y)))
-	dT = sp.T*ones(1,n)-ones(n,1)*sp.T'
+	ST = sin(sp.T)
+	CT = cos(sp.T)
 		
 	# f0 is the potential in the phase space whose extremas are solutions of the PFEs
-	f0 = -sum(sp.P.*sp.T) - .5*sum(K.*cos(dT))
-	
+	f0 = -sum(sp.P.*sp.T) - .5*sum(CT'*K*CT + ST'*K*ST)
+
 	# nabla is the gradient of this potential
-	nabla = -sp.P + sum(K.*sin(dT),2)[:] # sum rows 
+	nabla = -sp.P + ST.*(K*CT) - CT.*(K*ST)
 	delta = norm(nabla)
 	
 	# Follow the path of most negative gradient, until the correction is less than delta, to reach the bottom of a well
@@ -254,16 +255,19 @@ function SD_solver(sp::SParams)
 		n_iter += 1
 		A = copy(sp.T)
 		sp.T -= nabla*del
-		f1 = -sum(sp.P.*sp.T) - .5*sum(K.*cos(sp.T*ones(1,n)-ones(n,1)*sp.T'))
+		ST = sin(sp.T)
+		CT = cos(sp.T)
+		f1 = -sum(sp.P.*sp.T) - .5*sum(CT'*K*CT + ST'*K*ST)
 		while f1 > f0 && norm(f1-f0) > sp.epsilon
 			sp.T = copy(A)
 			del = del/2
 			sp.T -= nabla*del
-			f1 = -sum(sp.P.*sp.T) - .5*sum(K.*cos(sp.T*ones(1,n)-ones(n,1)*sp.T'))
+			ST = sin(sp.T)
+			CT = cos(sp.T)
+			f1 = -sum(sp.P.*sp.T) - .5*sum(CT'*K*CT + ST'*K*ST)
 		end
-		dT = sp.T*ones(1,n)-ones(n,1)*sp.T'
 		f0 = copy(f1)
-		nabla = -sp.P + sum(K.*sin(dT),2)[:]
+		nabla = -sp.P + ST.*(K*CT) - CT.*(K*ST)
 		delta = norm(nabla,Inf)
 		@debug("# iter $n_iter with error=$delta")
 	end
