@@ -150,7 +150,7 @@ elseif solver == "KR"
 
 	for j in 1:iter
 		# start at 0 (ie, "flat start")
-		t = (iter-1)/1000
+		t = (j-1)/1000
 		state = get_state(s,U,t,max_value)
 		
 		@debug("# simulation $j (alpha=$t)")
