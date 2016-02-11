@@ -242,13 +242,16 @@ function SD_solver(sp::SParams)
 	K = imag(sp.Y-spdiagm(diag(sp.Y)))
 	ST = sin(sp.T)
 	CT = cos(sp.T)
+
+	V1 = K*CT
+	V2 = K*ST
 		
 	# f0 is the potential in the phase space whose extremas are solutions of the PFEs
-	f0 = -sum(sp.P.*sp.T) - .5*sum(CT'*K*CT + ST'*K*ST)
+	f0 = -sum(sp.P.*sp.T) - .5*sum(CT'*V1 + ST'*V2)
 
 	# nabla is the gradient of this potential
-	nabla = -sp.P + ST.*(K*CT) - CT.*(K*ST)
-	delta = norm(nabla)
+	nabla = -sp.P + ST.*V1 - CT.*V2
+	delta = norm(nabla,Inf)
 	
 	# Follow the path of most negative gradient, until the correction is less than delta, to reach the bottom of a well
 	while delta > sp.epsilon && n_iter < sp.iter_max
