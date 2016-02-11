@@ -47,7 +47,7 @@ function load_graph(E_fn::AbstractString)
 			if !(h1 in h) && !(h2 in h) 
 				source = vertices[name_id[sn]]
 				target = vertices[name_id[tn]]
-				push!(edges, Line(ecounter, source, target, 1.im))
+				push!(edges, Line(ecounter, source, target, -1.im))
 				push!(h,h1)
 				push!(h,h2)
 				ecounter += 1

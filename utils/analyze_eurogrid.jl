@@ -3,7 +3,7 @@ include("../solvers.jl")
 include("../graphs.jl")
 
 # save generated graphs?
-SAVE = false
+SAVE = true
 
 # load graph
 g = load_serialized("../data/eurogrid/eurogrid.jld")
