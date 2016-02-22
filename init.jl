@@ -1,13 +1,31 @@
+using Distributions
+
 include("graphs.jl")
 
-function init_unif_dist(size::Int64)
-	A = (rand(size)*2-1)
-	return (A-sum(A)/size)
+# initialize a uniform random distribution
+function init_unif_dist(n::Int64)
+	U = rand(Uniform(),n)
+	return U/sum(U)
 end
 
 # initialize P vector with entry values taken uniformally at random in [-alpha*max_value, alpha*max_value]
-function init_P1(A::Array{Float64,1}, alpha::Float64, max_value::Float64)
-	return A*alpha*max_value
+#
+# U is assumed to be a distribution
+# alpha belongs to [0,1]
+function init_P1(U::Array{Float64,1}, alpha::Float64, max_value::Float64)
+	return (U*2-1)*alpha*max_value
+end
+
+# initialize P vector with entry values taken uniformally at random in [-alpha*max_value, alpha*max_value]
+#
+# U is assumed to be a distribution
+# alpha belongs to [0,1]
+function init_P2(U::Array{Float64,1}, alpha::Float64, max_value::Float64)
+	n = length(U)
+	# switch entry signs randomly
+	P = rand([-1,1],n).*U
+	P -= sum(P)/n
+	return P*alpha*max_value
 end
 
 # generate a cycle with one producer at vertex 1 and one consumer at a chosen vertex

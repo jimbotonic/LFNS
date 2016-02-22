@@ -41,6 +41,7 @@ function parse_cl()
 	return parse_args(s)
 end
 
+# parse arguments
 pargs = parse_cl()
 solver = pargs["solver"]
 
@@ -104,8 +105,9 @@ elseif solver == "SD"
 
 	export_csv_data(state.T, "T_out.csv")
 elseif solver == "KR"
-	function get_state(s::Simulator,A::Array{Float64,1},alpha::Float64,max_value::Float64)
-		P = init_P1(A,alpha,max_value)
+	function get_state(s::Simulator,U::Array{Float64,1},alpha::Float64,max_value::Float64)
+		P = init_P2(U,alpha,max_value)
+		@debug("norm P (2/Inf): ", norm(P,2), "/", norm(P,Inf))
 		change_P(s.g,P)
 		return simulation(s)
 	end
@@ -117,9 +119,10 @@ elseif solver == "KR"
 	sb = 1.
 	max_iter = round(Int64,1e5)
 	
-	epsilon = 1e-6
-	# max degree of Eurogrid is 17
-	max_value = 1.
+	epsilon = 1e-8
+	# NB: Eurogrid PC has 6021 nodes and a max degree of 17
+	# critical value is between 800 and 850
+	max_value = 800.
 
 	ssolver = pargs["ssolver"]
 	if ssolver == "SD"
@@ -131,9 +134,11 @@ elseif solver == "KR"
 		o_args[:h] = 3e-2
 		s = Simulator(g,RK_solver1,o_args,sb,epsilon,max_iter)
 	end
-	
+
+	# generate a uniform distribution
 	#U = init_unif_dist(n)
 	#export_csv_data(U, "U.csv")
+	
 	u_fn = pargs["u_fn"]
 	U = collect(load_csv_data(u_fn)[1])
 	iter = parse(Int,pargs["iter"])
@@ -148,18 +153,21 @@ elseif solver == "KR"
 
 	states = Array{Array{Float64,1},1}()
 
+	tic()
+	#for j in iter:-1:1
 	for j in 1:iter
 		# start at 0 (ie, "flat start")
-		t = (j-1)/1000
+		t = (j-1)/iter
+		#t = j/iter
+		@info("simulation # $j (alpha=$t max=$max_value)")
 		state = get_state(s,U,t,max_value)
+		@info("----------")
 		
-		@debug("# simulation $j (alpha=$t)")
-		@debug("----------")
-
 		push!(states,state.T)
 		#export_fn = "T_" * "$iter" * "_" * "$ssolver" * "_" * "$epsilon" * "_" * "$u_name" * ".csv"
     		#export_csv_data(state.T, export_fn)
 	end
+	toc()
 
-	serialize_to_file(states, "states_$max_value.jld")
+	serialize_to_file(states, "states_$u_name-$iter-$max_value.jld")
 end

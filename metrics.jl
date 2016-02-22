@@ -8,33 +8,10 @@ function vorticity(T::Array{Float64,1}, cycles::Array{Array{Int64,1},1})
 		for j in 1:(length(c)-1)
 			s += mod(c[j] - c[j+1] + pi, 2*pi) - pi
 		end
-		push!(X,abs(s))
+		# entries are multiples of 2*pi
+		push!(X,round(Int,abs(s/(2*pi))))
 	end
 	return X
-end
-
-# computes the winding number along the given sequence of nodes
-# it is assumed that the given sites form a cycle
-#
-## INPUT
-# T: thetas
-#
-## OUPUT
-# q: winding number
-#
-function winding_number(T::Array{Float64,1})
-	# dT[i] = T[i-1]-T[i]
-	dT = [T[end]-T[1],]
-	n = length(T)
-	
-	for i in 2:n
-		push!(dT,T[i-1]-T[i])
-	end
-	
-	dT = mod(dT+pi,2*pi)-pi
-	q = sum(dT)/(2*pi)
-	
-	return q
 end
 
 # Stability matrix
@@ -51,7 +28,7 @@ end
 ## OUTPUT
 # M: stability matrix
 #
-function get_stability_matrix(T::Array{Float64,1}, Y::Array{Complex{Float64},2}, approx_level::Int64=3)
+function get_stability_matrix(T::Array{Float64,1}, Y::SparseMatrixCSC{Complex{Float64},Int64}, approx_level::Int64=3)
 	B = imag(Y) 
 	G = real(Y)
 	
@@ -85,19 +62,17 @@ end
 #
 ## OUTPUT
 # l2: greatest non-null real part of the stability matrix eigenvalues
-function get_lambda2(T::Array{Float64,1}, Y::Array{Complex{Float64},2}, epsilon::Float64=1e-12)
+function get_lambda2(T::Array{Float64,1}, Y::SparseMatrixCSC{Complex{Float64},Int64}, epsilon::Float64=1e-12)
 	# get stability matrix
 	M = get_stability_matrix(T,Y)
 	evs = eigvals(M)
 	l1 = evs[end]
 	
 	if abs(l1) > epsilon
-		l2 = l1
+		return l1
 	else
-		l2 = evs[end-1]
+		return evs[end-1]
 	end
-	
-	return l2
 end
 
 # computes the flows at each node and on every line
@@ -110,7 +85,7 @@ end
 # P: vector of power balance at each node
 # F: matrix of power flows on every line
 # L: matrix of losses on every line
-function flow_test(T::Array{Float64,1}, Y::Array{Complex{Float64},2})
+function flow_test(T::Array{Float64,1}, Y::SparseMatrixCSC{Complex{Float64},Int64})
 	n = length(T)
 	
 	YY = Y.*(1-eye(n))
