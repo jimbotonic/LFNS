@@ -95,6 +95,7 @@ function flow_test(T::Array{Float64,1}, Y::SparseMatrixCSC{Complex{Float64},Int6
 	B = imag(YY)
 	
 	dT = T*ones(1,n)-ones(n,1)*T'
+
 	F = B.*sin(dT)+G.*cos(dT)
 	P = collect(sum(F.*(1-eye(n)),2))
 	L = F+F'

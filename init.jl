@@ -20,12 +20,26 @@ end
 #
 # U is assumed to be a distribution
 # alpha belongs to [0,1]
-function init_P2(U::Array{Float64,1}, alpha::Float64, max_value::Float64)
+function init_P2(U::Array{Float64,1})
 	n = length(U)
 	# switch entry signs randomly
 	P = rand([-1,1],n).*U
 	P -= sum(P)/n
-	return P*alpha*max_value
+	return P
+end
+
+
+function init_P3(U::Array{Float64,1})
+	n = length(U)
+	# switch entry signs randomly
+	V = sortrows([U 1:n])
+	V[:,1] = V[:,1].*(2*mod(1:n,2)-1)
+	V = [V[:,2] V[:,1]]
+	V = sortrows(V)
+	P = V[:,2]
+	P -= mean(P)
+#	println(P)
+	return P
 end
 
 # generate a cycle with one producer at vertex 1 and one consumer at a chosen vertex

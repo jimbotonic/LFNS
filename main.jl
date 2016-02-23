@@ -105,13 +105,13 @@ elseif solver == "SD"
 
 	export_csv_data(state.T, "T_out.csv")
 elseif solver == "KR"
-	function get_state(s::Simulator,U::Array{Float64,1},alpha::Float64,max_value::Float64)
-		P = init_P2(U,alpha,max_value)
+	function get_state(s::Simulator,Pref::Array{Float64,1},alpha::Float64,max_value::Float64)
+		P = Pref*alpha*max_value
 		@debug("norm P (2/Inf): ", norm(P,2), "/", norm(P,Inf))
 		change_P(s.g,P)
 		return simulation(s)
 	end
-
+	
 	g = load_serialized(pargs["g_fn"])
 	n = length(vertices(g))
 	
@@ -143,6 +143,8 @@ elseif solver == "KR"
 	U = collect(load_csv_data(u_fn)[1])
 	iter = parse(Int,pargs["iter"])
 	u_name = basename(u_fn)[1:end-4]
+
+	Pref = init_P3(U)
 	
 	# if we have an initial bootstraping vector T
 	bt_fn = pargs["bt_fn"]
@@ -160,7 +162,7 @@ elseif solver == "KR"
 		t = (j-1)/iter
 		#t = j/iter
 		@info("simulation # $j (alpha=$t max=$max_value)")
-		state = get_state(s,U,t,max_value)
+		state = get_state(s,Pref,t,max_value)
 		@info("----------")
 		
 		push!(states,state.T)
