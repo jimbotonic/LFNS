@@ -1,9 +1,11 @@
-using ArgParse
+using ArgParse, Logging
 
-include("init.jl")
-include("data.jl")
-include("solvers.jl")
-include("graphs.jl")
+ include("init.jl")
+ include("data.jl")
+ include("solvers.jl")
+ include("graphs.jl")
+
+@Logging.configure(level=INFO)
 
 # parse program arguments
 function parse_cl()
@@ -36,6 +38,19 @@ function parse_cl()
 			required = false
 		"--g_fn"
 			help = "file name for serialized graph"
+			required = false
+		"--parallel"
+			default = "no"
+			help = "yes if parallel computing"
+			required = false
+		"--alpha_i"
+			help = "first alpha value when parallelizing"
+			required = false
+		"--step_num"
+			help = "number of steps for each instance when parallelizing"
+			required = false
+		"--alpha_length"
+			help = "length of alpha interval when parallelizing"
 			required = false
 	end
 	return parse_args(s)
@@ -117,12 +132,12 @@ elseif solver == "KR"
 	
 	# initialize simulation parameters
 	sb = 1.
-	max_iter = round(Int64,1e5)
+	max_iter = round(Int64,1e6)
 	
-	epsilon = 1e-8
+	epsilon = 1e-3
 	# NB: Eurogrid PC has 6021 nodes and a max degree of 17
 	# critical value is between 800 and 850
-	max_value = 800.
+	max_value = 600.
 
 	ssolver = pargs["ssolver"]
 	if ssolver == "SD"
@@ -131,8 +146,12 @@ elseif solver == "KR"
 		s = Simulator(g,SD_solver,o_args,sb,epsilon,max_iter)
 	elseif ssolver == "RK"
 		o_args = Dict{Symbol,Any}()
-		o_args[:h] = 3e-2
+		o_args[:h] = .12
 		s = Simulator(g,RK_solver1,o_args,sb,epsilon,max_iter)
+	elseif ssolver == "RK2"
+		o_args = Dict{Symbol,Any}()
+		o_args[:h] = .12
+		s = Simulator(g,RK_solver2,o_args,sb,epsilon,max_iter)
 	end
 
 	# generate a uniform distribution
@@ -141,7 +160,7 @@ elseif solver == "KR"
 	
 	u_fn = pargs["u_fn"]
 	U = collect(load_csv_data(u_fn)[1])
-	iter = parse(Int,pargs["iter"])
+#	iter = parse(Int,pargs["iter"])
 	u_name = basename(u_fn)[1:end-4]
 
 	Pref = init_P3(U)
@@ -154,22 +173,48 @@ elseif solver == "KR"
 	end
 
 	states = Array{Array{Float64,1},1}()
-
-	tic()
-	#for j in iter:-1:1
-	for j in 1:iter
-		# start at 0 (ie, "flat start")
-		t = (j-1)/iter
-		#t = j/iter
-		@info("simulation # $j (alpha=$t max=$max_value)")
-		state = get_state(s,Pref,t,max_value)
-		@info("----------")
+	
+	par = pargs["parallel"]
+	
+	if par == "yes"
+		step_num = parse(Int,pargs["step_num"])
+		alpha_i = parse(Float64,pargs["alpha_i"])
+		alpha_length = parse(Float64,pargs["alpha_length"])
+		for j in 1:step_num
+			t = alpha_i + (j-1)*alpha_length/step_num
+			if j > 1
+				change_T(s.g,state.T)
+			end
+			@info("simulation # $j (alpha=$t max=$max_value)")
+			state = get_state(s,Pref,t,max_value)
 		
-		push!(states,state.T)
-		#export_fn = "T_" * "$iter" * "_" * "$ssolver" * "_" * "$epsilon" * "_" * "$u_name" * ".csv"
-    		#export_csv_data(state.T, export_fn)
+			@info("----------")
+			
+			push!(states,state.T)
+		end
+		
+		serialize_to_file(states, "states_$u_name-$max_value-$alpha_i.jld")
+	else
+		tic()
+		#for j in iter:-1:1
+		for j in 1:iter
+			# start at 0 (ie, "flat start")
+			t = (j-1)/iter	
+			#t = j/iter
+		#=	
+			if j > 1
+				change_T(s.g,state.T)
+			end
+		=#		
+			@info("simulation # $j (alpha=$t max=$max_value)")
+			state = get_state(s,Pref,t,max_value)
+			@info("----------")
+			
+			push!(states,state.T)
+			#export_fn = "T_" * "$iter" * "_" * "$ssolver" * "_" * "$epsilon" * "_" * "$u_name" * ".csv"
+    			#export_csv_data(state.T, export_fn)
+		end
+		toc()
+		serialize_to_file(states, "states_$u_name-$iter-$max_value.jld")
 	end
-	toc()
-
-	serialize_to_file(states, "states_$u_name-$iter-$max_value.jld")
 end

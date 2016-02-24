@@ -167,7 +167,7 @@ function RK4(f)
                ( (k1   )-> 
                ( (k2   )-> 
                ( (k3   )-> 
-               ( (k4   )-> (( k1 + 2*k2 + 2*k3 + k4 )/6, k1) 
+               ( (k4   )-> (( k1 + 2*k2 + 2*k3 + k4 )/6, k1/h) 
                )( h * f( y + k3  , v... ) )
                )( h * f( y + k2/2, v... ) )
                )( h * f( y + k1/2, v... ) )
@@ -183,6 +183,13 @@ function f1(T::Array{Float64,1}, V::Array{Float64,1}, Y::SparseMatrixCSC{Complex
 	M1 = real(M)
 	M2 = imag(M)
 	V1 = diag(M1)
+
+	return (P - V1 + (V2.*(-M1*V2 + M2*V3) - V3.*(M1*V3 + M2*V2))) 
+end
+
+function f2(T::Array{Float64,1}, V1::Array{Float64,1}, M1::SparseMatrixCSC{Float64,Int64}, M2::SparseMatrixCSC{Float64,Int64}, P::Array{Float64,1})
+	V2 = cos(T)
+	V3 = sin(T)
 
 	return (P - V1 + (V2.*(-M1*V2 + M2*V3) - V3.*(M1*V3 + M2*V2))) 
 end
@@ -205,20 +212,51 @@ function RK_solver1(sp::SParams)
 	dU = RK4(f1)
 	nTdot = zeros(Float64, length(sp.T))
 	Tdot = zeros(Float64, length(sp.T))
-
+	
 	n_iter = 1
 	while n_iter < sp.iter_max
 		(dT, Tdot) = dU(sp.T, sp.o_args[:h], sp.V, sp.Y, sp.P)
-		error=chebyshev(nTdot, Tdot)
+	#	error=chebyshev(nTdot, Tdot)
+		error = norm(Tdot,Inf)
 		if error < sp.epsilon
 			break
 		end
 		@debug("# iter $n_iter with error=$error")
-		nTdot = copy(Tdot)
+	#	nTdot = copy(Tdot)
 		sp.T += dT
 		n_iter += 1
 	end
 
+	return State(Float64[],sp.T,Tdot,n_iter)
+end
+
+function RK_solver2(sp::SParams)
+	dU = RK4(f2)
+	nTdot = zeros(Float64, length(sp.T))
+	Tdot = zeros(Float64, length(sp.T))
+	
+	M = sp.V'.*sp.Y.*sp.V
+	
+	M = M - spdiagm(diag(M))
+	M1 = real(M)
+	M2 = imag(M)
+	V1 = diag(M1)
+
+	n_iter = 1
+	while n_iter < sp.iter_max
+		(dT, Tdot) = dU(sp.T, sp.o_args[:h], V1, M1, M2, sp.P)
+	#	error=chebyshev(nTdot, Tdot)
+		error = norm(Tdot,Inf)
+		if error < sp.epsilon
+			break
+		end
+		@debug("# iter $n_iter with error=$error")
+	#	nTdot = copy(Tdot)
+		sp.T += dT
+		n_iter += 1
+	end
+	
+	@info("$n_iter iteration(s)")
 	return State(Float64[],sp.T,Tdot,n_iter)
 end
 
