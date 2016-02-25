@@ -1,12 +1,12 @@
 # compute the vorticity of the graph
 function vorticity(T::Array{Float64,1}, cycles::Array{Array{Int64,1},1})
 	X = Float64[]
-	for c in cycles
-		c = copy(cycles[i])
+	for cy in cycles
+		c = copy(cy)
 		push!(c,c[1])
 		s = 0.
 		for j in 1:(length(c)-1)
-			s += mod(c[j] - c[j+1] + pi, 2*pi) - pi
+			s += mod(T[c[j]] - T[c[j+1]] + pi, 2*pi) - pi
 		end
 		# entries are multiples of 2*pi
 		push!(X,round(Int,abs(s/(2*pi))))

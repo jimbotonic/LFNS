@@ -117,6 +117,20 @@ function get_adjacency_matrix(g::Graphs.AbstractGraph{Bus,Line})
 	return A
 end
 
+# get the incidence matrix
+function get_incidence_matrix(g::Graphs.AbstractGraph{Bus,Line})
+	n = length(vertices(g))
+	m = length(edges(g))
+	I = zeros(Int64,n,m)
+	for edge in edges(g)
+		s = edge.source.id
+		t = edge.target.id
+		I[s,edge.id] = 1
+		I[t,edge.id] = -1
+	end
+	return I
+end
+
 # get the principal component vertex ids
 function get_principal_component(g::Graphs.AbstractGraph{Bus,Line})
 	cs = connected_components(g)
