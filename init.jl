@@ -30,13 +30,14 @@ end
 
 
 function init_P3(U::Array{Float64,1})
+	# changes the signs of elements of U such that the element with highest value is positive, the second highest value is negative, the third is positive, and so on...
 	n = length(U)
-	# switch entry signs randomly
 	V = sortrows([U 1:n])
 	V[:,1] = V[:,1].*(2*mod(1:n,2)-1)
 	V = [V[:,2] V[:,1]]
 	V = sortrows(V)
 	P = V[:,2]
+	# make sure that sum(P)=0
 	P -= mean(P)
 #	println(P)
 	return P

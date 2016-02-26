@@ -5,7 +5,7 @@ using ArgParse, Logging
  include("solvers.jl")
  include("graphs.jl")
 
-@Logging.configure(level=INFO)
+# @Logging.configure(level=INFO)
 
 # parse program arguments
 function parse_cl()
@@ -49,7 +49,7 @@ function parse_cl()
 		"--step_num"
 			help = "number of steps for each instance when parallelizing"
 			required = false
-		"--alpha_length"
+		"--alpha_interval_length"
 			help = "length of alpha interval when parallelizing"
 			required = false
 	end
@@ -160,7 +160,7 @@ elseif solver == "KR"
 	
 	u_fn = pargs["u_fn"]
 	U = collect(load_csv_data(u_fn)[1])
-#	iter = parse(Int,pargs["iter"])
+	iter = parse(Int,pargs["iter"])
 	u_name = basename(u_fn)[1:end-4]
 
 	Pref = init_P3(U)
@@ -175,11 +175,12 @@ elseif solver == "KR"
 	states = Array{Array{Float64,1},1}()
 	
 	par = pargs["parallel"]
-	
+
+	# if par == "yes" : simulation on a subinterval of alpha : [alpha_i , alpha_i + alpha_interval_length]	
 	if par == "yes"
 		step_num = parse(Int,pargs["step_num"])
 		alpha_i = parse(Float64,pargs["alpha_i"])
-		alpha_length = parse(Float64,pargs["alpha_length"])
+		alpha_interval_length = parse(Float64,pargs["alpha_interval_length"])
 		for j in 1:step_num
 			t = alpha_i + (j-1)*alpha_length/step_num
 			if j > 1
@@ -194,6 +195,8 @@ elseif solver == "KR"
 		end
 		
 		serialize_to_file(states, "states_$u_name-$max_value-$alpha_i.jld")
+	
+	# if par != "yes" : simulation on the whole interval of alpha values
 	else
 		tic()
 		#for j in iter:-1:1
@@ -201,11 +204,9 @@ elseif solver == "KR"
 			# start at 0 (ie, "flat start")
 			t = (j-1)/iter	
 			#t = j/iter
-		#=	
 			if j > 1
 				change_T(s.g,state.T)
-			end
-		=#		
+			end	
 			@info("simulation # $j (alpha=$t max=$max_value)")
 			state = get_state(s,Pref,t,max_value)
 			@info("----------")
