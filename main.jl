@@ -34,7 +34,7 @@ function parse_cl()
 			help = "file name of the boostrap T vector"
 			required = false
 		"--iter"
-			help = "iteration number"
+			help = "iteration number, if parallel=yes : iteration number within the subinterval of alpha"
 			required = false
 		"--g_fn"
 			help = "file name for serialized graph"
@@ -178,11 +178,11 @@ elseif solver == "KR"
 
 	# if par == "yes" : simulation on a subinterval of alpha : [alpha_i , alpha_i + alpha_interval_length]	
 	if par == "yes"
-		step_num = parse(Int,pargs["step_num"])
+		# step_num = parse(Int,pargs["step_num"])
 		alpha_i = parse(Float64,pargs["alpha_i"])
 		alpha_interval_length = parse(Float64,pargs["alpha_interval_length"])
-		for j in 1:step_num
-			t = alpha_i + (j-1)*alpha_length/step_num
+		for j in 1:iter
+			t = alpha_i + (j-1)*alpha_interval_length/iter
 			if j > 1
 				change_T(s.g,state.T)
 			end
