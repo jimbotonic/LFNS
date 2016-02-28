@@ -120,8 +120,8 @@ elseif solver == "SD"
 
 	export_csv_data(state.T, "T_out.csv")
 elseif solver == "KR"
-	function get_state(s::Simulator,Pref::Array{Float64,1},alpha::Float64,max_value::Float64)
-		P = Pref*alpha*max_value
+	@everywhere function get_state(s::Simulator,P_ref::Array{Float64,1},alpha::Float64,max_value::Float64)
+		P = P_ref*alpha*max_value
 		@debug("norm P (2/Inf): ", norm(P,2), "/", norm(P,Inf))
 		change_P(s.g,P)
 		return simulation(s)
@@ -163,7 +163,7 @@ elseif solver == "KR"
 	iter = parse(Int,pargs["iter"])
 	u_name = basename(u_fn)[1:end-4]
 
-	Pref = init_P3(U)
+	P_ref = init_P3(U)
 	
 	# if we have an initial bootstraping vector T
 	bt_fn = pargs["bt_fn"]
@@ -172,12 +172,31 @@ elseif solver == "KR"
 		change_T(s.g,bT)
 	end
 
+	# array of computed states 
 	states = Array{Array{Float64,1},1}()
-	
-	par = pargs["parallel"]
 
-	# if par == "yes" : simulation on a subinterval of alpha : [alpha_i , alpha_i + alpha_interval_length]	
-	if par == "yes"
+	# parallel mode	
+	par = parse(Int,pargs["parallel"])
+	
+	# no parallelization (simulation on the whole interval of alpha values)
+	if par == 1
+		tic()
+		for j in 1:iter
+			# start at 0 (ie, "flat start")
+			t = (j-1)/iter	
+			if j > 1
+				change_T(s.g,state.T)
+			end	
+			@info("simulation # $j (alpha=$t max=$max_value)")
+			state = get_state(s,P_ref,t,max_value)
+			@info("----------")
+			
+			push!(states,state.T)
+		end
+		toc()
+		serialize_to_file(states, "states_$u_name-$iter-$max_value.jld")
+	# simulation on a subinterval of alpha : [alpha_i , alpha_i + alpha_interval_length]	
+	elseif par == 2
 		# step_num = parse(Int,pargs["step_num"])
 		alpha_i = parse(Float64,pargs["alpha_i"])
 		alpha_interval_length = parse(Float64,pargs["alpha_interval_length"])
@@ -187,35 +206,17 @@ elseif solver == "KR"
 				change_T(s.g,state.T)
 			end
 			@info("simulation # $j (alpha=$t max=$max_value)")
-			state = get_state(s,Pref,t,max_value)
-		
+			state = get_state(s,P_ref,t,max_value)
 			@info("----------")
 			
 			push!(states,state.T)
 		end
 		
 		serialize_to_file(states, "states_$u_name-$max_value-$alpha_i.jld")
-	
-	# if par != "yes" : simulation on the whole interval of alpha values
-	else
+	elseif par == 3
+		addprocs(24)
 		tic()
-		#for j in iter:-1:1
-		for j in 1:iter
-			# start at 0 (ie, "flat start")
-			t = (j-1)/iter	
-			#t = j/iter
-			if j > 1
-				change_T(s.g,state.T)
-			end	
-			@info("simulation # $j (alpha=$t max=$max_value)")
-			state = get_state(s,Pref,t,max_value)
-			@info("----------")
-			
-			push!(states,state.T)
-			#export_fn = "T_" * "$iter" * "_" * "$ssolver" * "_" * "$epsilon" * "_" * "$u_name" * ".csv"
-    			#export_csv_data(state.T, export_fn)
-		end
+
 		toc()
-		serialize_to_file(states, "states_$u_name-$iter-$max_value.jld")
 	end
 end
