@@ -8,29 +8,31 @@ function init_unif_dist(n::Int64)
 	return U/sum(U)
 end
 
-# initialize P vector with entry values taken uniformally at random in [-alpha*max_value, alpha*max_value]
+# initialize P vector with entry values taken uniformally at random in [-1, 1]
 #
 # U is assumed to be a distribution
-# alpha belongs to [0,1]
-function init_P1(U::Array{Float64,1}, alpha::Float64, max_value::Float64)
-	return (U*2-1)*alpha*max_value
+function init_P1(U::Array{Float64,1})
+	return (U*2-1)
 end
 
-# initialize P vector with entry values taken uniformally at random in [-alpha*max_value, alpha*max_value]
+# initialize P vector with entry values taken uniformally at random in [-1, 1]
 #
+# switch entries sign at random
 # U is assumed to be a distribution
-# alpha belongs to [0,1]
 function init_P2(U::Array{Float64,1})
 	n = length(U)
 	# switch entry signs randomly
 	P = rand([-1,1],n).*U
-	P -= sum(P)/n
+	P -= mean(P)
 	return P
 end
 
 
+# initialize P vector with entry values taken uniformally at random in [-1, 1]
+#
+# switch entries sign such that the highest value is positive, the 2nd highest value is negative, the 3rd is positive, ...
+# U is assumed to be a distribution
 function init_P3(U::Array{Float64,1})
-	# changes the signs of elements of U such that the element with highest value is positive, the second highest value is negative, the third is positive, and so on...
 	n = length(U)
 	V = sortrows([U 1:n])
 	V[:,1] = V[:,1].*(2*mod(1:n,2)-1)
@@ -39,16 +41,15 @@ function init_P3(U::Array{Float64,1})
 	P = V[:,2]
 	# make sure that sum(P)=0
 	P -= mean(P)
-#	println(P)
 	return P
 end
 
 # generate a cycle with one producer at vertex 1 and one consumer at a chosen vertex
+#
 ## INPUT
 # N: length of the cycle
 # ic: index of the vertex of the consumer
 # p: produced/consumed power
-#
 function generate_cycle(N::Int,ic::Int,p::Float64)
 	vs = Bus[]
 	es = Line[]
@@ -70,10 +71,10 @@ end
 
 # generate a double cycle with a bus where p is injected
 # producer and consumer are located at the degree 3 vertices
+#
 ## INPUT
 # l,c,r: number of VERTICES on each branch of the double cycle
 # p: produced/consumed power
-#
 function generate_double_cycle(l::Int,c::Int,r::Int,p::Float64)
 	vs = Bus[]
 	es = Line[]	
