@@ -1,4 +1,4 @@
-using ArgParse, Logging
+using ArgParse, Logging, ConfParser
 
 include("init.jl")
 include("data.jl")
@@ -59,6 +59,10 @@ end
 # parse arguments
 pargs = parse_cl()
 solver = pargs["solver"]
+
+# loading config file
+conf = ConfParse("config.ini")
+parse_conf!(conf)
 
 if solver == "NR"
 	ftype = pargs["ft"]
@@ -131,26 +135,25 @@ elseif solver == "KR"
 	n = length(vertices(g))
 	
 	# initialize simulation parameters
-	sb = 1.
-	max_iter = round(Int64,1e6)
-	
-	epsilon = 1e-6
+	sb = parse(Float64,retrieve(conf,"solvers","base_voltage"))
+	max_iter = round(Int,parse(Float64,retrieve(conf,"solvers","max_iter")))
+	epsilon = parse(Float64,retrieve(conf,"solvers","epsilon"))
 	# NB: Eurogrid PC has 6021 nodes and a max degree of 17
 	# critical value is between 800 and 850
-	max_value = 800.
+	max_value = parse(Float64,retrieve(conf,"eurogrid","max_value"))
 
 	ssolver = pargs["ssolver"]
 	if ssolver == "SD"
 		o_args = Dict{Symbol,Any}()
-		o_args[:d] = 1
+		o_args[:d] = parse(Int,retrieve(conf,"sd","d"))
 		s = Simulator(g,SD_solver,o_args,sb,epsilon,max_iter)
 	elseif ssolver == "RK"
 		o_args = Dict{Symbol,Any}()
-		o_args[:h] = .12
+		o_args[:h] = parse(Float64,retrieve(conf,"rk","h"))
 		s = Simulator(g,RK_solver1,o_args,sb,epsilon,max_iter)
 	elseif ssolver == "RK2"
 		o_args = Dict{Symbol,Any}()
-		o_args[:h] = .12
+		o_args[:h] = parse(Float64,retrieve(conf,"rk","h"))
 		s = Simulator(g,RK_solver2,o_args,sb,epsilon,max_iter)
 	end
 
@@ -161,6 +164,7 @@ elseif solver == "KR"
 	u_fn = pargs["u_fn"]
 	U = collect(load_csv_data(u_fn)[1])
 	iter = parse(Int,pargs["iter"])
+	# remove file extension from base name
 	u_name = basename(u_fn)[1:end-4]
 
 	P_ref = init_P3(U)
@@ -217,8 +221,8 @@ elseif solver == "KR"
 		serialize_to_file(states, "states_$u_name-$max_value-$alpha_i.jld")
 	elseif par == 3
 		# number of processes to be used
-		nprocs = parse(Int,pargs["nprocs"])
-		addprocs(nprocs)
+		npcs = parse(Int,pargs["nprocs"])
+		addprocs(npcs)
 
 		# include the required code
 		@everywhere include("init.jl")
