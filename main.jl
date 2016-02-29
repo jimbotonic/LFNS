@@ -124,7 +124,7 @@ elseif solver == "KR"
 		P = P_ref*alpha*max_value
 		@debug("norm P (2/Inf): ", norm(P,2), "/", norm(P,Inf))
 		change_P(s.g,P)
-		return simulation(s)
+		return t,simulation(s)
 	end
 	
 	g = load_serialized(pargs["g_fn"])
@@ -173,7 +173,7 @@ elseif solver == "KR"
 	end
 
 	# array of computed states 
-	states = Array{Array{Float64,1},1}()
+	states = Dict{Int,Array{Float64,1}}()
 
 	# parallel mode	
 	par = parse(Int,pargs["parallel"])
@@ -188,15 +188,16 @@ elseif solver == "KR"
 				change_T(s.g,state.T)
 			end	
 			@info("simulation # $j (alpha=$t max=$max_value)")
-			state = get_state(s,P_ref,t,max_value)
+			i,state = get_state(s,P_ref,t,max_value)
 			@info("----------")
 			
-			push!(states,state.T)
+			states[i] = state.T
 		end
 		toc()
 		serialize_to_file(states, "states_$u_name-$iter-$max_value.jld")
 	# simulation on a subinterval of alpha : [alpha_i , alpha_i + alpha_interval_length]	
 	elseif par == 2
+		tic()
 		# step_num = parse(Int,pargs["step_num"])
 		alpha_i = parse(Float64,pargs["alpha_i"])
 		alpha_interval_length = parse(Float64,pargs["alpha_interval_length"])
@@ -206,17 +207,17 @@ elseif solver == "KR"
 				change_T(s.g,state.T)
 			end
 			@info("simulation # $j (alpha=$t max=$max_value)")
-			state = get_state(s,P_ref,t,max_value)
+			i,state = get_state(s,P_ref,t,max_value)
 			@info("----------")
 			
-			push!(states,state.T)
+			states[i] = state.T
 		end
-		
+		toc()
 		serialize_to_file(states, "states_$u_name-$max_value-$alpha_i.jld")
 	elseif par == 3
-		addprocs(24)
+		addprocs(4)
 		tic()
-
+		results = pmap(get_state,Simulator[s for j in 1:iter],Array{Float64,1}[P_ref for j in 1:iter],Float64[(j-1)/iter for j in 1:iter],Float64[max_value for j in 1:iter])	
 		toc()
 	end
 end
