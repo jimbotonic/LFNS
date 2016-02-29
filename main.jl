@@ -151,10 +151,6 @@ elseif solver == "KR"
 		o_args = Dict{Symbol,Any}()
 		o_args[:h] = parse(Float64,retrieve(conf,"rk","h"))
 		s = Simulator(g,RK_solver1,o_args,sb,epsilon,max_iter)
-	elseif ssolver == "RK2"
-		o_args = Dict{Symbol,Any}()
-		o_args[:h] = parse(Float64,retrieve(conf,"rk","h"))
-		s = Simulator(g,RK_solver2,o_args,sb,epsilon,max_iter)
 	end
 
 	# generate a uniform distribution
@@ -177,7 +173,7 @@ elseif solver == "KR"
 	end
 
 	# array of computed states 
-	states = Dict{Float64,Array{Float64,1}}()
+	states = Dict{Float64,State}()
 
 	# parallel mode	
 	par = parse(Int,pargs["parallel"])
@@ -196,7 +192,7 @@ elseif solver == "KR"
 			state = get_state(s,P_ref,t)
 			@info("----------")
 			
-			states[t] = state.T
+			states[t] = state
 		end
 		toc()
 		serialize_to_file(states, "states_$u_name-$iter-$max_value.jld")
@@ -215,7 +211,7 @@ elseif solver == "KR"
 			state = get_state(s,P_ref,t)
 			@info("----------")
 			
-			states[t] = state.T
+			states[t] = state
 		end
 		toc()
 		serialize_to_file(states, "states_$u_name-$max_value-$alpha_i.jld")
@@ -240,7 +236,7 @@ elseif solver == "KR"
 		toc()
 		
 		for r in results
-			states[r[1]] = r[2].T 
+			states[r[1]] = r[2]
 		end		
 		serialize_to_file(states, "states_$u_name-$iter-$max_value.jld")
 	end
