@@ -63,9 +63,12 @@ end
 ## OUTPUT
 # l2: greatest non-null real part of the stability matrix eigenvalues
 function get_lambda2(T::Array{Float64,1}, Y::SparseMatrixCSC{Complex{Float64},Int64}, epsilon::Float64=1e-12)
+	tic()
 	# get stability matrix
 	M = get_stability_matrix(T,Y)
-	evs = eigvals(M)
+	n = size(M)[1]
+	M = Symmetric(M)
+	evs = eigvals(M,(n-1:n))
 	l1 = evs[end]
 	
 	if abs(l1) > epsilon
@@ -73,6 +76,7 @@ function get_lambda2(T::Array{Float64,1}, Y::SparseMatrixCSC{Complex{Float64},In
 	else
 		return evs[end-1]
 	end
+	toc()
 end
 
 # computes the flows at each node and on every line
@@ -102,3 +106,4 @@ function flow_test(T::Array{Float64,1}, Y::SparseMatrixCSC{Complex{Float64},Int6
 	
 	return P,F,L
 end
+

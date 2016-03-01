@@ -464,3 +464,20 @@ function load_graph(P_fn::AbstractString, Y_fn::AbstractString)
 	return graph(vertices, edges, is_directed=false)
 end
 
+# extract data from simulation results .jld file
+#
+# INPUT
+# states_fn: path to the results file
+#
+# OUTPUT
+# alpha: alpha values
+# T: theta values
+
+function extract_data(states_fn::AbstractString)
+	states = load_serialized(states_fn)
+	
+	alpha = collect(keys(states))
+	T = collect(values(states))
+	
+	return alpha,T
+end
