@@ -139,7 +139,7 @@ elseif solver == "KR"
 	max_iter = round(Int,parse(Float64,retrieve(conf,"solvers","max_iter")))
 	epsilon = parse(Float64,retrieve(conf,"solvers","epsilon"))
 	# NB: Eurogrid PC has 6021 nodes and a max degree of 17
-	# critical value is between 800 and 850
+	# critical value is between 0.24 and 0.255
 	max_value = parse(Float64,retrieve(conf,"eurogrid","max_value"))
 
 	ssolver = pargs["ssolver"]
@@ -219,20 +219,19 @@ elseif solver == "KR"
 		# number of processes to be used
 		npcs = parse(Int,pargs["nprocs"])
 		addprocs(npcs)
-
 		# include the required code
 		@everywhere include("init.jl")
 		@everywhere include("data.jl")
 		@everywhere include("solvers.jl")
 		@everywhere include("graphs.jl")
-		@everywhere function get_state(s::Simulator,P_ref::Array{Float64,1},t::Float64)
-			P = P_ref*t
+		@everywhere function get_state(s::Simulator,P_ref::Array{Float64,1},alpha::Float64)
+			P = P_ref*alpha
 			@debug("norm P (2/Inf): ", norm(P,2), "/", norm(P,Inf))
 			change_P(s.g,P)
-			return t,simulation(s)
+			return alpha,simulation(s)
 		end
 		tic()
-		@sync results = pmap(get_state,Simulator[s for j in 1:iter],Array{Float64,1}[P_ref for j in 1:iter],Float64[((j-1)/iter)*max_value for j in 1:iter])	
+		@sync results = pmap(get_state,Simulator[s for j in 1:iter],Array{Float64,1}[P_ref*max_value for j in 1:iter],Float64[((j-1)/iter) for j in 1:iter])	
 		toc()
 		
 		for r in results

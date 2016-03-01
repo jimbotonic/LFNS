@@ -19,11 +19,13 @@ end
 #
 # switch entries sign at random
 # U is assumed to be a distribution
+# absolute value of P's greatest value is 1
 function init_P2(U::Array{Float64,1})
 	n = length(U)
 	# switch entry signs randomly
 	P = rand([-1,1],n).*U
 	P -= mean(P)
+	P *= 1/maximum(abs(P))
 	return P
 end
 
@@ -32,6 +34,7 @@ end
 #
 # switch entries sign such that the highest value is positive, the 2nd highest value is negative, the 3rd is positive, ...
 # U is assumed to be a distribution
+# absolute value of P's greatest value is 1
 function init_P3(U::Array{Float64,1})
 	n = length(U)
 	V = sortrows([U 1:n])
@@ -41,6 +44,7 @@ function init_P3(U::Array{Float64,1})
 	P = V[:,2]
 	# make sure that sum(P)=0
 	P -= mean(P)
+	P *= 1/maximum(abs(P))
 	return P
 end
 
