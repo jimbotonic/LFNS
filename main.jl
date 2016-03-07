@@ -126,7 +126,7 @@ elseif solver == "SD"
 elseif solver == "KR"
 	function get_state(s::Simulator,P_ref::Array{Float64,1},alpha::Float64,max_value::Float64=1.)
 		P = P_ref*alpha*max_value
-		@debug("norm P (2/Inf): ", norm(P,2), "/", norm(P,Inf))
+		# @debug("norm P (2/Inf): ", norm(P,2), "/", norm(P,Inf))
 		change_P(s.g,P)
 		return simulation(s)
 	end
@@ -196,7 +196,7 @@ elseif solver == "KR"
 			states[t] = state
 		end
 		toc()
-		serialize_to_file(states, "states_$u_name-$niter.jld")
+		serialize_to_file(states, "states_$u_name-$start_iter-$end_iter-$niter.jld")
 	elseif par == 2
 		# number of processes to be used
 		npcs = parse(Int,pargs["nprocs"])
@@ -208,7 +208,7 @@ elseif solver == "KR"
 		@everywhere include("graphs.jl")
 		@everywhere function get_state(s::Simulator,P_ref::Array{Float64,1},alpha::Float64,max_value::Float64=1.)
 			P = P_ref*alpha*max_value
-			@debug("norm P (2/Inf): ", norm(P,2), "/", norm(P,Inf))
+			# @debug("norm P (2/Inf): ", norm(P,2), "/", norm(P,Inf))
 			change_P(s.g,P)
 			return alpha,simulation(s)
 		end
@@ -218,11 +218,12 @@ elseif solver == "KR"
 		toc()
 		
 		for r in results
+			alpha,state = r
 			# if the simulation converged, add the state
-			if r[2].n_iter < max_iter
-				states[r[1]] = r[2]
+			if state.n_iter < max_iter
+				states[alpha] = state
 			end
 		end		
-		serialize_to_file(states, "states_$u_name-$niter.jld")
+		serialize_to_file(states, "states_$u_name-$start_iter-$end_iter-$niter.jld")
 	end
 end
