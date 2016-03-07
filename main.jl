@@ -33,7 +33,7 @@ function parse_cl()
 		"--bt_fn"
 			help = "file name of the boostrap T vector"
 			required = false
-		"--niter"
+		"--n_iter"
 			help = "maximum number of iterations"
 			required = false
 		"--start_iter"
@@ -124,8 +124,8 @@ elseif solver == "SD"
 
 	export_csv_data(state.T, "T_out.csv")
 elseif solver == "KR"
-	function get_state(s::Simulator,P_ref::Array{Float64,1},alpha::Float64)
-		P = P_ref*alpha
+	function get_state(s::Simulator,P_ref::Array{Float64,1},alpha::Float64,max_value::Float64=1.)
+		P = P_ref*alpha*max_value
 		@debug("norm P (2/Inf): ", norm(P,2), "/", norm(P,Inf))
 		change_P(s.g,P)
 		return simulation(s)
@@ -158,7 +158,7 @@ elseif solver == "KR"
 	
 	u_fn = pargs["u_fn"]
 	U = collect(load_csv_data(u_fn)[1])
-	niter = parse(Int,pargs["niter"])
+	niter = parse(Int,pargs["n_iter"])
 	start_iter = parse(Int,pargs["start_iter"])
 	end_iter = parse(Int,pargs["end_iter"])
 	# remove file extension from base name
@@ -206,8 +206,8 @@ elseif solver == "KR"
 		@everywhere include("data.jl")
 		@everywhere include("solvers.jl")
 		@everywhere include("graphs.jl")
-		@everywhere function get_state(s::Simulator,P_ref::Array{Float64,1},alpha::Float64)
-			P = P_ref*alpha
+		@everywhere function get_state(s::Simulator,P_ref::Array{Float64,1},alpha::Float64,max_value::Float64=1.)
+			P = P_ref*alpha*max_value
 			@debug("norm P (2/Inf): ", norm(P,2), "/", norm(P,Inf))
 			change_P(s.g,P)
 			return alpha,simulation(s)
