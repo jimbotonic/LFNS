@@ -33,7 +33,7 @@ function parse_cl()
 		"--bt_fn"
 			help = "file name of the boostrap T vector"
 			required = false
-		"--n_iter"
+		"--niter"
 			help = "maximum number of iterations"
 			required = false
 		"--start_iter"
@@ -158,7 +158,7 @@ elseif solver == "KR"
 	
 	u_fn = pargs["u_fn"]
 	U = collect(load_csv_data(u_fn)[1])
-	niter = parse(Int,pargs["n_iter"])
+	niter = parse(Int,pargs["niter"])
 	start_iter = parse(Int,pargs["start_iter"])
 	end_iter = parse(Int,pargs["end_iter"])
 	# remove file extension from base name
@@ -214,12 +214,12 @@ elseif solver == "KR"
 		end
 		tic()
 		r = start_iter:end_iter
-		@sync results = pmap(get_state,Simulator[s for j in start_iter:end_iter],Array{Float64,1}[P_ref for j in start_iter:end_iter],Float64[((j-1)/iter) for j in start_iter:max_iter])	
+		@sync results = pmap(get_state,Simulator[s for j in start_iter:end_iter],Array{Float64,1}[P_ref for j in start_iter:end_iter],Float64[((j-1)/niter) for j in start_iter:max_iter])	
 		toc()
 		
 		for r in results
 			# if the simulation converged, add the state
-			if r.n_iter < max_iter
+			if r[2].n_iter < max_iter
 				states[r[1]] = r[2]
 			end
 		end		
