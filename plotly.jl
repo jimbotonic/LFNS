@@ -74,9 +74,9 @@ function plot_heatmap(bin_matrix, filename::String, log_scale=false, layout=None
 	]
 
 	if layout != None
-		response = Plotly.plot([data], ["layout" => layout, "filename" => filename, "fileopt" => "overwrite"])
+		response = Plotly.plot(collect(data), ["layout" => layout, "filename" => filename, "fileopt" => "overwrite"])
 	else
-		response = Plotly.plot([data], ["filename" => filename, "fileopt" => "overwrite"])
+		response = Plotly.plot(collect(data), ["filename" => filename, "fileopt" => "overwrite"])
 	end
 	plot_url = response["url"]
 end
@@ -96,9 +96,9 @@ function plot_scatter_data(X::Array{Float64,1},Y::Array{Float64,1}, ptype::Strin
 	]
 
 	if layout != None
-		response = Plotly.plot([data], ["layout" => layout, "filename" => filename, "fileopt" => "overwrite"])
+		response = Plotly.plot(collect(data), ["layout" => layout, "filename" => filename, "fileopt" => "overwrite"])
 	else
-		response = Plotly.plot([data], ["filename" => filename, "fileopt" => "overwrite"])
+		response = Plotly.plot(collect(data), ["filename" => filename, "fileopt" => "overwrite"])
 	end
 	plot_url = response["url"]
 end
