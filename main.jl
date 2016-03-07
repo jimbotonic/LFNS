@@ -193,7 +193,7 @@ elseif solver == "KR"
 			state = get_state(s,P_ref,alpha)
 			@info("----------")
 			
-			states[t] = state
+			states[alpha] = state
 		end
 		toc()
 		serialize_to_file(states, "states_$u_name-$start_iter-$end_iter-$niter.jld")
