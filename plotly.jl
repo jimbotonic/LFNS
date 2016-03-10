@@ -43,7 +43,7 @@ end
 
 ### layouts
 
-function get_layout(title::String,xname::String,yname::String,xtype::String,ytype::String)
+function get_layout(title::AbstractString,xname::AbstractString,yname::AbstractString,xtype::AbstractString,ytype::AbstractString)
 	return [
   "title" => title,
   "xaxis" => [
@@ -62,7 +62,7 @@ end
 
 ### plotting functions
 
-function plot_heatmap(bin_matrix, filename::String, log_scale=false, layout=None)
+function plot_heatmap(bin_matrix, filename::AbstractString, log_scale=false, layout=None)
 	if log_scale 
 		bin_matrix = log(bin_matrix)
 	end
@@ -82,7 +82,7 @@ function plot_heatmap(bin_matrix, filename::String, log_scale=false, layout=None
 end
 
 # send scatter plot data (one trace)
-function plot_scatter_data(X::Array{Float64,1},Y::Array{Float64,1}, ptype::String, mode::String, filename::String, layout=None)
+function plot_scatter_data(X::Array{Float64,1},Y::Array{Float64,1}, ptype::AbstractString, mode::AbstractString, filename::AbstractString, layout=None)
 	data = [
 	  [
 	    "x" => X, 
@@ -107,12 +107,12 @@ end
 type scatter_trace
 	X::Array{Float64,1}
 	Y::Array{Float64,1}
-	name::String
+	name::AbstractString
 end
 
 # generate plotting data from an array of scatter traces
-function get_scatter_data(traces::Array{scatter_trace,1},ptype::String,mode::String)
-	data = Dict{String,Any}[]
+function get_scatter_data(traces::Array{scatter_trace,1},ptype::AbstractString,mode::AbstractString)
+	data = Dict{AbstractString,Any}[]
 	for t in traces
 		ptrace = [
 			"x" => t.X,
@@ -127,7 +127,7 @@ function get_scatter_data(traces::Array{scatter_trace,1},ptype::String,mode::Str
 end
 
 # send scatter plot data (multiple traces)
-function plot_scatter_data(traces::Array{scatter_trace,1}, ptype::String, mode::String, filename::String, layout=None)
+function plot_scatter_data(traces::Array{scatter_trace,1}, ptype::AbstractString, mode::AbstractString, filename::AbstractString, layout=None)
 	data = get_scatter_data(traces,ptype,mode)
 	if layout != None
 		response = Plotly.plot([data], ["layout" => layout, "filename" => filename, "fileopt" => "overwrite"])
@@ -140,12 +140,12 @@ end
 # scatter trace type
 type hist_trace
 	X::Array{Float64,1}
-	name::String
+	name::AbstractString
 end
 
 # generate plotting data from an array of histogram traces
 function get_hist_data(traces::Array{hist_trace,1})
-	data = Dict{String,Any}[]
+	data = Dict{AbstractString,Any}[]
 	for t in traces
 		ptrace = [
 			"x" => t.X,
@@ -160,7 +160,7 @@ function get_hist_data(traces::Array{hist_trace,1})
 end
 
 # plot 2 histograms
-function plot_histograms(traces::Array{hist_trace,1}, filename::String, layout=None)
+function plot_histograms(traces::Array{hist_trace,1}, filename::AbstractString, layout=None)
 	data = get_hist_data(traces)
 
 	#layout = ["title" => "Core Colinks Distribution",
