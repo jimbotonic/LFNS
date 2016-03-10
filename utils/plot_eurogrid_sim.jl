@@ -84,4 +84,4 @@ for r in results
 end		
 
 # plot data
-plot_scatter_data(X,Y,"scatter","lines+markers", "eurogrid_lambda2", None)
+plot_scatter_data(X,Y,"scatter","markers", "eurogrid_lambda2", None)

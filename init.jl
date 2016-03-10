@@ -8,33 +8,36 @@ function init_unif_dist(n::Int64)
 	return U/sum(U)
 end
 
-# initialize P vector with entry values taken uniformally at random in [-1, 1]
+# initialize P vector with entry values in [-1, 1] and absolute value of greatest value equal to 1
 #
-# U is assumed to be a distribution
+# NB: U is assumed to be a distribution
 function init_P1(U::Array{Float64,1})
-	return (U*2-1)
+	P = U*2-1
+	# make sure that sum(P)=0
+	P -= mean(P)
+	P *= 1/maximum(abs(P))
+	return P
 end
 
-# initialize P vector with entry values taken uniformally at random in [-1, 1]
+# initialize P vector with entry values in [-1, 1] and absolute value of greatest value equal to 1
 #
 # switch entries sign at random
-# U is assumed to be a distribution
-# absolute value of P's greatest value is 1
+# NB: U is assumed to be a distribution
 function init_P2(U::Array{Float64,1})
 	n = length(U)
 	# switch entry signs randomly
 	P = rand([-1,1],n).*U
+	# make sure that sum(P)=0
 	P -= mean(P)
 	P *= 1/maximum(abs(P))
 	return P
 end
 
 
-# initialize P vector with entry values taken uniformally at random in [-1, 1]
+# initialize P vector with entry values in [-1, 1] and absolute value of greatest value equal to 1
 #
 # switch entries sign such that the highest value is positive, the 2nd highest value is negative, the 3rd is positive, ...
-# U is assumed to be a distribution
-# absolute value of P's greatest value is 1
+# NB: U is assumed to be a distribution
 function init_P3(U::Array{Float64,1})
 	n = length(U)
 	V = sortrows([U 1:n])
