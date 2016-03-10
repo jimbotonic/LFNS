@@ -46,30 +46,42 @@ end
 X = Float64[]
 Y = Float64[]
 
-# plot lambda 2
+# plot vorticity
 for k in keys(states)
 	T = states[k].T
 	V = vorticity(T, cycles)
 	push!(X,k)
-	push!(Y,mean(V))
-	@debug("mean V: ", mean(V))
+	push!(Y,var(V))
+	#@debug("mean V: ", mean(V))
 end
 
 # plot data
 plot_scatter_data(X,Y,"scatter","markers", "eurogrid_vorticity", None)
-quit()
 
 X = Float64[]
 Y = Float64[]
 
 # plot lambda 2
-for k in keys(states)
-	T = states[k].T
-	l2 = get_lambda2(T, sp.Y)
-	push!(X,k)
-	push!(Y,l2)
-	@debug("l2: $l2")
+#for k in keys(states)
+#	T = states[k].T
+#	l2 = get_lambda2(T, sp.Y)
+#	push!(X,k)
+#	push!(Y,l2)
+#	#@debug("l2: $l2")
+#end
+
+@everywhere function get_par_lambda2(k::Float64,states::Dict{Float64,Array{Float64,1}},Y::SparseMatrixCSC{Complex{Float64},Int64})
+	return k,get_lambda2(states[k].T,Y)
 end
+
+tic()
+@sync results = pmap(get_par_lambda2,Float64[k for k in keys(states)],Dict{Float64,Array{Float64,1}}[states for k in keys(states)],SparseMatrixCSC{Complex{Float64},Int64}[sp.Y for k in keys(states)])	
+toc()
+
+for r in results
+	push!(X,r[1])
+	push!(Y,r[2])
+end		
 
 # plot data
 plot_scatter_data(X,Y,"scatter","lines+markers", "eurogrid_lambda2", None)
