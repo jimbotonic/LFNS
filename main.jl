@@ -169,19 +169,24 @@ elseif solver == "KR"
 	if dist_type == "rand"
 		U = init_rand_dist(n)
 		#export_csv_data(U, "U.csv")
+
+		u_name = "rand"
 	elseif dist_type == "unif"
 		U = init_unif_dist(n)
 		#export_csv_data(U, "U.csv")
+
+		u_name = "unif"
 	else
 		u_fn = pargs["u_fn"]
 		U = collect(load_csv_data(u_fn)[1])
+
+		# remove file extension from base name
+		u_name = basename(u_fn)[1:end-4]
 	end
 
 	niter = parse(Int,pargs["niter"])
 	start_iter = parse(Int,pargs["start_iter"])
 	end_iter = parse(Int,pargs["end_iter"])
-	# remove file extension from base name
-	u_name = basename(u_fn)[1:end-4]
 
 	# rescale distribution
 	P_ref = init_P3(U)
