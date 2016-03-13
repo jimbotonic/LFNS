@@ -78,12 +78,13 @@ else
 	@everywhere include("../simulator.jl")
 	@everywhere include("../metrics.jl")
 	@everywhere include("../plotly.jl")
-	@everywhere function get_par_lambda2(k::Float64,states::Dict{Float64,Array{Float64,1}},Y::SparseMatrixCSC{Complex{Float64},Int64})
-		return k,get_lambda2(states[k].T,Y)
+	@everywhere function get_par_lambda2(k::Float64,T::Array{Float64,1},Y::SparseMatrixCSC{Complex{Float64},Int64})
+		return k,get_lambda2(T,Y)
 	end
 
+	kstates = keys(states)
 	tic()
-	@sync results = pmap(get_par_lambda2,collect(keys(states)),Dict{Float64,State}[states for k in keys(states)],SparseMatrixCSC{Complex{Float64},Int64}[sp.Y for k in keys(states)])	
+	@sync results = pmap(get_par_lambda2,collect(kstates),Array{Float64,1}[states[k].T for k in kstates],SparseMatrixCSC{Complex{Float64},Int64}[sp.Y for k in kstates])	
 	toc()
 
 	for r in results

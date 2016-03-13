@@ -2,8 +2,13 @@ using Distributions
 
 include("graphs.jl")
 
-# initialize a uniform random distribution
+# initialize a random distribution whose entries are drawn uniformaly at random
 function init_unif_dist(n::Int64)
+	return Float64[1/n for i in 1:n]
+end
+
+# initialize a random distribution whose entries are drawn uniformaly at random
+function init_rand_dist(n::Int64)
 	U = rand(Uniform(),n)
 	return U/sum(U)
 end

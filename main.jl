@@ -34,9 +34,11 @@ function parse_cl()
 			help = "file name of the boostrap T vector"
 			required = false
 		"--niter"
+			default = "100"
 			help = "maximum number of iterations"
 			required = false
 		"--start_iter"
+			default = "1"
 			help = "starting iteration number"
 			required = false
 		"--end_iter"
@@ -50,7 +52,16 @@ function parse_cl()
 			help = "1: no parallelization | 2: parallelization"
 			required = false
 		"--nprocs"
+			default = "40"
 			help = "# of processes to allocate for parallelization"
+			required = false
+		"--run_id"
+			default = "1"
+			help = "numbering of the run if many ones are launched"
+			required = false
+		"--dist_type"
+			default = "custom"
+			help = "type of distribution to be used to initalize injections (rand | unif | custom)"
 			required = false
 	end
 	return parse_args(s)
@@ -152,12 +163,20 @@ elseif solver == "KR"
 		s = Simulator(g,RK_solver1,o_args,sb,epsilon,max_iter)
 	end
 
-	# generate a uniform distribution
-	#U = init_unif_dist(n)
-	#export_csv_data(U, "U.csv")
+	run_id = pargs["run_id"]
+	dist_type = pargs["dist_type"]
 	
-	u_fn = pargs["u_fn"]
-	U = collect(load_csv_data(u_fn)[1])
+	if dist_type == "rand"
+		U = init_rand_dist(n)
+		#export_csv_data(U, "U.csv")
+	elseif dist_type == "unif"
+		U = init_unif_dist(n)
+		#export_csv_data(U, "U.csv")
+	else
+		u_fn = pargs["u_fn"]
+		U = collect(load_csv_data(u_fn)[1])
+	end
+
 	niter = parse(Int,pargs["niter"])
 	start_iter = parse(Int,pargs["start_iter"])
 	end_iter = parse(Int,pargs["end_iter"])
@@ -224,6 +243,6 @@ elseif solver == "KR"
 				states[alpha] = state
 			end
 		end		
-		serialize_to_file(states, "states_$u_name-$start_iter-$end_iter-$niter.jld")
+		serialize_to_file(states, "states_$u_name-$start_iter-$end_iter-$niter($run_id).jld")
 	end
 end
