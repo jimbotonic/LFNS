@@ -87,6 +87,7 @@ else
 	@sync results = pmap(get_par_lambda2,collect(kstates),Array{Float64,1}[states[k].T for k in kstates],SparseMatrixCSC{Complex{Float64},Int64}[sp.Y for k in kstates])	
 	toc()
 
+	@info("# results: ", length(results))
 	for r in results
 		push!(X,r[1])
 		push!(Y,r[2])
