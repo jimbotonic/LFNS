@@ -80,6 +80,113 @@ function generate_cycle(N::Int,ic::Int,p::Float64)
 	return graph(vs, es, is_directed=false)
 end
 
+# generate a flat square lattice
+#
+## INPUT
+# n,m: width and height of the lattice
+function generate_sq_lattice(width::Int,height::Int)
+	vs = Bus[]
+	es = Line[]	
+	ecounter = 1
+
+	for i in 1:n*m
+		push!(vs,Bus(i,0.,0.))
+	end
+
+	# rows 
+	for i in 0:(m-1)
+		for j in 1:(n-1)
+			push!(es, Line(ecounter,vs[i*n+j],vs[i*n+j+1],-1.im))
+			ecounter += 1
+		end
+	end
+
+	# columns
+	for i in 1:n
+		for j in 0:(m-2)
+			push!(es, Line(ecounter,vs[j*n+i],vs[(j+1)*n+i],-1.im))
+			ecounter += 1
+		end
+	end
+	
+	return graph(vs, es, is_directed=false)
+end
+
+# generate a square lattice on the sphere
+#
+## INPUT
+# n: size of the cubic faces
+function generate_sq_lattice_on_sphere(size::Int)
+	vs = Bus[]
+	es = Line[]	
+	ecounter = 1
+
+	# add 4 faces
+	for i in 1:4n^2
+		push!(vs,Bus(i,0.,0.))
+	end
+
+	# connect the 4 faces
+	#
+	# rows 
+	for i in 0:(4n-1)
+		for j in 1:(n-1)
+			push!(es, Line(ecounter,vs[i*n+j],vs[i*n+j+1],-1.im))
+			ecounter += 1
+		end
+	end
+
+	# columns
+	for i in 1:n
+		for j in 0:(4n-2)
+			push!(es, Line(ecounter,vs[j*n+i],vs[(j+1)*n+i],-1.im))
+			ecounter += 1
+		end
+	end
+	
+	# add 2 more faces
+	for i in 1:2*n^2
+		push!(vs,Bus(i,0.,0.))
+	end
+
+	# connect the 2 faces
+	#
+	# rows 
+	for i in 0:(n-1)
+		for j in 1:(n-1)
+			push!(es, Line(ecounter,vs[4n^2+i*n+j],vs[4n^2+i*n+j+1],-1.im))
+			push!(es, Line(ecounter,vs[5n^2+i*n+j],vs[5n^2+i*n+j+1],-1.im))
+			ecounter += 1
+		end
+	end
+
+	# columns
+	for i in 1:n
+		for j in 0:(n-2)
+			push!(es, Line(ecounter,vs[4n^2+j*n+i],vs[4n^2+(j+1)*n+i],-1.im))
+			push!(es, Line(ecounter,vs[5n^2+j*n+i],vs[5n^2+(j+1)*n+i],-1.im))
+			ecounter += 1
+		end
+	end
+
+	# stitch face 5 and 6 with the 4 first
+	for i in 1:n
+		# up
+		push!(es, Line(ecounter,vs[4n^2+i],vs[2n^2+(i-1)*n+1],-1.im))
+		push!(es, Line(ecounter,vs[5n^2+i],vs[3n^2-(i-1)*n],-1.im))
+		# left
+		push!(es, Line(ecounter,vs[4n^2+(i-1)*n+1],vs[2n^2-i*n+1],-1.im))
+		push!(es, Line(ecounter,vs[5n^2+(i-1)*n+1],vs[3n^2+i*n],-1.im))
+		# right
+		push!(es, Line(ecounter,vs[4n^2+i*n],vs[3n^2+(i-1)*n+1],-1.im))
+		push!(es, Line(ecounter,vs[5n^2+i*n],vs[2n^2-(i-1)*n],-1.im))
+		# bottom
+		push!(es, Line(ecounter,vs[5n^2-n+i],vs[n^2-i*n+1],-1.im))
+		push!(es, Line(ecounter,vs[6n^2-n+i],vs[n^2-(i-1)*n],-1.im))
+	end
+	
+	return graph(vs, es, is_directed=false)
+end
 
 # generate a double cycle with a bus where p is injected
 # producer and consumer are located at the degree 3 vertices
@@ -98,7 +205,7 @@ function generate_double_cycle(l::Int,c::Int,r::Int,p::Float64)
 		push!(vs,Bus(i,0.,0.))
 	end
 	for i in 2:l
-		push!(es, Line(ecounter,vs[i-1],vs[i],1.im))
+		push!(es, Line(ecounter,vs[i-1],vs[i],-1.im))
 		ecounter += 1
 	end
 	# central branch (l+1):(c+l)
@@ -106,7 +213,7 @@ function generate_double_cycle(l::Int,c::Int,r::Int,p::Float64)
 		push!(vs,Bus(i,0.,0.))
 	end
 	for i in (l+2):(c+l)
-		push!(es, Line(ecounter,vs[i-1],vs[i],1.im))
+		push!(es, Line(ecounter,vs[i-1],vs[i],-1.im))
 		ecounter += 1
 	end
 	# right branch (l+c+1):(c+l+r)
@@ -114,7 +221,7 @@ function generate_double_cycle(l::Int,c::Int,r::Int,p::Float64)
 		push!(vs,Bus(i,0.,0.))
 	end
 	for i in (l+c+2):(c+l+r)
-		push!(es, Line(ecounter,vs[i-1],vs[i],1.im))
+		push!(es, Line(ecounter,vs[i-1],vs[i],-1.im))
 		ecounter += 1
 	end
 
@@ -122,18 +229,18 @@ function generate_double_cycle(l::Int,c::Int,r::Int,p::Float64)
 	push!(vs,Bus(l+c+r+1,0.,p))
 	push!(vs, Bus(l+c+r+2,0.,-p))
 
-	push!(es, Line(ecounter,vs[l+c+r+1],vs[1],1.im))
+	push!(es, Line(ecounter,vs[l+c+r+1],vs[1],-1.im))
 	ecounter += 1
-	push!(es, Line(ecounter,vs[l+c+r+1],vs[l+1],1.im))
+	push!(es, Line(ecounter,vs[l+c+r+1],vs[l+1],-1.im))
 	ecounter += 1
-	push!(es, Line(ecounter,vs[l+c+r+1],vs[l+c+1],1.im))
+	push!(es, Line(ecounter,vs[l+c+r+1],vs[l+c+1],-1.im))
 	ecounter += 1
 
-	push!(es, Line(ecounter,vs[l+c+r+2],vs[l],1.im))
+	push!(es, Line(ecounter,vs[l+c+r+2],vs[l],-1.im))
 	ecounter += 1
-	push!(es, Line(ecounter,vs[l+c+r+2],vs[l+c],1.im))
+	push!(es, Line(ecounter,vs[l+c+r+2],vs[l+c],-1.im))
 	ecounter += 1
-	push!(es, Line(ecounter,vs[l+c+r+2],vs[l+c+r],1.im))
+	push!(es, Line(ecounter,vs[l+c+r+2],vs[l+c+r],-1.im))
 
 	return graph(vs, es, is_directed=false)
 end
