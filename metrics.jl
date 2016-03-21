@@ -14,6 +14,7 @@ function vorticity(T::Array{Float64,1}, cycles::Array{Array{Int64,1},1})
 	return X
 end
 
+
 # Stability matrix
 #
 ## INPUT
@@ -27,7 +28,6 @@ end
 #
 ## OUTPUT
 # M: stability matrix
-#
 function get_stability_matrix(T::Array{Float64,1}, Y::SparseMatrixCSC{Complex{Float64},Int64}, approx_level::Int64=3)
 	B = imag(Y) 
 	G = real(Y)

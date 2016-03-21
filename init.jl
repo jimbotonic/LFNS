@@ -111,6 +111,64 @@ function generate_sq_lattice(n::Int,m::Int)
 	return graph(vs, es, is_directed=false)
 end
 
+# initialize a vector T to create vortex on square lattice
+#
+# INPUT
+# n,m: width and height of the lattice
+# i,j: position of the lower corner of the vortex (i>=2, j<=n-1)
+function create_vortex_on_sq_lattice(n::Int,m::Int,i::Int,j::Int)
+	T = zeros(Float64,n*m)
+	
+	T[(i-1)*n+j]= -(3/4)*pi # bottom-left
+	T[(i-2)*n+j]= (3/4)*pi # up-left
+	T[(i-1)*n+j+1]= -(1/4)*pi # bottom-right
+	T[(i-2)*n+j+1]= (1/4)*pi # up-right
+
+	# above
+	if i > 2
+		for k in 1:(i-2)
+			T[(k-1)*n+j] = (1/2)*pi
+			T[(k-1)*n+j+1] = (1/2)*pi
+		end
+	end
+	# below
+	if i < m
+		for k in (i+1):m
+			T[(k-1)*n+j] = -(1/2)*pi
+			T[(k-1)*n+j+1] = -(1/2)*pi
+		end
+	end
+	# left
+	if j > 1
+		for k in 1:j
+			T[(i-2)*n+k] = - pi
+			T[(i-1)*n+j+k] = - pi
+		end
+	end
+	# right (already at 0)
+
+	return T
+end
+
+# generate the contour cycle of a square lattice
+function get_sq_lattice_contour_cycle(n::Int,m::Int)
+	bcycle = Array{Int64,1}()
+
+	for j in 1:n
+		push!(bcycle,j)
+	end	
+	for i in 1:m
+		push!(bcycle,i*n)
+	end	
+	for j in 0:(n-1)
+		push!(bcycle,m*n-j)
+	end	
+	for i in 1:m
+		push!(bcycle,(m-i)*n+1)
+	end	
+	return bcycle
+end
+
 # generate a flat square lattice on a cylinder
 #
 ## INPUT
