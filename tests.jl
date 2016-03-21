@@ -1,3 +1,4 @@
+include("init.jl")
 include("data.jl")
 include("solvers.jl")
 include("graphs.jl")
@@ -106,3 +107,28 @@ error_T = chebyshev(state.T,T_ref)
 
 @test_approx_eq_eps error_V 0. 1e-4
 @test_approx_eq_eps error_T 0. 1e-4
+
+###
+# test lattice initialization
+###
+
+@info("######## Testing lattice initialization")
+
+# simple square lattice
+n = 15
+m = 25
+
+g = generate_sq_lattice(n,m)
+nv = length(vertices(g))
+ne = length(edges(g))
+
+# n*m
+@test nv == n*m
+@test ne == (n-1)*m + (m-1)*n
+
+# square lattice on the sphere
+g = generate_sq_lattice_on_sphere(n)
+
+for v in vertices(g)
+	@test out_degree(v,g) == 4 
+end

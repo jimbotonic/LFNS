@@ -153,7 +153,7 @@ end
 #
 ## INPUT
 # n,m: width and height of the lattice
-function generate_sq_lattice_on_donut(n::Int,m::Int)
+function generate_sq_lattice_on_torus(n::Int,m::Int)
 	vs = Bus[]
 	es = Line[]	
 	ecounter = 1
@@ -226,7 +226,7 @@ function generate_sq_lattice_on_sphere(n::Int)
 	end
 	
 	# add 2 more faces
-	for i in 1:2*n^2
+	for i in (4n^2+1):(4n^2+2*n^2)
 		push!(vs,Bus(i,0.,0.))
 	end
 
@@ -252,7 +252,7 @@ function generate_sq_lattice_on_sphere(n::Int)
 		end
 	end
 
-	# stitch face 5 and 6 with the 4 first
+	# stitch face 5 and 6 with the 4 first faces
 	for i in 1:n
 		# up
 		push!(es, Line(ecounter,vs[4n^2+i],vs[2n^2+(i-1)*n+1],-1.im))
@@ -273,6 +273,12 @@ function generate_sq_lattice_on_sphere(n::Int)
 		push!(es, Line(ecounter,vs[5n^2-n+i],vs[n^2-i*n+1],-1.im))
 		ecounter += 1
 		push!(es, Line(ecounter,vs[6n^2-n+i],vs[n^2-(i-1)*n],-1.im))
+		ecounter += 1
+	end
+
+	# stitch face 1 (up) with face 4 (bottom)
+	for i in 1:n
+		push!(es, Line(ecounter,vs[i],vs[4n^2-n+i],-1.im))
 		ecounter += 1
 	end
 	
