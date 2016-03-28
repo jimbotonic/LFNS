@@ -223,6 +223,49 @@ function RK_solver1(sp::SParams)
 	return State(Float64[],sp.T,Tdot,n_iter)
 end
 
+# Runge-Kutta solver for Flow Data networks
+#
+## INPUT
+# T: initial thetas
+# h: step size (default value 1e-2)
+# Tdot: initial theta derivatives (often vector of 0s, i.e., "flat start")
+# V: initial voltages
+# Y: admittance square matrix (nxn square matrix of complex numbers)
+# P0: initial active powers
+# callback_func: callback function to be called at each iteration of the solver
+#
+## OUTPUT
+# T: updated thetas
+# Tdot: updated theta_dots
+# n_iter: # of iterations before convergence
+function RK_solver1(sp::SParams,callback_func::Function)
+	dU = RK4(f1)
+	nTdot = zeros(Float64, length(sp.T))
+	Tdot = zeros(Float64, length(sp.T))
+	
+	M = sp.V'.*sp.Y.*sp.V
+	
+	M = M - spdiagm(diag(M))
+	M1 = real(M)
+	M2 = imag(M)
+	V1 = diag(M1)
+
+	n_iter = 1
+	while n_iter < sp.iter_max
+		(dT, Tdot) = dU(sp.T, sp.o_args[:h], V1, M1, M2, sp.P)
+		error = norm(Tdot,Inf)
+		if error < sp.epsilon
+			break
+		end
+		@debug("# iter $n_iter with error=$error")
+		sp.T += dT
+		n_iter += 1
+		callback_func(sp.T,n_iter,error)
+	end
+	
+	@info("$n_iter iteration(s)")
+	return State(Float64[],sp.T,Tdot,n_iter)
+end
 # Steepest descent solver for Flow Data networks
 #
 ## INPUT

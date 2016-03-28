@@ -95,17 +95,26 @@ type Simulator
 	end
 end
 
-
 # lead a simulation
 function simulation(s::Simulator)
-	# initialize simulation data
 	sp = get_sparams(s)
 	state = s.solver(sp)
 	push!(s.states,state)
 	return state
 end
 
+# lead a simulation 
+#
+# callback_func: callback function to be called at each iteration of the solver
+function simulation(s::Simulator,callback_func::Function)
+	sp = get_sparams(s)
+	state = s.solver(sp,callback_func)
+	push!(s.states,state)
+	return state
+end
+
 # initialize the solvers parameters (admittance matrix, active/reactive  injection vectors, angles, ...)
+#
 # Sb: base power (for converting in p.u.)
 function get_sparams(s::Simulator)
 	vs = vertices(s.g)

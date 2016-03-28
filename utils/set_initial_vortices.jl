@@ -1,11 +1,13 @@
-using Logging, ConfParser
-
 include("../init.jl")
 include("../graphs.jl")
 include("../simulator.jl")
 include("../solvers.jl")
 include("../data.jl")
 include("../metrics.jl")
+
+using Logging, ConfParser
+
+@Logging.configure(level=DEBUG)
 
 # loading config file
 conf = ConfParse("../config.ini")
@@ -26,10 +28,11 @@ o_args = Dict{Symbol,Any}()
 o_args[:h] = parse(Float64,retrieve(conf,"rk","h"))
 s = Simulator(g,RK_solver1,o_args,sb,epsilon,max_iter)
 
+# initialize the injections with a uniform distribution
 U = init_unif_dist(n*m)
 alpha = 1e-2
 
-# rescale distribution
+# rescale distribution and set injections
 P_ref = init_P3(U)
 P = P_ref*alpha
 change_P(s.g,P)
@@ -42,16 +45,21 @@ cycles = Array{Array{Int64,1},1}()
 bcycle =  get_sq_lattice_contour_cycle(n,m)
 push!(cycles,bcycle)
 
+# solver callback function
+function callback_func(T::Array{Float64,1},n_iter::Int,error::Float64)
+	@info("vorticity (iteration: $n_iter, error: $error): ", vorticity(T,cycles))
+end
+
 #for j in 1:(n-1)
 #	for i in 2:m
-for j in 20:20
-	for i in 20:20
+for j in 1:1
+	for i in 2:2
 		@debug("Simulation: ", (n*(i-1)+j))
 		T = create_vortex_on_sq_lattice(n,m,i,j)
-		println("start vorticity: ", vorticity(T,cycles))
+		@info("start vorticity: ", vorticity(T,cycles))
 		change_T(s.g,T)
-		state = simulation(s)
-		println("end vorticity: ", vorticity(state.T,cycles))
+		state = simulation(s,callback_func)
+		@info("end vorticity: ", vorticity(state.T,cycles))
 		states[n*(i-1)+j] = state
 	end
 end
