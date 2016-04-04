@@ -54,8 +54,7 @@ function callback_func(sp::SParams,n_iter::Int,error::Float64)
 		println(X)
 		println(Y)
 		println(Z)
-		quit()
-		#@info("position: ", X[1], Y[1])
+		@info("position: ", X[1], Y[1])
 	end
 end
 
