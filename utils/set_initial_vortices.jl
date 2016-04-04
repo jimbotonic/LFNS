@@ -14,8 +14,8 @@ conf = ConfParse("../config.ini")
 parse_conf!(conf)
 
 # simple square lattice
-n = 50
-m = 50
+n = 51
+m = 51
 
 g = generate_sq_lattice(n,m)
 
@@ -46,8 +46,8 @@ bcycle =  get_sq_lattice_contour_cycle(n,m)
 push!(cycles,bcycle)
 
 # solver callback function
-function callback_func(T::Array{Float64,1},n_iter::Int,error::Float64)
-	@info("vorticity (iteration: $n_iter, error: $error): ", vorticity(T,cycles))
+function callback_func(sp::SParams,n_iter::Int,error::Float64)
+	@info("vorticity (iteration: $n_iter, error: $error): ", vorticity(sp.T,cycles))
 end
 
 #for j in 1:(n-1)
