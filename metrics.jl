@@ -14,6 +14,43 @@ function vorticity(T::Array{Float64,1}, cycles::Array{Array{Int64,1},1})
 	return X
 end
 
+# compute the vorticity of the graph
+function vorticity(T::Array{Float64,1}, cycle::Array{Int64,1})
+	X = Float64[]
+	c = copy(cycle)
+	push!(c,c[1])
+	s = 0.
+	for j in 1:(length(c)-1)
+		s += mod(T[c[j]] - T[c[j+1]] + pi, 2*pi) - pi
+	end
+	return round(Int,abs(s/(2*pi)))
+end
+
+# find the positions of the vortices
+#
+# n: height of the lattice
+# m: width of the lattice
+function find_vortices_in_sq_lattice(n::Int,m::Int,T::Array{Float64,1})
+	X = Int[]
+	Y = Int[]
+	V = Float64[]
+	for i in 1:n-1
+		for j in 1:m-1
+			cycle = Int[]
+			push!(cycle, (i-1)*n+j)
+			push!(cycle, (i-1)*n+j+1)
+			push!(cycle, i*n+j)
+			push!(cycle, i*n+j+1)
+			v = vorticity(T,cycle)
+			if v > 0
+				push!(X,j)	
+				push!(X,i)	
+				push!(X,v)	
+			end
+		end	
+	end
+	return X,Y,V
+end
 
 # Stability matrix
 #

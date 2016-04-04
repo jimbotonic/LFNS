@@ -115,7 +115,7 @@ end
 #
 # INPUT
 # n,m: width and height of the lattice
-# i,j: position of the lower corner of the vortex (i>=2, j<=n-1)
+# i,j: (row,column) position of the lower corner of the vortex (i>=2, j<=n-1)
 function create_vortex_on_sq_lattice(n::Int,m::Int,i::Int,j::Int)
 	T = zeros(Float64,n*m)
 	
@@ -146,6 +146,43 @@ function create_vortex_on_sq_lattice(n::Int,m::Int,i::Int,j::Int)
 		end
 	end
 	# right (already at 0)
+
+	return T
+end
+
+# initialize a vector T to create vortex on square lattice
+#
+# INPUT
+# n,m: (height,width) of the lattice
+# i,j: (row,column) coordinates of the vortex center
+function create_vortex_on_sq_lattice2(n::Int,m::Int,i::Int,j::Int)
+	T = zeros(Float64,n*m)
+	for p in 1:(n*m)
+		# get coordinates of the current point 
+		x = mod(p,m)
+		if x == 0
+			x = m
+		end
+		y = ceil(Int,p/m)
+		# center of the vortex
+		cx = j + 1/2
+		cy = i + 1/2
+		ba = atan(abs(y-cy)/abs(x-cx))
+		# NO
+		# NB: each square has a 1 unit length
+		if x <= cx && y <= cy
+			T[p] = ba + pi/2
+		# NE
+		elseif x >= cx && y <= cy
+			T[p] = ba 
+		# SE
+		elseif x >= cx && y >= cy
+			T[p] = ba - pi/2
+		# SO
+		elseif x <= cx && y >= cy
+			T[p] = ba - pi
+		end
+	end	
 
 	return T
 end
