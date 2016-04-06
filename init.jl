@@ -194,13 +194,13 @@ function get_sq_lattice_contour_cycle(n::Int,m::Int)
 	for j in 1:n
 		push!(bcycle,j)
 	end	
-	for i in 1:m
+	for i in 2:m
 		push!(bcycle,i*n)
 	end	
 	for j in 0:(n-1)
 		push!(bcycle,m*n-j)
 	end	
-	for i in 1:m
+	for i in 2:m
 		push!(bcycle,(m-i)*n+1)
 	end	
 	return bcycle
@@ -379,6 +379,111 @@ function generate_sq_lattice_on_sphere(n::Int)
 	
 	return graph(vs, es, is_directed=false)
 end
+
+# generate a flat triangular lattice of equilateral shape 
+# with corners at positions (west, north-east, south-east)
+# numbering of the sites is from bottom to top and from left to right
+#
+## INPUT
+# n: length of the side of the lattice
+function generate_tri_lattice(n::Int)
+	vs = Bus[]
+	es = Line[]	
+	vcounter = 0
+	ecounter = 0
+	
+	sites = zeros(Int(n*(n+1)/2),3)
+	
+	for k in 0:(n-1)
+		for l in 0:k
+			vcounter += 1
+			sites[vcounter,:] = [vcounter, l, k-l]
+			push!(vs,Bus(vcounter,0.,0.))
+		end
+	end
+	
+	for i in 1:Int((n*(n+1)/2))
+		if sites[i,3] > 0
+			ecounter += 1
+			push!(es, Line(ecounter,vs[i],vs[i+1],-1.im))
+			#push!(es, Line(ecounter,vs[i*n+j],vs[i*n+j+1],-1.im))
+		end
+		if (sites[i,2]+sites[i,3]) < n-1
+			ecounter += 1
+			push!(es, Line(ecounter,vs[i],vs[Int(sum(sites[i,1:3]))+1],-1.im))
+			ecounter += 1
+			push!(es, Line(ecounter,vs[i],vs[Int(sum(sites[i,1:3]))+2],-1.im))
+		end
+	end
+		
+	return graph(vs, es, is_directed=false)
+end
+
+# initialize a vector T to create cortex on triangular lattice
+# 
+# INPUT
+# n: length of the side of the lattice
+# i,j: (column number, triangle number in the column from bottom) coordinates of the triangle carrying the vortex
+# 1 <= i <= n-1, 1 <= j <= 2*i-1
+
+function create_vortex_on_tri_lattice(n::Int,i::Int,j::Int)
+	T = zeros(Float64,Int(n*(n+1)/2))
+	
+	xcoords = Float64[]
+	ycoords = Float64[]
+
+	# get the coordinates of the nodes in a orthonormal coordinate system	
+	for k in 0:(n-1)
+		for l in 0:k
+			push!(xcoords,k*cos(pi/6))
+			push!(ycoords,(2*l-k)*sin(pi/6))
+		end
+	end
+
+	# get the index of one of the nodes of the triangle carrying the vortex
+	idx = Int(i*(i+1)/2) + 1
+	
+	if j%2 == 1
+		idx += Int((j-1)/2)
+		xvortex = xcoords[idx] + sqrt(3)/3
+		yvortex = ycoords[idx]
+	else
+		idx += Int((j-2)/2)
+		xvortex = xcoords[idx] + sqrt(3)/6
+		yvortex = ycoords[idx] + .5
+	end	
+
+	# compute angles
+	dx = xcoords - xvortex
+	dy = ycoords - yvortex
+	
+	t = (dx.<0)
+	T = atan(dy./dx) + t*pi
+	T = mod(T+pi,2*pi) - pi
+	
+	return T
+end
+			
+
+# generate the contour cycle of a triangular lattice
+function get_tri_lattice_contour_cycle(n::Int)
+	bcycle = [1,]
+	elcycb = [1,]
+	
+	x = 1
+	
+	for i in 2:n
+		x += i
+		unshift!(elcycb,x)
+		push!(bcycle,elcycb[2]+1)
+	end
+	
+	append!(bcycle,elcycb)
+	
+	return bcycle
+	
+end
+
 
 # generate a double cycle with a bus where p is injected
 # producer and consumer are located at the degree 3 vertices
