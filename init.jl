@@ -197,7 +197,7 @@ function get_sq_lattice_contour_cycle(n::Int,m::Int)
 	for i in 2:m
 		push!(bcycle,i*n)
 	end	
-	for j in 0:(n-1)
+	for j in 1:(n-1)
 		push!(bcycle,m*n-j)
 	end	
 	for i in 2:m
