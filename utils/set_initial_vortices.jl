@@ -4,6 +4,7 @@ include("../simulator.jl")
 include("../solvers.jl")
 include("../data.jl")
 include("../metrics.jl")
+include("../plotly.jl")
 
 using Logging, ConfParser
 
@@ -31,7 +32,7 @@ s = Simulator(g,RK_solver1,o_args,sb,epsilon,max_iter)
 # initialize the injections with a uniform distribution
 #U = init_unif_dist(n*m)
 U = init_rand_dist(n*m)
-alpha = 1e-1
+alpha = 8e-1
 
 # rescale distribution and set injections
 P_ref = init_P3(U)
@@ -46,15 +47,23 @@ states = Dict{Int,State}()
 bcycle =  get_sq_lattice_contour_cycle(n,m)
 #push!(cycles,bcycle)
 
+X = Float64[]
+Y = Float64[]
+S = Set{UInt64}()
+
 # solver callback function
 function callback_func(sp::SParams,n_iter::Int,error::Float64)
 	@info("vorticity (iteration: $n_iter, error: $error): ", vorticity(sp.T,bcycle))
-	X,Y,Z = find_vortices_in_sq_lattice(n,m,sp.T)
-	if length(X) > 0
-		println(X)
-		println(Y)
-		println(Z)
-		@info("position: ", X[1], Y[1])
+	A,B,V = find_vortices_in_sq_lattice(n,m,sp.T)
+	if length(A) > 0
+		a = A[1]
+		b = B[1]
+		h = hash("$a$b")
+		if !(h in S)
+			push!(X,A[1])
+			push!(Y,B[1])
+			push!(S,h)
+		end
 	end
 end
 
@@ -63,13 +72,15 @@ i = 25
 j = 25
 T = create_vortex_on_sq_lattice2(n,m,i,j)
 
-@debug("angle ($i,$j): ", T[(i-1)*n+j])
-@debug("angle ($i,$(j+1)): ", T[(i-1)*n+j+1])
-@debug("angle ($(i+1),$j): ", T[i*n+j])
-@debug("angle ($(i+1),$(j+1)): ", T[i*n+j+1])
+#@debug("angle ($i,$j): ", T[(i-1)*n+j])
+#@debug("angle ($i,$(j+1)): ", T[(i-1)*n+j+1])
+#@debug("angle ($(i+1),$j): ", T[i*n+j])
+#@debug("angle ($(i+1),$(j+1)): ", T[i*n+j+1])
 
 @info("start vorticity: ", vorticity(T,bcycle))
 change_T(s.g,T)
 state = simulation(s,callback_func)
 @info("end vorticity: ", vorticity(state.T,bcycle))
 
+# plot data
+plot_scatter_data(X,Y,"scatter","markers+lines", "vortex_position", None)

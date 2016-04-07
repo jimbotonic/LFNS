@@ -38,8 +38,8 @@ function find_vortices_in_sq_lattice(n::Int,m::Int,T::Array{Float64,1})
 			cycle = Int[]
 			push!(cycle, (i-1)*n+j)
 			push!(cycle, (i-1)*n+j+1)
-			push!(cycle, i*n+j)
 			push!(cycle, i*n+j+1)
+			push!(cycle, i*n+j)
 			v = vorticity(T,cycle)
 			if v > 0
 				push!(X,j)	

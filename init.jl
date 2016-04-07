@@ -112,6 +112,8 @@ function generate_sq_lattice(n::Int,m::Int)
 end
 
 # initialize a vector T to create vortex on square lattice
+# create a vortex on a square at the specified position
+# with 4 bands of aligned angles in the 4 directions
 #
 # INPUT
 # n,m: width and height of the lattice
@@ -151,6 +153,8 @@ function create_vortex_on_sq_lattice(n::Int,m::Int,i::Int,j::Int)
 end
 
 # initialize a vector T to create vortex on square lattice
+# create a vortex on a square at the specified position
+# initialize all other angles by using atan
 #
 # INPUT
 # n,m: (height,width) of the lattice
@@ -425,7 +429,6 @@ end
 # n: length of the side of the lattice
 # i,j: (column number, triangle number in the column from bottom) coordinates of the triangle carrying the vortex
 # 1 <= i <= n-1, 1 <= j <= 2*i-1
-
 function create_vortex_on_tri_lattice(n::Int,i::Int,j::Int)
 	T = zeros(Float64,Int(n*(n+1)/2))
 	
@@ -463,7 +466,6 @@ function create_vortex_on_tri_lattice(n::Int,i::Int,j::Int)
 	
 	return T
 end
-			
 
 # generate the contour cycle of a triangular lattice
 function get_tri_lattice_contour_cycle(n::Int)
@@ -483,7 +485,6 @@ function get_tri_lattice_contour_cycle(n::Int)
 	return bcycle
 	
 end
-
 
 # generate a double cycle with a bus where p is injected
 # producer and consumer are located at the degree 3 vertices
