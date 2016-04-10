@@ -55,6 +55,23 @@ function init_P3(U::Array{Float64,1})
 	return P
 end
 
+# initialize P vector with entry values in [-1, 1] and absolute value of greatest value equal to 1
+#
+# switch sign of entries of odd position
+# NB: U is assumed to be a distribution
+function init_P4(U::Array{Float64,1})
+	P = copy(U)
+	for i in 1:length(P)
+		if isodd(i)
+			P[i] = -P[i]
+		end
+	end
+	# make sure that sum(P)=0
+	P -= mean(P)
+	P *= 1/maximum(abs(P))
+	return P
+end
+
 # generate a cycle with one producer at vertex 1 and one consumer at a chosen vertex
 #
 ## INPUT
@@ -185,6 +202,45 @@ function create_vortex_on_sq_lattice2(n::Int,m::Int,i::Int,j::Int)
 		# SO
 		elseif x <= cx && y >= cy
 			T[p] = ba - pi
+		end
+	end	
+
+	return T
+end
+
+# initialize a vector T to create vortex on square lattice
+# create a vortex on a square at the specified position
+# initialize all other angles by using atan
+#
+# INPUT
+# n,m: (height,width) of the lattice
+# i,j: (row,column) coordinates of the vortex center
+function create_antivortex_on_sq_lattice2(n::Int,m::Int,i::Int,j::Int)
+	T = zeros(Float64,n*m)
+	for p in 1:(n*m)
+		# get coordinates of the current point 
+		x = mod(p,m)
+		if x == 0
+			x = m
+		end
+		y = ceil(Int,p/m)
+		# center of the vortex
+		cx = j + 1/2
+		cy = i + 1/2
+		ba = atan(abs(y-cy)/abs(x-cx))
+		# NO
+		# NB: each square has a 1 unit length
+		if x <= cx && y <= cy
+			T[p] = ba - pi/2
+		# NE
+		elseif x >= cx && y <= cy
+			T[p] = ba - pi
+		# SE
+		elseif x >= cx && y >= cy
+			T[p] = ba + pi/2
+		# SO
+		elseif x <= cx && y >= cy
+			T[p] = ba
 		end
 	end	
 

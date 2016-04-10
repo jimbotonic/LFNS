@@ -29,13 +29,14 @@ o_args = Dict{Symbol,Any}()
 o_args[:h] = parse(Float64,retrieve(conf,"rk","h"))
 s = Simulator(g,RK_solver1,o_args,sb,epsilon,max_iter)
 
+alpha = 5e-1
 # initialize the injections with a uniform distribution
-#U = init_unif_dist(n*m)
-U = init_rand_dist(n*m)
-alpha = 8e-1
+U = init_unif_dist(n*m)
+#U = init_rand_dist(n*m)
 
 # rescale distribution and set injections
-P_ref = init_P3(U)
+#P_ref = init_P3(U)
+P_ref = init_P4(U)
 P = P_ref*alpha
 change_P(s.g,P)
 
@@ -43,9 +44,7 @@ change_P(s.g,P)
 states = Dict{Int,State}()
 
 # get the contour cycle of the lattice
-#cycles = Array{Array{Int64,1},1}()
 bcycle =  get_sq_lattice_contour_cycle(n,m)
-#push!(cycles,bcycle)
 
 X = Float64[]
 Y = Float64[]
@@ -64,18 +63,29 @@ function callback_func(sp::SParams,n_iter::Int,error::Float64)
 			push!(Y,B[1])
 			push!(S,h)
 		end
+		if a != 25 || b != 25
+			@info("pos [$a,$b]")
+		end
 	end
 end
 
-# choose middle square
-i = 25
-j = 25
-T = create_vortex_on_sq_lattice2(n,m,i,j)
+### create vortices
 
+# vortex or antivortex in the middle
+# choose middle square
+#i = 25
+#j = 25
+##T = create_vortex_on_sq_lattice2(n,m,i,j)
+#T = create_antivortex_on_sq_lattice2(n,m,i,j)
 #@debug("angle ($i,$j): ", T[(i-1)*n+j])
 #@debug("angle ($i,$(j+1)): ", T[(i-1)*n+j+1])
 #@debug("angle ($(i+1),$j): ", T[i*n+j])
 #@debug("angle ($(i+1),$(j+1)): ", T[i*n+j+1])
+
+# create double vortex
+T1 = create_vortex_on_sq_lattice2(n,m,11,11)
+T2 = create_vortex_on_sq_lattice2(n,m,39,39)
+T = T1+T2
 
 @info("start vorticity: ", vorticity(T,bcycle))
 change_T(s.g,T)
@@ -83,4 +93,4 @@ state = simulation(s,callback_func)
 @info("end vorticity: ", vorticity(state.T,bcycle))
 
 # plot data
-plot_scatter_data(X,Y,"scatter","markers+lines", "vortex_position", None)
+#plot_scatter_data(X,Y,"scatter","markers+lines", "vortex_position", None)
