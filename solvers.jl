@@ -260,7 +260,8 @@ function RK_solver1(sp::SParams,callback_func::Function)
 		@debug("# iter $n_iter with error=$error")
 		sp.T += dT
 		n_iter += 1
-		callback_func(sp,n_iter,error)
+		go_on = callback_func(sp,n_iter,error)
+		!go_on && break
 	end
 	
 	@info("$n_iter iteration(s)")

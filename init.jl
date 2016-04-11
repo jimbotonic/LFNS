@@ -192,13 +192,13 @@ function create_vortex_on_sq_lattice2(n::Int,m::Int,i::Int,j::Int)
 		# NO
 		# NB: each square has a 1 unit length
 		if x <= cx && y <= cy
-			T[p] = ba + pi/2
+			T[p] = -ba + pi
 		# NE
 		elseif x >= cx && y <= cy
 			T[p] = ba 
 		# SE
 		elseif x >= cx && y >= cy
-			T[p] = ba - pi/2
+			T[p] = -ba
 		# SO
 		elseif x <= cx && y >= cy
 			T[p] = ba - pi
@@ -231,13 +231,13 @@ function create_antivortex_on_sq_lattice2(n::Int,m::Int,i::Int,j::Int)
 		# NO
 		# NB: each square has a 1 unit length
 		if x <= cx && y <= cy
-			T[p] = ba - pi/2
+			T[p] = -ba
 		# NE
 		elseif x >= cx && y <= cy
 			T[p] = ba - pi
 		# SE
 		elseif x >= cx && y >= cy
-			T[p] = ba + pi/2
+			T[p] = -ba + pi
 		# SO
 		elseif x <= cx && y >= cy
 			T[p] = ba

@@ -33,22 +33,27 @@ s = Simulator(g,RK_solver1,o_args,sb,epsilon,max_iter)
 # injections initialization
 ###
 
-alpha = 7e-1
-# initialize the injections with a uniform distribution
-#U = init_unif_dist(n*m)
-U = init_rand_dist(n*m)
+alpha = 1.1
+random = true
+N = 1
 
-# rescale distribution and set injections
-P_ref = init_P3(U)
-#P_ref = init_P4(U)
+if !random
+	# initialize the injections with a uniform distribution
+	U = init_unif_dist(n*m)
+	# rescale distribution and set injections
+	P_ref = init_P4(U)
+else
+	U = init_rand_dist(n*m)
+	# rescale distribution and set injections
+	#P_ref = init_P4(U)
+	P_ref = init_P3(U)
+end
 P = P_ref*alpha
 change_P(s.g,P)
 
 ###
 # create vortices
 ###
-
-N = 2
 
 if N == 1
 	# vortex or antivortex in the middle
@@ -57,30 +62,30 @@ if N == 1
 	j = 25
 	T = create_vortex_on_sq_lattice2(n,m,i,j)
 	#T = create_antivortex_on_sq_lattice2(n,m,i,j)
-	#@debug("angle ($i,$j): ", T[(i-1)*n+j])
-	#@debug("angle ($i,$(j+1)): ", T[(i-1)*n+j+1])
-	#@debug("angle ($(i+1),$j): ", T[i*n+j])
-	#@debug("angle ($(i+1),$(j+1)): ", T[i*n+j+1])
+	@debug("angle ($i,$j): ", T[(i-1)*n+j])
+	@debug("angle ($i,$(j+1)): ", T[(i-1)*n+j+1])
+	@debug("angle ($(i+1),$j): ", T[i*n+j])
+	@debug("angle ($(i+1),$(j+1)): ", T[i*n+j+1])
 	
 	trace1 = scatter_trace(Float64[],Float64[],"v1")
 	traces = scatter_trace[]
 	push!(traces,trace1)
 	
-	LP = Array{Array{Int,1}}(2)
+	LP = Array{Array{Int,1}}(1)
 	LP[1] = [i,j]
 	
 	push!(traces[1].X,i)
 	push!(traces[1].Y,j)
 elseif N == 2
 	# create double vortex
-	i1 = 24; j1 = 24
-	i2 = 26; j2 = 26
 	#i1 = 21; j1 = 21
-	#i2 = 39; j2 = 39
+	#i2 = 29; j2 = 29
+	i1 = 25; j1 = 21
+	i2 = 25; j2 = 29
 
 	T1 = create_vortex_on_sq_lattice2(n,m,i1,j1)
-	#T2 = create_vortex_on_sq_lattice2(n,m,i2,j2)
-	T2 = create_antivortex_on_sq_lattice2(n,m,i2,j2)
+	T2 = create_vortex_on_sq_lattice2(n,m,i2,j2)
+	#T2 = create_antivortex_on_sq_lattice2(n,m,i2,j2)
 	T = T1+T2
 
 	trace1 = scatter_trace(Float64[],Float64[],"v1")
@@ -204,6 +209,7 @@ function callback_func(sp::SParams,n_iter::Int,error::Float64)
 			end
 		end
 	end
+	return true
 end
 
 @info("start vorticity: ", vorticity(T,bcycle))
@@ -213,3 +219,4 @@ state = simulation(s,callback_func)
 
 # plot data
 plot_scatter_data(traces,"scatter","markers+lines", "vortices_position", None)
+
