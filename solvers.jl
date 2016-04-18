@@ -219,7 +219,7 @@ function RK_solver1(sp::SParams)
 		n_iter += 1
 	end
 	
-	@info("$n_iter iteration(s)")
+	@info("$n_iter iterations")
 	return State(Float64[],sp.T,Tdot,n_iter)
 end
 
@@ -264,7 +264,7 @@ function RK_solver1(sp::SParams,callback_func::Function)
 		!go_on && break
 	end
 	
-	@info("$n_iter iteration(s)")
+	@info("$n_iter iterations")
 	return State(Float64[],sp.T,Tdot,n_iter)
 end
 # Steepest descent solver for Flow Data networks

@@ -33,9 +33,9 @@ s = Simulator(g,RK_solver1,o_args,sb,epsilon,max_iter)
 # injections initialization
 ###
 
-alpha = 0.6
+alpha = 0.8
 random = true
-N = 3
+N = 4
 
 if !random
 	# initialize the injections with a uniform distribution
@@ -63,12 +63,9 @@ if N == 1
 	# choose middle square
 	i = 25
 	j = 25
-	T = create_vortex_on_sq_lattice2(n,m,i,j)
-	#T = create_antivortex_on_sq_lattice2(n,m,i,j)
-	@debug("angle ($i,$j): ", T[(i-1)*n+j])
-	@debug("angle ($i,$(j+1)): ", T[(i-1)*n+j+1])
-	@debug("angle ($(i+1),$j): ", T[i*n+j])
-	@debug("angle ($(i+1),$(j+1)): ", T[i*n+j+1])
+	T = create_vortex_on_sq_lattice(n,m,i,j)
+	#T = create_antivortex_on_sq_lattice(n,m,i,j)
+	#export_csv_data(T,"T_1-antivortex.csv")
 	
 	trace1 = scatter_trace(Float64[],Float64[],"v1")
 	traces = scatter_trace[]
@@ -79,15 +76,16 @@ if N == 1
 	push!(traces[1].X,i)
 	push!(traces[1].Y,j)
 elseif N == 2
-	# create double vortex
-	i1 = 25; j1 = 23
-	i2 = 25; j2 = 27
-	#i1 = 24; j1 = 24
-	#i2 = 26; j2 = 26
+	# double vortex on the same row
+	#i1 = 25; j1 = 20
+	#i2 = 25; j2 = 31
+	# double vortex in the diagonal
+	i1 = 20; j1 = 20
+	i2 = 31; j2 = 31
 
-	T1 = create_vortex_on_sq_lattice2(n,m,i1,j1)
-	T2 = create_vortex_on_sq_lattice2(n,m,i2,j2)
-	#T2 = create_antivortex_on_sq_lattice2(n,m,i2,j2)
+	T1 = create_vortex_on_sq_lattice(n,m,i1,j1)
+	#T2 = create_vortex_on_sq_lattice(n,m,i2,j2)
+	T2 = create_antivortex_on_sq_lattice(n,m,i2,j2)
 	T = T1+T2
 
 	trace1 = scatter_trace(Float64[],Float64[],"v1")
@@ -114,10 +112,10 @@ elseif N == 3
 	i2 = 25; j2 = 25
 	i3 = 25; j3 = 29 
 
-	T1 = create_vortex_on_sq_lattice2(n,m,i1,j1)
-	#T2 = create_vortex_on_sq_lattice2(n,m,i2,j2)
-	T2 = create_antivortex_on_sq_lattice2(n,m,i2,j2)
-	T3 = create_vortex_on_sq_lattice2(n,m,i3,j3)
+	T1 = create_vortex_on_sq_lattice(n,m,i1,j1)
+	#T2 = create_vortex_on_sq_lattice(n,m,i2,j2)
+	T2 = create_antivortex_on_sq_lattice(n,m,i2,j2)
+	T3 = create_vortex_on_sq_lattice(n,m,i3,j3)
 	T = T1+T2+T3
 
 	trace1 = scatter_trace(Float64[],Float64[],"v1")
@@ -146,20 +144,21 @@ elseif N == 4
 	#i3 = 21; j3 = 29
 	#i4 = 29; j4 = 21
 	# 4 vortices in the diagonal
-	i1 = 22; j1 = 22
-	i2 = 24; j2 = 24
-	i3 = 26; j3 = 26
-	i4 = 28; j4 = 28
+	#i1 = 22; j1 = 22
+	#i2 = 24; j2 = 24
+	#i3 = 26; j3 = 26
+	#i4 = 28; j4 = 28
 	# 4 vortices center + triangle
-	#i1 = 25; j1 = 25
-	#i2 = 21; j2 = 25
-	#i3 = 29; j3 = 29
-	#i4 = 29; j4 = 21
+	i1 = 25; j1 = 25
+	i2 = 21; j2 = 25
+	i3 = 29; j3 = 29
+	i4 = 29; j4 = 21
 
-	T1 = create_vortex_on_sq_lattice2(n,m,i1,j1)
-	T2 = create_vortex_on_sq_lattice2(n,m,i2,j2)
-	T3 = create_vortex_on_sq_lattice2(n,m,i3,j3)
-	T4 = create_vortex_on_sq_lattice2(n,m,i4,j4)
+	#T1 = create_vortex_on_sq_lattice(n,m,i1,j1)
+	T1 = create_antivortex_on_sq_lattice(n,m,i1,j1)
+	T2 = create_vortex_on_sq_lattice(n,m,i2,j2)
+	T3 = create_vortex_on_sq_lattice(n,m,i3,j3)
+	T4 = create_vortex_on_sq_lattice(n,m,i4,j4)
 	T = T1+T2+T3+T4
 
 	trace1 = scatter_trace(Float64[],Float64[],"v1")
@@ -194,11 +193,11 @@ elseif N == 5
 	i4 = 29; j4 = 21
 	i5 = 25; j5 = 25
 
-	T1 = create_vortex_on_sq_lattice2(n,m,i1,j1)
-	T2 = create_vortex_on_sq_lattice2(n,m,i2,j2)
-	T3 = create_vortex_on_sq_lattice2(n,m,i3,j3)
-	T4 = create_vortex_on_sq_lattice2(n,m,i4,j4)
-	T5 = create_vortex_on_sq_lattice2(n,m,i5,j5)
+	T1 = create_vortex_on_sq_lattice(n,m,i1,j1)
+	T2 = create_vortex_on_sq_lattice(n,m,i2,j2)
+	T3 = create_vortex_on_sq_lattice(n,m,i3,j3)
+	T4 = create_vortex_on_sq_lattice(n,m,i4,j4)
+	T5 = create_vortex_on_sq_lattice(n,m,i5,j5)
 	T = T1+T2+T3+T4+T5
 
 	trace1 = scatter_trace(Float64[],Float64[],"v1")

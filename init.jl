@@ -72,13 +72,13 @@ function init_P4(U::Array{Float64,1})
 	return P
 end
 
-# generate a cycle with one producer at vertex 1 and one consumer at a chosen vertex
+# generate a ring with one producer at vertex 1 and one consumer at a chosen vertex
 #
 ## INPUT
 # n: length of the cycle
 # ic: index of the vertex of the consumer
 # p: produced/consumed power
-function generate_cycle(n::Int,ic::Int,p::Float64)
+function generate_ring(n::Int,ic::Int,p::Float64)
 	vs = Bus[]
 	es = Line[]
 	
@@ -130,53 +130,12 @@ end
 
 # initialize a vector T to create vortex on square lattice
 # create a vortex on a square at the specified position
-# with 4 bands of aligned angles in the 4 directions
-#
-# INPUT
-# n,m: width and height of the lattice
-# i,j: (row,column) position of the lower corner of the vortex (i>=2, j<=n-1)
-function create_vortex_on_sq_lattice(n::Int,m::Int,i::Int,j::Int)
-	T = zeros(Float64,n*m)
-	
-	T[(i-1)*n+j]= -(3/4)*pi # bottom-left
-	T[(i-2)*n+j]= (3/4)*pi # up-left
-	T[(i-1)*n+j+1]= -(1/4)*pi # bottom-right
-	T[(i-2)*n+j+1]= (1/4)*pi # up-right
-
-	# above
-	if i > 2
-		for k in 1:(i-2)
-			T[(k-1)*n+j] = (1/2)*pi
-			T[(k-1)*n+j+1] = (1/2)*pi
-		end
-	end
-	# below
-	if i < m
-		for k in (i+1):m
-			T[(k-1)*n+j] = -(1/2)*pi
-			T[(k-1)*n+j+1] = -(1/2)*pi
-		end
-	end
-	# left
-	if j > 1
-		for k in 1:j
-			T[(i-2)*n+k] = - pi
-			T[(i-1)*n+j+k] = - pi
-		end
-	end
-	# right (already at 0)
-
-	return T
-end
-
-# initialize a vector T to create vortex on square lattice
-# create a vortex on a square at the specified position
 # initialize all other angles by using atan
 #
 # INPUT
 # n,m: (height,width) of the lattice
 # i,j: (row,column) coordinates of the vortex center
-function create_vortex_on_sq_lattice2(n::Int,m::Int,i::Int,j::Int)
+function create_vortex_on_sq_lattice(n::Int,m::Int,i::Int,j::Int)
 	T = zeros(Float64,n*m)
 	for p in 1:(n*m)
 		# get coordinates of the current point 
@@ -215,7 +174,7 @@ end
 # INPUT
 # n,m: (height,width) of the lattice
 # i,j: (row,column) coordinates of the vortex center
-function create_antivortex_on_sq_lattice2(n::Int,m::Int,i::Int,j::Int)
+function create_antivortex_on_sq_lattice(n::Int,m::Int,i::Int,j::Int)
 	T = zeros(Float64,n*m)
 	for p in 1:(n*m)
 		# get coordinates of the current point 
@@ -231,16 +190,16 @@ function create_antivortex_on_sq_lattice2(n::Int,m::Int,i::Int,j::Int)
 		# NO
 		# NB: each square has a 1 unit length
 		if x <= cx && y <= cy
-			T[p] = -ba
+			T[p] = ba - pi
 		# NE
 		elseif x >= cx && y <= cy
-			T[p] = ba - pi
+			T[p] = -ba
 		# SE
 		elseif x >= cx && y >= cy
-			T[p] = -ba + pi
+			T[p] = ba
 		# SO
 		elseif x <= cx && y >= cy
-			T[p] = ba
+			T[p] = -ba + pi
 		end
 	end	
 
@@ -542,13 +501,13 @@ function get_tri_lattice_contour_cycle(n::Int)
 	
 end
 
-# generate a double cycle with a bus where p is injected
+# generate a double ring with a bus where p is injected
 # producer and consumer are located at the degree 3 vertices
 #
 ## INPUT
 # l,c,r: number of VERTICES on each branch of the double cycle
 # p: produced/consumed power
-function generate_double_cycle(l::Int,c::Int,r::Int,p::Float64)
+function generate_double_ring(l::Int,c::Int,r::Int,p::Float64)
 	vs = Bus[]
 	es = Line[]	
 	ecounter = 1

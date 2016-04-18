@@ -14,7 +14,7 @@ function vorticity(T::Array{Float64,1}, cycles::Array{Array{Int64,1},1})
 	return V
 end
 
-# compute the vorticity of the graph
+# compute the vorticity of a given cycle
 function vorticity(T::Array{Float64,1}, cycle::Array{Int64,1})
 	c = copy(cycle)
 	push!(c,c[1])
