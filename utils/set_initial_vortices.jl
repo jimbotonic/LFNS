@@ -33,9 +33,9 @@ s = Simulator(g,RK_solver1,o_args,sb,epsilon,max_iter)
 # injections initialization
 ###
 
-alpha = 1.1
+alpha = 0.6
 random = true
-N = 1
+N = 3
 
 if !random
 	# initialize the injections with a uniform distribution
@@ -55,6 +55,9 @@ change_P(s.g,P)
 # create vortices
 ###
 
+# dictionary of the last vortices positions of the vortices
+LP = Dict{Int,Array{Int,1}}()
+
 if N == 1
 	# vortex or antivortex in the middle
 	# choose middle square
@@ -71,17 +74,16 @@ if N == 1
 	traces = scatter_trace[]
 	push!(traces,trace1)
 	
-	LP = Array{Array{Int,1}}(1)
 	LP[1] = [i,j]
 	
 	push!(traces[1].X,i)
 	push!(traces[1].Y,j)
 elseif N == 2
 	# create double vortex
-	#i1 = 21; j1 = 21
-	#i2 = 29; j2 = 29
-	i1 = 25; j1 = 21
-	i2 = 25; j2 = 29
+	i1 = 25; j1 = 23
+	i2 = 25; j2 = 27
+	#i1 = 24; j1 = 24
+	#i2 = 26; j2 = 26
 
 	T1 = create_vortex_on_sq_lattice2(n,m,i1,j1)
 	T2 = create_vortex_on_sq_lattice2(n,m,i2,j2)
@@ -95,8 +97,6 @@ elseif N == 2
 	push!(traces,trace1)
 	push!(traces,trace2)
 
-	# array of the last vortices positions of the vortices
-	LP = Array{Array{Int,1}}(2)
 	LP[1] = [i1,j1]
 	LP[2] = [i2,j2]
 
@@ -105,13 +105,18 @@ elseif N == 2
 	push!(traces[2].X,i2)
 	push!(traces[2].Y,j2)
 elseif N == 3
-	# create double vortex
-	i1 = 11; j1 = 11
-	i2 = 11; j2 = 39
-	i3 = 39; j3 = 25 
+	# 3 vortices in diagonal
+	#i1 = 23; j1 = 23
+	#i2 = 25; j2 = 25
+	#i3 = 27; j3 = 27 
+	# 3 vortices on the line
+	i1 = 25; j1 = 21
+	i2 = 25; j2 = 25
+	i3 = 25; j3 = 29 
 
 	T1 = create_vortex_on_sq_lattice2(n,m,i1,j1)
-	T2 = create_vortex_on_sq_lattice2(n,m,i2,j2)
+	#T2 = create_vortex_on_sq_lattice2(n,m,i2,j2)
+	T2 = create_antivortex_on_sq_lattice2(n,m,i2,j2)
 	T3 = create_vortex_on_sq_lattice2(n,m,i3,j3)
 	T = T1+T2+T3
 
@@ -124,8 +129,6 @@ elseif N == 3
 	push!(traces,trace2)
 	push!(traces,trace3)
 
-	# array of the last vortices positions of the vortices
-	LP = Array{Array{Int,1}}(3)
 	LP[1] = [i1,j1]
 	LP[2] = [i2,j2]
 	LP[3] = [i3,j3]
@@ -135,13 +138,23 @@ elseif N == 3
 	push!(traces[2].X,i2)
 	push!(traces[2].Y,j2)
 	push!(traces[3].X,i3)
-	push!(traces[3].X,j3)
+	push!(traces[3].Y,j3)
 elseif N == 4
-	# create double vortex
-	i1 = 11; j1 = 11
-	i2 = 39; j2 = 39
-	i3 = 11; j3 = 39
-	i4 = 39; j4 = 11
+	# 4 vortices on a square -> gives vorticity=3
+	#i1 = 21; j1 = 21
+	#i2 = 29; j2 = 29
+	#i3 = 21; j3 = 29
+	#i4 = 29; j4 = 21
+	# 4 vortices in the diagonal
+	i1 = 22; j1 = 22
+	i2 = 24; j2 = 24
+	i3 = 26; j3 = 26
+	i4 = 28; j4 = 28
+	# 4 vortices center + triangle
+	#i1 = 25; j1 = 25
+	#i2 = 21; j2 = 25
+	#i3 = 29; j3 = 29
+	#i4 = 29; j4 = 21
 
 	T1 = create_vortex_on_sq_lattice2(n,m,i1,j1)
 	T2 = create_vortex_on_sq_lattice2(n,m,i2,j2)
@@ -160,8 +173,6 @@ elseif N == 4
 	push!(traces,trace3)
 	push!(traces,trace4)
 
-	# array of the last vortices positions of the vortices
-	LP = Array{Array{Int,1}}(4)
 	LP[1] = [i1,j1]
 	LP[2] = [i2,j2]
 	LP[3] = [i3,j3]
@@ -172,9 +183,53 @@ elseif N == 4
 	push!(traces[2].X,i2)
 	push!(traces[2].Y,j2)
 	push!(traces[3].X,i3)
-	push!(traces[3].X,j3)
-	push!(traces[4].Y,i4)
+	push!(traces[3].Y,j3)
+	push!(traces[4].X,i4)
 	push!(traces[4].Y,j4)
+elseif N == 5
+	# 4 vortices on a square -> gives vorticity=3
+	i1 = 21; j1 = 21
+	i2 = 29; j2 = 29
+	i3 = 21; j3 = 29
+	i4 = 29; j4 = 21
+	i5 = 25; j5 = 25
+
+	T1 = create_vortex_on_sq_lattice2(n,m,i1,j1)
+	T2 = create_vortex_on_sq_lattice2(n,m,i2,j2)
+	T3 = create_vortex_on_sq_lattice2(n,m,i3,j3)
+	T4 = create_vortex_on_sq_lattice2(n,m,i4,j4)
+	T5 = create_vortex_on_sq_lattice2(n,m,i5,j5)
+	T = T1+T2+T3+T4+T5
+
+	trace1 = scatter_trace(Float64[],Float64[],"v1")
+	trace2 = scatter_trace(Float64[],Float64[],"v2")
+	trace3 = scatter_trace(Float64[],Float64[],"v3")
+	trace4 = scatter_trace(Float64[],Float64[],"v4")
+	trace5 = scatter_trace(Float64[],Float64[],"v5")
+
+	traces = scatter_trace[]
+	push!(traces,trace1)
+	push!(traces,trace2)
+	push!(traces,trace3)
+	push!(traces,trace4)
+	push!(traces,trace5)
+
+	LP[1] = [i1,j1]
+	LP[2] = [i2,j2]
+	LP[3] = [i3,j3]
+	LP[4] = [i4,j4]
+	LP[5] = [i5,j5]
+
+	push!(traces[1].X,i1)
+	push!(traces[1].Y,j1)
+	push!(traces[2].X,i2)
+	push!(traces[2].Y,j2)
+	push!(traces[3].X,i3)
+	push!(traces[3].Y,j3)
+	push!(traces[4].X,i4)
+	push!(traces[4].Y,j4)
+	push!(traces[5].X,i5)
+	push!(traces[5].Y,j5)
 end
 
 # get the contour cycle of the lattice
@@ -184,29 +239,30 @@ bcycle =  get_sq_lattice_contour_cycle(n,m)
 function callback_func(sp::SParams,n_iter::Int,error::Float64)
 	@info("vorticity (iteration: $n_iter, error: $error): ", vorticity(sp.T,bcycle))
 	A,B,V = find_vortices_in_sq_lattice(n,m,sp.T)
-	for i in 1:length(LP)
-		if LP[i] != [-1,-1]
-			changed = false
-			for j in 1:length(A)
-				# we assume that vortices move by steps of distance 1 (infinite norm)
-				d = maximum(abs(LP[i]-[A[j],B[j]]))
-				if d <= 1
-					# the vortex moved of 1 step
-					if d == 1
-						LP[i] = [A[j],B[j]]
-						push!(traces[i].X,A[j])
-						push!(traces[i].Y,B[j])
-						@info("--- new pos of vortex $i: [", A[j], "," , B[j], "]")
-					end
-					changed = true
-					break
-				end
+	for k in keys(LP)
+		changed = false
+		for j in 1:length(A)
+			# we assume that vortices move by steps of distance 1 (L1 norm)
+			d = sum(abs(LP[k]-[A[j],B[j]]))
+			if d == 1
+				# the vortex moved of 1 step
+				# update position
+				LP[k] = [A[j],B[j]]
+				push!(traces[k].X,A[j])
+				push!(traces[k].Y,B[j])
+				@info("--- new pos of vortex $k: [", A[j], "," , B[j], "]")
+				changed = true
+				break
+			elseif d == 0
+				# the vortex hasn't moved
+				changed = true
+				break
 			end
-			# the vortex has disappeared
-			if !changed 
-				@info("--- vortex $i has disappeared")
-				LP[i] = [-1,-1]
-			end
+		end
+		# the vortex has disappeared
+		if !changed 
+			@info("--- vortex $k has disappeared")
+			delete!(LP,k)
 		end
 	end
 	return true
