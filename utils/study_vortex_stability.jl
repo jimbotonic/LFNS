@@ -1,12 +1,3 @@
-addprocs(40)
-
-@everywhere include("../init.jl")
-@everywhere include("../graphs.jl")
-@everywhere include("../simulator.jl")
-@everywhere include("../solvers.jl")
-@everywhere include("../data.jl")
-@everywhere include("../metrics.jl")
-
 using Logging, ConfParser
 
 @Logging.configure(level=DEBUG)
@@ -15,19 +6,28 @@ using Logging, ConfParser
 conf = ConfParse("../config.ini")
 parse_conf!(conf)
 
+#addprocs(3)
+
+@everywhere include("../init.jl")
+@everywhere include("../graphs.jl")
+@everywhere include("../simulator.jl")
+@everywhere include("../solvers.jl")
+@everywhere include("../data.jl")
+@everywhere include("../metrics.jl")
+
 # simple square lattice
-@everywhere n = 49
-@everywhere m = 49
+n = 49
+m = 49
 
 # generate square lattice
 @everywhere g = generate_sq_lattice(n,m)
 
 # initialize simulation parameters
-@everywhere sb = parse(Float64,retrieve(conf,"solvers","base_voltage"))
-@everywhere max_iter = round(Int,parse(Float64,retrieve(conf,"solvers","max_iter")))
-@everywhere epsilon = parse(Float64,retrieve(conf,"solvers","epsilon"))
+sb = parse(Float64,retrieve(conf,"solvers","base_voltage"))
+max_iter = round(Int,parse(Float64,retrieve(conf,"solvers","max_iter")))
+epsilon = parse(Float64,retrieve(conf,"solvers","epsilon"))
 
-@everywhere o_args = Dict{Symbol,Any}()
+o_args = Dict{Symbol,Any}()
 o_args[:h] = parse(Float64,retrieve(conf,"rk","h"))
 @everywhere s = Simulator(g,RK_solver1,o_args,sb,epsilon,max_iter)
 
@@ -36,8 +36,8 @@ o_args[:h] = parse(Float64,retrieve(conf,"rk","h"))
 
 # central face cycle
 @everywhere ccycle = Int[]
-ipos = ceil(Int,m)
-jpos = ceil(Int,n)
+ipos = ceil(Int,m/2)
+jpos = ceil(Int,n/2)
 
 push!(ccycle, (ipos-1)*n+jpos)
 push!(ccycle, (ipos-1)*n+jpos+1)
@@ -52,17 +52,14 @@ push!(ccycle, ipos*n+jpos)
 i = 25
 j = 25
 
-T = create_vortex_on_sq_lattice2(n,m,i,j)
+T = create_vortex_on_sq_lattice(n,m,i,j)
 #T = create_antivortex_on_sq_lattice2(n,m,i,j)
 change_T(s.g,T)
 
-# generat3dde a random injection vector
-U = init_rand_dist(n*m)
-@everywhere P_ref = init_P3(U)
 
 low = 0
 step = 1e-2
-high = 2
+high = 0.1
 
 # number of random initial random distribution
 np = 100
@@ -77,7 +74,9 @@ np = 100
 @everywhere function callback_func(sp::SParams,n_iter::Int,error::Float64)
 	# the vortex has moved?
 	v = vorticity(sp.T,ccycle)
-	v == 0 && has_moved = true
+	if v == 0
+		has_moved = true
+	end
 	return true
 end
 
@@ -85,55 +84,69 @@ end
 	P = P_ref*alpha
 	change_P(s.g,P)
 	state = simulation(s,callback_func)
-	return P,state,has_moved
+	return state,alpha,has_moved
 end
 
 # stats associated to a given random P
 type Stats
 	# vortex stable & convergence
-	Vst::Float64
+	Vst::Dict{Float64,Float64}
 	# vortex inside & convergence
-	Vin::Float64
+	Vin::Dict{Float64,Float64}
 	# vortex outside & convergence
-	Vout::Float64
+	Vout::Dict{Float64,Float64}
 	# no convergence
-	Div::Float64
+	Div::Dict{Float64,Float64}
 end
 
-PStats = Dict{Array{Float64,1},Stats}()
 alphas = collect(low:step:high)
-stats = Stats(0.,0.,0.,0.)
+
+# initialize stats
+stats = Stats(Dict{Float64,Float64}(),Dict{Float64,Float64}(),Dict{Float64,Float64}(),Dict{Float64,Float64}())
+for alpha in alphas
+	stats.Vst[alpha] = 0.
+	stats.Vin[alpha] = 0.
+	stats.Vout[alpha] = 0.
+	stats.Div[alpha] = 0.
+end
 
 # for the different initial P distributions
-for i in 1:np
+for i in 1:1
+	# generate a random injection vector
+	U = init_rand_dist(n*m)
+	P_ref = init_P3(U)
+
 	# compute the final state for different values of alpha in parallel
-	@sync results = pmap(get_simulation_state,Array{Simulator,1}[s for alpha in alphas],Array{Array{Float64,1},1}[P_ref for alpha in alphas],alphas)	
-	nr = length(r)
+	@sync results = pmap(get_simulation_state,Simulator[s for alpha in alphas],Array{Float64,1}[P_ref for alpha in alphas],alphas)	
+	nr = length(results)
 	for r in results
-		P = r[1]
-		state = r[2]
+		state = r[1]
+		alpha = r[2]
 		has_moved = r[3]
 		if state.n_iter < max_iter 
 			if !has_moved
-				stats.Vst += 1.
+				stats.Vst[alpha] += 1.
 			else
 	 			v = vorticity(state.T,bcycle)
 				if v == 1
-					stats.Vin += 1.
+					stats.Vin[alpha] += 1.
 				else
-					stats.Vout += 1.
+					stats.Vout[alpha] += 1.
 				end
 			end
 		else
-			stats.Div += 1.
+			stats.Div[alpha] += 1.
 		end 
 	end		
-	stats.Vst /= nr
-	stats.Vin /= nr
-	stats.Vout /= nr
-	stats.Div /= nr
 
-	PStats[P] = stats
+	# normalize
+	for alpha in alphas
+		stats.Vst[alpha] /= np
+		stats.Vin[alpha] /= np
+		stats.Vout[alpha] /= np
+		stats.Div[alpha] /= np
+	end
 end
 
+serialize_to_file(stats, "stats_$np-$low-$step-$high.jld")
 
