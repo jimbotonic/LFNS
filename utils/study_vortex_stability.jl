@@ -16,8 +16,8 @@ conf = ConfParse("../config.ini")
 parse_conf!(conf)
 
 # simple square lattice
-n = 49
-m = 49
+@everywhere n = 49
+@everywhere m = 49
 
 # generate square lattice
 @everywhere g = generate_sq_lattice(n,m)
