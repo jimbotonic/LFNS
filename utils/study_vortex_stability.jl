@@ -20,14 +20,14 @@ n = 49
 m = 49
 
 # generate square lattice
-g = generate_sq_lattice(n,m)
+@everywhere g = generate_sq_lattice(n,m)
 
 # initialize simulation parameters
-sb = parse(Float64,retrieve(conf,"solvers","base_voltage"))
-max_iter = round(Int,parse(Float64,retrieve(conf,"solvers","max_iter")))
-epsilon = parse(Float64,retrieve(conf,"solvers","epsilon"))
+@everywhere sb = parse(Float64,retrieve(conf,"solvers","base_voltage"))
+@everywhere max_iter = round(Int,parse(Float64,retrieve(conf,"solvers","max_iter")))
+@everywhere epsilon = parse(Float64,retrieve(conf,"solvers","epsilon"))
 
-o_args = Dict{Symbol,Any}()
+@everywhere o_args = Dict{Symbol,Any}()
 o_args[:h] = parse(Float64,retrieve(conf,"rk","h"))
 @everywhere s = Simulator(g,RK_solver1,o_args,sb,epsilon,max_iter)
 
@@ -82,10 +82,10 @@ np = 100
 end
 
 @everywhere function get_simulation_state(s::Simulator,P_ref::Array{Float64,1},alpha::Float64)
-	# injections initialization
 	P = P_ref*alpha
 	change_P(s.g,P)
-	return simulation(s,callback_func)
+	state = simulation(s,callback_func)
+	return P,state,has_moved
 end
 
 # stats associated to a given random P
@@ -102,18 +102,38 @@ end
 
 PStats = Dict{Array{Float64,1},Stats}()
 alphas = collect(low:step:high)
+stats = Stats(0.,0.,0.,0.)
 
 # for the different initial P distributions
 for i in 1:np
 	# compute the final state for different values of alpha in parallel
 	@sync results = pmap(get_simulation_state,Array{Simulator,1}[s for alpha in alphas],Array{Array{Float64,1},1}[P_ref for alpha in alphas],alphas)	
-
 	nr = length(r)
 	for r in results
-		if r.n_iter < max_iter 
-	 		v = vorticity(r.T,bcycle)
+		P = r[1]
+		state = r[2]
+		has_moved = r[3]
+		if state.n_iter < max_iter 
+			if !has_moved
+				stats.Vst += 1.
+			else
+	 			v = vorticity(state.T,bcycle)
+				if v == 1
+					stats.Vin += 1.
+				else
+					stats.Vout += 1.
+				end
+			end
 		else
-
+			stats.Div += 1.
 		end 
 	end		
+	stats.Vst /= nr
+	stats.Vin /= nr
+	stats.Vout /= nr
+	stats.Div /= nr
+
+	PStats[P] = stats
 end
+
+
