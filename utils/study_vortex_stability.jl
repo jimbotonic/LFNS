@@ -1,26 +1,35 @@
 using Logging, ConfParser
 
+include("../init.jl")
+include("../graphs.jl")
+include("../simulator.jl")
+include("../solvers.jl")
+include("../data.jl")
+include("../metrics.jl")
+
 @Logging.configure(level=DEBUG)
 
 # loading config file
 conf = ConfParse("../config.ini")
 parse_conf!(conf)
 
-#addprocs(3)
+addprocs(3)
 
-@everywhere include("../init.jl")
-@everywhere include("../graphs.jl")
-@everywhere include("../simulator.jl")
-@everywhere include("../solvers.jl")
-@everywhere include("../data.jl")
-@everywhere include("../metrics.jl")
+@everywhere begin
+	include("../init.jl")
+	include("../graphs.jl")
+	include("../simulator.jl")
+	include("../solvers.jl")
+	include("../data.jl")
+	include("../metrics.jl")
 
-# simple square lattice
-n = 49
-m = 49
+	# simple square lattice
+	n = 49
+	m = 49
+end
 
 # generate square lattice
-@everywhere g = generate_sq_lattice(n,m)
+g = generate_sq_lattice(n,m)
 
 # initialize simulation parameters
 sb = parse(Float64,retrieve(conf,"solvers","base_voltage"))
@@ -29,20 +38,22 @@ epsilon = parse(Float64,retrieve(conf,"solvers","epsilon"))
 
 o_args = Dict{Symbol,Any}()
 o_args[:h] = parse(Float64,retrieve(conf,"rk","h"))
-@everywhere s = Simulator(g,RK_solver1,o_args,sb,epsilon,max_iter)
+s = Simulator(g,RK_solver1,o_args,sb,epsilon,max_iter)
 
 # get the contour cycle of the lattice
-@everywhere bcycle =  get_sq_lattice_contour_cycle(n,m)
+bcycle =  get_sq_lattice_contour_cycle(n,m)
 
 # central face cycle
-@everywhere ccycle = Int[]
-ipos = ceil(Int,m/2)
-jpos = ceil(Int,n/2)
+@everywhere begin 
+	ccycle = Int[]
+	ipos = ceil(Int,m/2)
+	jpos = ceil(Int,n/2)
 
-push!(ccycle, (ipos-1)*n+jpos)
-push!(ccycle, (ipos-1)*n+jpos+1)
-push!(ccycle, ipos*n+jpos+1)
-push!(ccycle, ipos*n+jpos)
+	push!(ccycle, (ipos-1)*n+jpos)
+	push!(ccycle, (ipos-1)*n+jpos+1)
+	push!(ccycle, ipos*n+jpos+1)
+	push!(ccycle, ipos*n+jpos)
+end
 
 ###
 # create vortex
@@ -55,7 +66,6 @@ j = 25
 T = create_vortex_on_sq_lattice(n,m,i,j)
 #T = create_antivortex_on_sq_lattice2(n,m,i,j)
 change_T(s.g,T)
-
 
 low = 0
 step = 1e-2
@@ -88,7 +98,7 @@ end
 end
 
 # stats associated to a given random P
-type Stats
+@everywhere type Stats
 	# vortex stable & convergence
 	Vst::Dict{Float64,Float64}
 	# vortex inside & convergence
@@ -118,6 +128,7 @@ for i in 1:1
 
 	# compute the final state for different values of alpha in parallel
 	@sync results = pmap(get_simulation_state,Simulator[s for alpha in alphas],Array{Float64,1}[P_ref for alpha in alphas],alphas)	
+	println(results)
 	nr = length(results)
 	for r in results
 		state = r[1]
