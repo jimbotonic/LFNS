@@ -33,7 +33,7 @@ s = Simulator(g,RK_solver1,o_args,sb,epsilon,max_iter)
 # injections initialization
 ###
 
-alpha = 0.2
+alpha = 0.6
 random = true
 N = 2
 
@@ -56,7 +56,7 @@ change_P(s.g,P)
 ###
 
 # dictionary of the last vortices positions of the vortices
-LP = Dict{Int,Array{Int,1}}()
+global LP = Dict{Int,Array{Int,1}}()
 
 if N == 1
 	# vortex or antivortex in the middle
@@ -79,6 +79,9 @@ elseif N == 2
 	# double vortex on the same row
 	i1 = 25; j1 = 20
 	i2 = 25; j2 = 31
+	# double vortex on the same line
+	#i1 = 20; j1 = 25
+	#i2 = 31; j2 = 25
 	# double vortex in the diagonal
 	#i1 = 20; j1 = 20
 	#i2 = 31; j2 = 31
@@ -234,9 +237,18 @@ end
 # get the contour cycle of the lattice
 bcycle =  get_sq_lattice_contour_cycle(n,m)
 
+# record T vectors 
+TS = Array{Array{Float64,1},1}()
+
 # solver callback function
 function callback_func(sp::SParams,n_iter::Int,error::Float64)
 	@info("vorticity (iteration: $n_iter, error: $error): ", vorticity(sp.T,bcycle))
+
+	global TS
+	if n_iter < 10000 && n_iter % 100 == 0
+		push!(TS,sp.T)
+	end
+
 	A,B,V = find_vortices_in_sq_lattice(n,m,sp.T)
 	for k in keys(LP)
 		changed = false
@@ -275,3 +287,7 @@ state = simulation(s,callback_func)
 # plot data
 plot_scatter_data(traces,"scatter","markers+lines", "vortices_position", None)
 
+# export T vectors
+#for i in 1:length(TS)
+#	export_csv_data(TS[i],"./movie/$i.csv")	
+#end

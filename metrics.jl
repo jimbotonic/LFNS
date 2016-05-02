@@ -42,8 +42,8 @@ function find_vortices_in_sq_lattice(n::Int,m::Int,T::Array{Float64,1})
 			push!(cycle, i*n+j)
 			v = vorticity(T,cycle)
 			if v > 0
-				push!(X,j)	
-				push!(Y,i)	
+				push!(X,i)	
+				push!(Y,j)	
 				push!(V,v)	
 			end
 		end	
