@@ -13,7 +13,7 @@ include("../metrics.jl")
 conf = ConfParse("../config.ini")
 parse_conf!(conf)
 
-addprocs(3)
+addprocs(45)
 
 @everywhere begin
 	include("../init.jl")
@@ -69,7 +69,7 @@ change_T(s.g,T)
 
 low = 0
 step = 1e-2
-high = 0.1
+high = 2
 
 # number of random initial random distribution
 np = 100
@@ -82,15 +82,18 @@ np = 100
 
 # solver callback function
 @everywhere function callback_func(sp::SParams,n_iter::Int,error::Float64)
-	# the vortex has moved?
-	v = vorticity(sp.T,ccycle)
-	if v == 0
-		has_moved = true
+	global has_moved
+	if !has_moved
+		# the vortex has moved?
+		if vorticity(sp.T,ccycle) == 0
+			has_moved = true
+		end
 	end
 	return true
 end
 
 @everywhere function get_simulation_state(s::Simulator,P_ref::Array{Float64,1},alpha::Float64)
+	global has_moved = false
 	P = P_ref*alpha
 	change_P(s.g,P)
 	state = simulation(s,callback_func)
@@ -121,14 +124,13 @@ for alpha in alphas
 end
 
 # for the different initial P distributions
-for i in 1:1
+for i in 1:np
 	# generate a random injection vector
 	U = init_rand_dist(n*m)
 	P_ref = init_P3(U)
 
 	# compute the final state for different values of alpha in parallel
 	@sync results = pmap(get_simulation_state,Simulator[s for alpha in alphas],Array{Float64,1}[P_ref for alpha in alphas],alphas)	
-	println(results)
 	nr = length(results)
 	for r in results
 		state = r[1]
@@ -159,5 +161,6 @@ for i in 1:1
 	end
 end
 
+println(stats)
 serialize_to_file(stats, "stats_$np-$low-$step-$high.jld")
 

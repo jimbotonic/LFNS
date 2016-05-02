@@ -33,9 +33,9 @@ s = Simulator(g,RK_solver1,o_args,sb,epsilon,max_iter)
 # injections initialization
 ###
 
-alpha = 0.8
+alpha = 0.2
 random = true
-N = 4
+N = 2
 
 if !random
 	# initialize the injections with a uniform distribution
@@ -77,15 +77,15 @@ if N == 1
 	push!(traces[1].Y,j)
 elseif N == 2
 	# double vortex on the same row
-	#i1 = 25; j1 = 20
-	#i2 = 25; j2 = 31
+	i1 = 25; j1 = 20
+	i2 = 25; j2 = 31
 	# double vortex in the diagonal
-	i1 = 20; j1 = 20
-	i2 = 31; j2 = 31
+	#i1 = 20; j1 = 20
+	#i2 = 31; j2 = 31
 
 	T1 = create_vortex_on_sq_lattice(n,m,i1,j1)
-	#T2 = create_vortex_on_sq_lattice(n,m,i2,j2)
-	T2 = create_antivortex_on_sq_lattice(n,m,i2,j2)
+	T2 = create_vortex_on_sq_lattice(n,m,i2,j2)
+	#T2 = create_antivortex_on_sq_lattice(n,m,i2,j2)
 	T = T1+T2
 
 	trace1 = scatter_trace(Float64[],Float64[],"v1")
