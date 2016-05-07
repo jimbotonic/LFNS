@@ -69,7 +69,7 @@ change_T(s.g,T)
 
 low = 0
 step = 1e-2
-high = 2
+high = 1.3
 
 # number of random initial random distribution
 np = 100
@@ -151,14 +151,14 @@ for i in 1:np
 			stats.Div[alpha] += 1.
 		end 
 	end		
+end
 
-	# normalize
-	for alpha in alphas
-		stats.Vst[alpha] /= np
-		stats.Vin[alpha] /= np
-		stats.Vout[alpha] /= np
-		stats.Div[alpha] /= np
-	end
+# normalize
+for alpha in alphas
+	stats.Vst[alpha] /= np
+	stats.Vin[alpha] /= np
+	stats.Vout[alpha] /= np
+	stats.Div[alpha] /= np
 end
 
 println(stats)
