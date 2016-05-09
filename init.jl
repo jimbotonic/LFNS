@@ -99,7 +99,8 @@ end
 # generate a flat square lattice
 #
 ## INPUT
-# n,m: width and height of the lattice
+# n: width of the lattice
+# m: height of the lattice
 function generate_sq_lattice(n::Int,m::Int)
 	vs = Bus[]
 	es = Line[]	
@@ -133,8 +134,9 @@ end
 # initialize all other angles by using atan
 #
 # INPUT
-# n,m: (height,width) of the lattice
-# i,j: (row,column) coordinates of the vortex center
+# matrix-like coordinates:
+# -> n,m: (height,width) of the lattice
+# -> i,j: (row,column) coordinates of the vortex center
 function create_vortex_on_sq_lattice(n::Int,m::Int,i::Int,j::Int)
 	T = zeros(Float64,n*m)
 	for p in 1:(n*m)
@@ -172,8 +174,9 @@ end
 # initialize all other angles by using atan
 #
 # INPUT
-# n,m: (height,width) of the lattice
-# i,j: (row,column) coordinates of the vortex center
+# matrix-like coordinates:
+# -> n,m: (height,width) of the lattice
+# -> i,j: (row,column) coordinates of the vortex center
 function create_antivortex_on_sq_lattice(n::Int,m::Int,i::Int,j::Int)
 	T = zeros(Float64,n*m)
 	for p in 1:(n*m)
@@ -207,6 +210,9 @@ function create_antivortex_on_sq_lattice(n::Int,m::Int,i::Int,j::Int)
 end
 
 # generate the contour cycle of a square lattice
+#
+# n: width of the lattice
+# m: height of the lattice
 function get_sq_lattice_contour_cycle(n::Int,m::Int)
 	bcycle = Array{Int64,1}()
 
@@ -228,7 +234,8 @@ end
 # generate a flat square lattice on a cylinder
 #
 ## INPUT
-# n,m: width and height of the lattice
+# n: width of the lattice
+# m: height of the lattice
 function generate_sq_lattice_on_cylinder(n::Int,m::Int)
 	vs = Bus[]
 	es = Line[]	
@@ -266,7 +273,8 @@ end
 # generate a flat square lattice on a donut
 #
 ## INPUT
-# n,m: width and height of the lattice
+# n: width of the lattice
+# m: height of the lattice
 function generate_sq_lattice_on_torus(n::Int,m::Int)
 	vs = Bus[]
 	es = Line[]	
