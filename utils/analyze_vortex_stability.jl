@@ -97,11 +97,11 @@ end
 	P = P_ref*alpha
 	change_P(s.g,P)
 	state = simulation(s,callback_func)
-	return state,alpha,has_moved
+	return alpha,state,has_moved
 end
 
 # stats associated to a given random P
-@everywhere type Stats
+type AStats
 	# vortex stable & convergence
 	Vst::Dict{Float64,Float64}
 	# vortex inside & convergence
@@ -115,7 +115,7 @@ end
 alphas = collect(low:step:high)
 
 # initialize stats
-stats = Stats(Dict{Float64,Float64}(),Dict{Float64,Float64}(),Dict{Float64,Float64}(),Dict{Float64,Float64}())
+stats = AStats(Dict{Float64,Float64}(),Dict{Float64,Float64}(),Dict{Float64,Float64}(),Dict{Float64,Float64}())
 for alpha in alphas
 	stats.Vst[alpha] = 0.
 	stats.Vin[alpha] = 0.
@@ -133,8 +133,8 @@ for i in 1:np
 	@sync results = pmap(get_simulation_state,Simulator[s for alpha in alphas],Array{Float64,1}[P_ref for alpha in alphas],alphas)	
 	nr = length(results)
 	for r in results
-		state = r[1]
-		alpha = r[2]
+		alpha = r[1]
+		state = r[2]
 		has_moved = r[3]
 		if state.n_iter < max_iter 
 			if !has_moved
@@ -162,5 +162,5 @@ for alpha in alphas
 end
 
 println(stats)
-serialize_to_file(stats, "stats_$np-$low-$step-$high.jld")
+serialize_to_file(stats, "AStats_$np-$low-$step-$high.jld")
 
