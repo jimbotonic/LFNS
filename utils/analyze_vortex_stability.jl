@@ -74,6 +74,9 @@ high = 1.3
 # number of random initial random distribution
 np = 100
 
+# set of alpha values
+alphas = collect(low:step:high)
+
 ###
 # parallelization
 ###
@@ -112,9 +115,7 @@ type AStats
 	Div::Dict{Float64,Float64}
 end
 
-alphas = collect(low:step:high)
-
-# initialize stats
+# initialize AStats
 stats = AStats(Dict{Float64,Float64}(),Dict{Float64,Float64}(),Dict{Float64,Float64}(),Dict{Float64,Float64}())
 for alpha in alphas
 	stats.Vst[alpha] = 0.
@@ -123,11 +124,15 @@ for alpha in alphas
 	stats.Div[alpha] = 0.
 end
 
+# P -> (alpha -> symbol)
+pstats = Dict{Array{Float64,1},Dict{Float64,Symbol}}()
+
 # for the different initial P distributions
 for i in 1:np
 	# generate a random injection vector
 	U = init_rand_dist(n*m)
 	P_ref = init_P3(U)
+	as = Dict{Float64,Symbol}()
 
 	# compute the final state for different values of alpha in parallel
 	@sync results = pmap(get_simulation_state,Simulator[s for alpha in alphas],Array{Float64,1}[P_ref for alpha in alphas],alphas)	
@@ -139,18 +144,24 @@ for i in 1:np
 		if state.n_iter < max_iter 
 			if !has_moved
 				stats.Vst[alpha] += 1.
+				as[alpha] = :Vst
 			else
 	 			v = vorticity(state.T,bcycle)
 				if v == 1
 					stats.Vin[alpha] += 1.
+					as[alpha] = :Vin
 				else
 					stats.Vout[alpha] += 1.
+					as[alpha] = :Vout
 				end
 			end
 		else
 			stats.Div[alpha] += 1.
+			as[alpha] = :Div
 		end 
 	end		
+	
+	pstats[P_ref] = as
 end
 
 # normalize
@@ -163,4 +174,5 @@ end
 
 println(stats)
 serialize_to_file(stats, "AStats_$np-$low-$step-$high.jld")
+serialize_to_file(pstats, "PStats_$np-$low-$step-$high.jld")
 
