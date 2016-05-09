@@ -278,7 +278,7 @@ function load_IEEE_SLFD(filename::AbstractString)
 			sh_conductance = float(strip(replace(l[107:114],',','.')))
 			sh_susceptance = float(strip(replace(l[115:122],',','.')))
 			
-			v = Bus(id, name, bus_type, init_voltage, final_voltage, base_voltage, angle, load, generation, Q_min, Q_max, 0., 0., sh_conductance, sh_susceptance)
+			v = Bus(id, name, bus_type, init_voltage, final_voltage, base_voltage, angle, load, generation, Q_min, Q_max, 0., 0., sh_conductance, sh_susceptance,0.,0.)
 			push!(vs, v)
 			@info("adding vertex: ", v)
 			
