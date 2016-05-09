@@ -27,8 +27,9 @@ end
 
 # find the positions of the vortices
 #
-# n: height of the lattice
-# m: width of the lattice
+# matrix-like coordinates:
+# -> n: height of the lattice
+# -> m: width of the lattice
 function find_vortices_in_sq_lattice(n::Int,m::Int,T::Array{Float64,1})
 	X = Int[]
 	Y = Int[]
@@ -36,10 +37,10 @@ function find_vortices_in_sq_lattice(n::Int,m::Int,T::Array{Float64,1})
 	for i in 1:(n-1)
 		for j in 1:(m-1)
 			cycle = Int[]
-			push!(cycle, (i-1)*n+j)
-			push!(cycle, (i-1)*n+j+1)
-			push!(cycle, i*n+j+1)
-			push!(cycle, i*n+j)
+			push!(cycle, (i-1)*m+j)
+			push!(cycle, (i-1)*m+j+1)
+			push!(cycle, i*m+j+1)
+			push!(cycle, i*m+j)
 			v = vorticity(T,cycle)
 			if v > 0
 				push!(X,i)	
@@ -49,6 +50,83 @@ function find_vortices_in_sq_lattice(n::Int,m::Int,T::Array{Float64,1})
 		end	
 	end
 	return X,Y,V
+end
+
+# get the value of the potential
+#
+# matrix-like coordinates:
+# -> n: height of the lattice
+# -> m: width of the lattice
+function get_potential_in_sq_lattice(n::Int,m::Int,P::Array{Float64,1},T::Array{Float64,1})
+	u = 0.
+	# compute \sum P_i * theta_i
+	for i in 1:n
+		for j in 1:m
+			pos = (i-1)*m+j
+			v -= P[pos]*T[pos]
+		end
+	end
+	# 4 corners
+	pos = 1
+	v -= cos(T[pos+1]-T[pos])
+	v -= cos(T[pos+m]-T[pos])
+	pos = m
+	v -= cos(T[pos-1]-T[pos])
+	v -= cos(T[pos+m]-T[pos])
+	pos = (n-1)*m + 1 
+	v -= cos(T[pos+1]-T[pos])
+	v -= cos(T[pos-m]-T[pos])
+	pos = n*m
+	v -= cos(T[pos-1]-T[pos])
+	v -= cos(T[pos-m]-T[pos])
+	# first line
+	for i in 1:1
+		for j in 2:(m-1)
+			pos = (i-1)*m+j
+			v -= cos(T[pos-1]-T[pos])
+			v -= cos(T[pos+1]-T[pos])
+			v -= cos(T[pos+m]-T[pos])
+		end
+	end
+	# last line
+	for i in n:n
+		for j in 2:(m-1)
+			pos = (i-1)*m+j
+			v -= cos(T[pos-1]-T[pos])
+			v -= cos(T[pos+1]-T[pos])
+			v -= cos(T[pos-m]-T[pos])
+		end
+	end
+	# left column
+	for i in 2:(n-1)
+		for j in 1:1
+			pos = (i-1)*m+j
+			v -= cos(T[pos-m]-T[pos])
+			v -= cos(T[pos+m]-T[pos])
+			v -= cos(T[pos+1]-T[pos])
+		end
+	end
+	# right column
+	for i in 2:(n-1)
+		for j in m:m
+			pos = (i-1)*m+j
+			v -= cos(T[pos-m]-T[pos])
+			v -= cos(T[pos+m]-T[pos])
+			v -= cos(T[pos-1]-T[pos])
+		end
+	end
+	# inside of the lattice
+	for i in 2:(n-1)
+		for j in 2:(m-1)
+			pos = (i-1)*m+j
+			v -= cos(T[pos-1]-T[pos])
+			v -= cos(T[pos+1]-T[pos])
+			v -= cos(T[pos-m]-T[pos])
+			v -= cos(T[pos+m]-T[pos])
+		end
+	end
+
+	return v
 end
 
 # Stability matrix
