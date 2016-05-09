@@ -352,6 +352,8 @@ function export_graphml(g::Graphs.AbstractGraph{Bus,Line}, filename::AbstractStr
 		write(graphmlFile, "		<data key=\"P_max\">" * string(n.P_max) * "</data>\n")
 		write(graphmlFile, "		<data key=\"sh_conductance\">" * string(n.sh_conductance) * "</data>\n")
 		write(graphmlFile, "		<data key=\"sh_susceptance\">" * string(n.sh_susceptance) * "</data>\n")
+		write(graphmlFile, "		<data key=\"lat\">" * string(n.lat) * "</data>\n")
+		write(graphmlFile, "		<data key=\"lng\">" * string(n.lng) * "</data>\n")
 		write(graphmlFile, "	</node>\n")
 	end
 

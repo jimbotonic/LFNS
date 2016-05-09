@@ -22,25 +22,28 @@ type Bus
 	P_max::Float64
 	sh_conductance::Float64
 	sh_susceptance::Float64
+	# normalized latitude and longitude (between 0 and 1)
+	lat::Float64
+	lng::Float64
 	
 	# default constructor
-	function Bus(id::Int64, name::AbstractString, bus_type::Int, init_voltage::Float64, final_voltage::Float64, base_voltage::Float64, angle::Float64, load::Complex{Float64}, generation::Complex{Float64}, Q_min::Float64, Q_max::Float64, P_min::Float64, P_max::Float64, sh_conductance::Float64, sh_susceptance::Float64)
-		new(id, name, bus_type, init_voltage, final_voltage, base_voltage, angle, load, generation, Q_min, Q_max, P_min, P_max, sh_conductance, sh_susceptance)
+	function Bus(id::Int64, name::AbstractString, bus_type::Int, init_voltage::Float64, final_voltage::Float64, base_voltage::Float64, angle::Float64, load::Complex{Float64}, generation::Complex{Float64}, Q_min::Float64, Q_max::Float64, P_min::Float64, P_max::Float64, sh_conductance::Float64, sh_susceptance::Float64, lat::Float64, lng::Float64)
+		new(id, name, bus_type, init_voltage, final_voltage, base_voltage, angle, load, generation, Q_min, Q_max, P_min, P_max, sh_conductance, sh_susceptance, lat, lng)
 	end
 
 	# simple constructors
 	function Bus(id::Int64, t::Float64, p::Float64)
 		if p < 0
 			# load
-			new(id, "$id", 2, 1., 1., 1., t, -p, 0., 0., 0., 0., 0., 0., 0.)
+			new(id, "$id", 2, 1., 1., 1., t, -p, 0., 0., 0., 0., 0., 0., 0., 0., 0.)
 		else
 			# generation
-			new(id, "$id", 2, 1., 1., 1., t, 0., p, 0., 0., 0., 0., 0., 0.)
+			new(id, "$id", 2, 1., 1., 1., t, 0., p, 0., 0., 0., 0., 0., 0., 0., 0.)
 		end
 	end 
 	
 	function Bus(id::Int64, name::AbstractString)
-		new(id, name, 2, 1., 1., 1., 0., 0., 0., 0., 0., 0., 0., 0., 0.)
+		new(id, name, 2, 1., 1., 1., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.)
 	end 
 end
 
