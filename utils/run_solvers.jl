@@ -1,9 +1,9 @@
 using ArgParse, Logging, ConfParser
 
-include("init.jl")
-include("data.jl")
-include("solvers.jl")
-include("graphs.jl")
+include("../init.jl")
+include("../data.jl")
+include("../solvers.jl")
+include("../graphs.jl")
 
 # @Logging.configure(level=INFO)
 
@@ -226,10 +226,10 @@ elseif solver == "KR"
 		npcs = parse(Int,pargs["nprocs"])
 		addprocs(npcs)
 		# include the required code
-		@everywhere include("init.jl")
-		@everywhere include("data.jl")
-		@everywhere include("solvers.jl")
-		@everywhere include("graphs.jl")
+		@everywhere include("../init.jl")
+		@everywhere include("../data.jl")
+		@everywhere include("../solvers.jl")
+		@everywhere include("../graphs.jl")
 		@everywhere function get_state(s::Simulator,P_ref::Array{Float64,1},alpha::Float64,max_value::Float64=1.)
 			P = P_ref*alpha*max_value
 			# @debug("norm P (2/Inf): ", norm(P,2), "/", norm(P,Inf))
