@@ -82,17 +82,14 @@ end
 
 function display_pstats(title::AbstractString,d::Dict{Float64,Int})
 	sd = sort(collect(d))
-	esd = 0.
-	vsd = 0.
-	ntot = sum(Int[sd[i][2] for i in 1:length(sd)])
-	for p in sd
-		esd += p[1]*(p[2]/ntot)
-		vsd += p[1]^2*(p[2]/ntot)
-	end
-	dev = sqrt(vsd - esd^2)
+	freqs = Int[sd[i][2] for i in 1:length(sd)]
+	freqs /= sum(freqs)
+	alphas = Float64[sd[i][1] for i in 1:length(sd)]
+	esp = dot(freqs,alphas)
+	variance = dot(freqs,alphas.^2)-esp^2
 	println("### Stats for: ", title)
-	println("-> esperance: ", esd)
-	println("-> deviation: ", dev)
+	println("-> mean: ", esp)
+	println("-> std : ", sqrt(variance))
 end
 
 ###

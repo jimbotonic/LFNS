@@ -231,6 +231,54 @@ function get_sq_lattice_contour_cycle(n::Int,m::Int)
 	return bcycle
 end
 
+# generate the contour cycle of a graph from (lat,lng) pairs
+#
+# mode A: start from leftest node and visit nodes clockwise
+# -> angles are measured for y=0+ axis
+# -> from leftest node, choose next child so that angle is maximum in upper-right quadrant
+# -> for next nodes, choose next child so that:
+# 	-> angle is maximum if first crossed edge has been visited
+#	-> angle is maximum before an already visited edge is crossed
+#
+# mode B: start from leftest node and visit nodes anticlockwise
+# -> angles are measured with respect to y=0- axis
+# -> from leftest node, choose next child so that angle is maximum in lower-right quadrant
+# -> for next nodes, choose next child so that:
+# 	-> angle is maximum if first crossed edge has been visited
+#	-> angle is maximum before an already visited edge is crossed
+function get_graph_contour_cycle(g::Graphs.AbstractGraph{Bus,Line})
+	bcycle = Array{Int64,1}()
+
+	X = Float64[]
+	Y = Float64[]
+	X2 = Float64[]
+	Y2 = Float64[]
+	ids = Set{Int}()
+
+	for v in vertices(g)
+		push!(X,v.lat)
+		push!(Y,v.lng)
+		# ignore sources and sinks
+		if out_degree(v,g) > 1
+			push!(ids,v)
+			push!(X2,v.lat)
+			push!(Y2,v.lng)
+		end
+	end
+
+	# get leftest vertex
+	lvi = indmin(X2)
+	push!(bcycle,lvi)
+
+	cv = lvi
+	while true
+		nei = out_neighbors(cv,g)
+		
+	end
+			
+	return bcycle
+end
+
 # generate a flat square lattice on a cylinder
 #
 ## INPUT

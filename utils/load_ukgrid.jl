@@ -35,8 +35,8 @@ function load_graph(E_fn::AbstractString, pos_fn::AbstractString)
 	end
 	
 	for i in 1:size(pos_df,1)
-		vlat = pos_df[i,1]
-		vlng = pos_df[i,2]
+		vlng = pos_df[i,1]
+		vlat = pos_df[i,2]
 		vertices[i].lat = vlat
 		vertices[i].lng = vlng
 	end

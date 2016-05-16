@@ -97,7 +97,7 @@ function get_slack_component_ids(g::Graphs.AbstractGraph{Bus,Line})
 end
 
 # get the vector of active powers
-function get_active_power(g::Graphs.AbstractGraph{Bus,Line})
+function get_active_powers(g::Graphs.AbstractGraph{Bus,Line})
 	n = length(vertices(g))
 	P = zeros(Float64,n)
 	for v in vertices(g)
