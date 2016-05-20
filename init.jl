@@ -231,51 +231,107 @@ function get_sq_lattice_contour_cycle(n::Int,m::Int)
 	return bcycle
 end
 
+# compute the angle (mode A, i.e., with respect to y=0,x>0 axis) for the edge parent node - child node 
+function compute_edge_angle(px::Int, py::Int, cx::Int, cy::Int)
+	dx = cx-px
+	dy = cy-py
+
+	# Q1
+	if dx >= 0 && dy >= 0
+		return atan(abs(dy/dx))
+	# Q2
+	elseif dx < 0 && dy >= 0
+		return pi-atan(abs(dy/dx))
+	# Q3
+	elseif dy < 0 && dx <= 0
+		return pi+atan(abs(dy/dx))
+	# Q4 (dy < 0 && dx > 0)
+	else
+		return 2pi-atan(abs(dy/dx))
+	end
+end
+
 # generate the contour cycle of a graph from (lat,lng) pairs
 #
-# mode A: start from leftest node and visit nodes clockwise
-# -> angles are measured for y=0+ axis
-# -> from leftest node, choose next child so that angle is maximum in upper-right quadrant
-# -> for next nodes, choose next child so that:
+# mode A: start from lowest node and visit nodes clockwise
+# -> angles are measured anticlockwise with respect to y=0,x>0 axis
+# -> for choosing next nodes, choose next child so that:
 # 	-> angle is maximum if first crossed edge has been visited
 #	-> angle is maximum before an already visited edge is crossed
 #
-# mode B: start from leftest node and visit nodes anticlockwise
-# -> angles are measured with respect to y=0- axis
-# -> from leftest node, choose next child so that angle is maximum in lower-right quadrant
-# -> for next nodes, choose next child so that:
-# 	-> angle is maximum if first crossed edge has been visited
-#	-> angle is maximum before an already visited edge is crossed
-function get_graph_contour_cycle(g::Graphs.AbstractGraph{Bus,Line})
+# mode B: start from highest node and visit nodes anticlockwise
+# -> angles are measured clockwise with respect to y=0,x<0 axis
+# -> for choosing next nodes, apply same rule as in mode A
+function get_geolocalized_graph_contour_cycle(g::Graphs.AbstractGraph{Bus,Line})
 	bcycle = Array{Int64,1}()
 
 	X = Float64[]
 	Y = Float64[]
 	X2 = Float64[]
 	Y2 = Float64[]
-	ids = Set{Int}()
+	nvids = Set{Int}()
+	on_vid = Dict{Int,Int}()
+	oid_v = Dict{Int,Bus}()
 
+	counter = 1
 	for v in vertices(g)
 		push!(X,v.lat)
 		push!(Y,v.lng)
-		# ignore sources and sinks
+		# ignore sinks
 		if out_degree(v,g) > 1
-			push!(ids,v)
+			push!(nvids,v.id)
+			on_vid[v.id] = counter
+			oid_v[v.id] = v
 			push!(X2,v.lat)
 			push!(Y2,v.lng)
+			counter += 1
 		end
 	end
 
-	# get leftest vertex
-	lvi = indmin(X2)
-	push!(bcycle,lvi)
-
-	cv = lvi
+	# get lowest vertex (old index)
+	lvi = indmin(Y)
+	# get vertex from old index
+	cv = oid_v[lvi]
+	push!(bcycle,cv.id)
+	# parent id (old index)
+	pid = -1
 	while true
 		nei = out_neighbors(cv,g)
-		
+		# no-sink children ids (old indices)
+		cids = collect(intersect(Set([v.id for v in nei]),nvids))
+		# get parent node coordinates
+		px = X2[on_vid[cv.id]]
+		py = Y2[on_vid[cv.id]]
+		# compute angles for all no-sink children
+		cangles = Float[compute_edge_angle(px,px,X2[on_vid[o]],Y2[on_vid[o]]) for o in cids]
+		mii = indmin(cangles)
+		# get angle corresponding to parent-child edge
+		pangle = compute_edge_angle(px,px,X2[on_vid[pid]],Y2[on_vid[pid]]) 
+		# first node to be explored
+		# OR if the parent-child is the first one clockwise, select the maximum angle
+		if pid != -1 || mii == pangle
+			# get index of the max angle
+			mai = indmax(cangles)
+		# otherwise select the maximum angle lower than parent-child edge angle
+		else
+			# select maximum of angles < parent-child edge angle
+			mfca = maximum(filter(x-> x < pangle,cangles))
+			# get index of the max possible angle
+			mai = find(x->x==mfca,cangles)
+		end
+		# set parent id for the next loop
+		pid = cv.id
+		# get new vertex
+		cv = oid_v[cids[mai]]
+		# if the cycle is closed
+		if cv == bcycle[1]
+			break
+		else
+			# add new node to the cycle
+			push!(bcycle,cv.id)
+		end
 	end
-			
+				
 	return bcycle
 end
 
