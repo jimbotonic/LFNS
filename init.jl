@@ -149,7 +149,7 @@ function create_vortex_on_sq_lattice(n::Int,m::Int,i::Int,j::Int)
 		# center of the vortex
 		cx = j + 1/2
 		cy = i + 1/2
-		ba = atan(abs(y-cy)/abs(x-cx))
+		ba = atan(abs((y-cy)/(x-cx)))
 		# NO
 		# NB: each square has a 1 unit length
 		if x <= cx && y <= cy
@@ -189,7 +189,7 @@ function create_antivortex_on_sq_lattice(n::Int,m::Int,i::Int,j::Int)
 		# center of the vortex
 		cx = j + 1/2
 		cy = i + 1/2
-		ba = atan(abs(y-cy)/abs(x-cx))
+		ba = atan(abs((y-cy)/(x-cx)))
 		# NO
 		# NB: each square has a 1 unit length
 		if x <= cx && y <= cy
@@ -232,7 +232,7 @@ function get_sq_lattice_contour_cycle(n::Int,m::Int)
 end
 
 # compute the angle (mode A, i.e., with respect to y=0,x>0 axis) for the edge parent node - child node 
-function compute_edge_angle(px::Int, py::Int, cx::Int, cy::Int)
+function compute_edge_angle(px::Float64, py::Float64, cx::Float64, cy::Float64)
 	dx = cx-px
 	dy = cy-py
 
@@ -275,15 +275,15 @@ function get_geolocalized_graph_contour_cycle(g::Graphs.AbstractGraph{Bus,Line})
 
 	counter = 1
 	for v in vertices(g)
-		push!(X,v.lat)
-		push!(Y,v.lng)
+		push!(X,v.lng)
+		push!(Y,v.lat)
 		# ignore sinks
 		if out_degree(v,g) > 1
 			push!(nvids,v.id)
 			on_vid[v.id] = counter
 			oid_v[v.id] = v
-			push!(X2,v.lat)
-			push!(Y2,v.lng)
+			push!(X2,v.lng)
+			push!(Y2,v.lat)
 			counter += 1
 		end
 	end
@@ -293,38 +293,48 @@ function get_geolocalized_graph_contour_cycle(g::Graphs.AbstractGraph{Bus,Line})
 	# get vertex from old index
 	cv = oid_v[lvi]
 	push!(bcycle,cv.id)
-	# parent id (old index)
+	# previous parent id (old index)
 	pid = -1
 	while true
+		# get children of current node
 		nei = out_neighbors(cv,g)
 		# no-sink children ids (old indices)
 		cids = collect(intersect(Set([v.id for v in nei]),nvids))
 		# get parent node coordinates
-		px = X2[on_vid[cv.id]]
-		py = Y2[on_vid[cv.id]]
+		px = cv.lng
+		py = cv.lat
 		# compute angles for all no-sink children
-		cangles = Float[compute_edge_angle(px,px,X2[on_vid[o]],Y2[on_vid[o]]) for o in cids]
+		cangles = Float64[compute_edge_angle(px,px,X2[on_vid[o]],Y2[on_vid[o]]) for o in cids]
+		# get index of the min angle
 		mii = indmin(cangles)
-		# get angle corresponding to parent-child edge
-		pangle = compute_edge_angle(px,px,X2[on_vid[pid]],Y2[on_vid[pid]]) 
-		# first node to be explored
-		# OR if the parent-child is the first one clockwise, select the maximum angle
-		if pid != -1 || mii == pangle
+		# first explored node
+		if length(bcycle) > 1
+			# get angle corresponding to current cv-pv edge
+			pangle = cangles[find(x->x==pv.id,cids)[1]]
+			
+			# OR if the parent-child edge is the first one clockwise, select the maximum angle
+			if cangles[mii] == pangle
+				# get index of the max angle
+				mai = indmax(cangles)
+			# otherwise select the maximum angle lower than parent-child edge angle
+			else
+				# select maximum of angles < parent-child edge angle
+				mfca = maximum(filter(x-> x < pangle,cangles))
+				# get index of the max possible angle
+				mai = find(x->x==mfca,cangles)[1]
+			end
+		else
 			# get index of the max angle
 			mai = indmax(cangles)
-		# otherwise select the maximum angle lower than parent-child edge angle
-		else
-			# select maximum of angles < parent-child edge angle
-			mfca = maximum(filter(x-> x < pangle,cangles))
-			# get index of the max possible angle
-			mai = find(x->x==mfca,cangles)
 		end
-		# set parent id for the next loop
-		pid = cv.id
+		# set previous parent id for the next loop
+		pv = cv
 		# get new vertex
 		cv = oid_v[cids[mai]]
+		@debug("pvertex ", pv.id ," (", pv.lng, " ", pv.lat, ")")
+		@debug("cvertex ", cv.id ," (", cv.lng, " ", cv.lat, ")")
 		# if the cycle is closed
-		if cv == bcycle[1]
+		if cv.id == bcycle[1]
 			break
 		else
 			# add new node to the cycle
