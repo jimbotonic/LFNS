@@ -13,7 +13,7 @@ include("../metrics.jl")
 conf = ConfParse("../config.ini")
 parse_conf!(conf)
 
-addprocs(3)
+addprocs(45)
 
 @everywhere begin
 	include("../init.jl")
@@ -147,7 +147,7 @@ astats2 = AStats2(Dict{Float64,Float64}(),Dict{Float64,Float64}(),Dict{Float64,F
 
 for alpha in alphas
 	astats2.Vst1[alpha] = 0.
-	astats2.Vst1[alpha] = 0.
+	astats2.Vst2[alpha] = 0.
 	astats2.Vin[alpha] = 0.
 	astats2.Vout1[alpha] = 0.
 	astats2.Vout2[alpha] = 0.
