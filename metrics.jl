@@ -180,6 +180,7 @@ function get_lambda2(T::Array{Float64,1}, Y::SparseMatrixCSC{Complex{Float64},In
 	# get stability matrix
 	M = get_stability_matrix(T,Y)
 	n = size(M)[1]
+	# why?
 	M = Symmetric(M)
 	evs = eigvals(M,(n-1:n))
 	l1 = evs[end]

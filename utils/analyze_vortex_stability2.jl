@@ -182,18 +182,18 @@ for i in 1:np
 			else
 	 			v = vorticity(state.T,bcycle)
 				if v == 2
-					stats.Vin[alpha] += 1.
+					astats2.Vin[alpha] += 1.
 					as[alpha] = :Vin
 				elseif v == 1
-					stats.Vout1[alpha] += 1.
+					astats2.Vout1[alpha] += 1.
 					as[alpha] = :Vout1
 				elseif v == 0
-					stats.Vout2[alpha] += 1.
+					astats2.Vout2[alpha] += 1.
 					as[alpha] = :Vout2
 				end
 			end
 		else
-			stats.Div[alpha] += 1.
+			astats2.Div[alpha] += 1.
 			as[alpha] = :Div
 		end 
 	end		

@@ -72,7 +72,7 @@ pargs = parse_cl()
 solver = pargs["solver"]
 
 # loading config file
-conf = ConfParse("config.ini")
+conf = ConfParse("../config.ini")
 parse_conf!(conf)
 
 if solver == "NR"
