@@ -233,6 +233,7 @@ end
 
 # compute the angle (mode A, i.e., with respect to y=0,x>0 axis) for the edge parent node - child node 
 function compute_edge_angle(px::Float64, py::Float64, cx::Float64, cy::Float64)
+	#@debug("computing angle ($px,$py)-($cx,$cy)")
 	dx = cx-px
 	dy = cy-py
 
@@ -253,6 +254,8 @@ end
 
 # generate the contour cycle of a graph from (lat,lng) pairs
 #
+# NB: sink nodes need to be treated separately
+#
 # mode A: start from lowest node and visit nodes clockwise
 # -> angles are measured anticlockwise with respect to y=0,x>0 axis
 # -> for choosing next nodes, choose next child so that:
@@ -262,7 +265,7 @@ end
 # mode B: start from highest node and visit nodes anticlockwise
 # -> angles are measured clockwise with respect to y=0,x<0 axis
 # -> for choosing next nodes, apply same rule as in mode A
-function get_geolocalized_graph_contour_cycle(g::Graphs.AbstractGraph{Bus,Line})
+function get_geolocalized_graph_contour_cycle(g::Graphs.AbstractGraph{Bus,Line},ignore_vids::Set{Int}=Set{Int}())
 	bcycle = Array{Int64,1}()
 
 	X = Float64[]
@@ -273,6 +276,7 @@ function get_geolocalized_graph_contour_cycle(g::Graphs.AbstractGraph{Bus,Line})
 	on_vid = Dict{Int,Int}()
 	oid_v = Dict{Int,Bus}()
 
+	# collect geolocalization data
 	counter = 1
 	for v in vertices(g)
 		push!(X,v.lng)
@@ -293,25 +297,28 @@ function get_geolocalized_graph_contour_cycle(g::Graphs.AbstractGraph{Bus,Line})
 	# get vertex from old index
 	cv = oid_v[lvi]
 	push!(bcycle,cv.id)
-	# previous parent id (old index)
-	pid = -1
 	while true
+		#@debug("exploring vertex ", cv.id)
 		# get children of current node
 		nei = out_neighbors(cv,g)
+		#@debug("nei: ", [v.id for v in nei])
 		# no-sink children ids (old indices)
-		cids = collect(intersect(Set([v.id for v in nei]),nvids))
+		cids = collect(setdiff(intersect(Set([v.id for v in nei]),nvids),ignore_vids))
+		#@debug("cids: ", cids)
 		# get parent node coordinates
 		px = cv.lng
 		py = cv.lat
 		# compute angles for all no-sink children
-		cangles = Float64[compute_edge_angle(px,px,X2[on_vid[o]],Y2[on_vid[o]]) for o in cids]
+		cangles = Float64[compute_edge_angle(px,py,X2[on_vid[o]],Y2[on_vid[o]]) for o in cids]
 		# get index of the min angle
 		mii = indmin(cangles)
-		# first explored node
+		# first node was already explored
 		if length(bcycle) > 1
 			# get angle corresponding to current cv-pv edge
 			pangle = cangles[find(x->x==pv.id,cids)[1]]
-			
+			#@debug("cv-pv edge angle: $pangle")
+			#@debug("child edges angle: ", cangles)
+			#@debug("min child edges angle: ", cangles[mii])
 			# OR if the parent-child edge is the first one clockwise, select the maximum angle
 			if cangles[mii] == pangle
 				# get index of the max angle
@@ -331,8 +338,8 @@ function get_geolocalized_graph_contour_cycle(g::Graphs.AbstractGraph{Bus,Line})
 		pv = cv
 		# get new vertex
 		cv = oid_v[cids[mai]]
-		@debug("pvertex ", pv.id ," (", pv.lng, " ", pv.lat, ")")
-		@debug("cvertex ", cv.id ," (", cv.lng, " ", cv.lat, ")")
+		#@debug("parent  vertex ", pv.id ," (", pv.lng, " ", pv.lat, ")")
+		#@debug("current vertex ", cv.id ," (", cv.lng, " ", cv.lat, ")")
 		# if the cycle is closed
 		if cv.id == bcycle[1]
 			break
@@ -340,6 +347,7 @@ function get_geolocalized_graph_contour_cycle(g::Graphs.AbstractGraph{Bus,Line})
 			# add new node to the cycle
 			push!(bcycle,cv.id)
 		end
+		#@debug("----------")
 	end
 				
 	return bcycle

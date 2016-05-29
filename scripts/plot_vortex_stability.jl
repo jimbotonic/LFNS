@@ -79,7 +79,6 @@ if plot_astats
 	plot_scatter_data(atraces,"scatter","markers", "A", None)
 end
 
-
 function display_pstats(title::AbstractString,d::Dict{Float64,Int})
 	sd = sort(collect(d))
 	freqs = Int[sd[i][2] for i in 1:length(sd)]

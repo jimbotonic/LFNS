@@ -132,3 +132,16 @@ g = generate_sq_lattice_on_sphere(n)
 for v in vertices(g)
 	@test out_degree(v,g) == 4 
 end
+
+###
+# test graph analysis functions on real graphs
+###
+
+@info("######## test contour cycle detection")
+g = load_serialized("./data/ukgrid/ukgrid.jld")
+
+# contour cycle starting from lowest node
+ccycle = [1,5,4,6,7,38,39,40,41,37,35,117,49,50,51,52,54,68,69,77,78,80,81,89,95,97,96,100,101,102,104,106,108,109,107,94,92,91,90,87,86,83,82,75,74,60,59,31,29,28,22,20,16,15,14,13,12,10,119,11,3,2]
+
+# get contour cycle
+bcycle = get_geolocalized_graph_contour_cycle(g)

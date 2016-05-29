@@ -3,7 +3,7 @@ using Logging, DataFrames, Graphs
 include("../graphs.jl")
 include("../data.jl")
 
-@Logging.configure(level=ERROR)
+@Logging.configure(level=DEBUG)
 
 # load graph
 #
@@ -14,50 +14,46 @@ function load_graph(E_fn::AbstractString, pos_fn::AbstractString)
 	# load the data
 	E_df = load_csv_data(E_fn)
 	pos_df = load_csv_data(pos_fn)
-	names = AbstractString[]
 
-	for i in 1:size(E_df,1)
-		push!(names,string(E_df[i,1]+1))
-		push!(names,string(E_df[i,2]+1))
-	end
-
-	# the size of the network is assumed to be the # of rows in P0 
-	names = unique(names)
-	n = length(names)
-
+	# adding vertices
 	vertices = Bus[]
-	name_id = Dict{AbstractString,Int64}()
 	counter = 1
-	for na in names
-		name_id[na] = counter
-		push!(vertices, Bus(counter,na))
+	for i in 1:size(pos_df,1)
+		bus = Bus(counter,string(counter))
+		bus.lng = pos_df[i,1]
+		bus.lat = pos_df[i,2]
+		push!(vertices, bus)
 		counter += 1
 	end
 	
-	for i in 1:size(pos_df,1)
-		vlng = pos_df[i,1]
-		vlat = pos_df[i,2]
-		vertices[i].lat = vlat
-		vertices[i].lng = vlng
-	end
-	
-	# remove duplicate edges and loops
-	h = Set()
+	# adding edges
+	s = Set{UInt64}()
 	ecounter = 1
-
 	edges = Line[]
 	for i in 1:size(E_df,1)
 		sn = string(E_df[i,1]+1)
 		tn = string(E_df[i,2]+1)
-		if sn != tn
-			h1 = hash(sn*tn)
-			h2 = hash(tn*sn)
-			if !(h1 in h) && !(h2 in h) 
-				source = vertices[name_id[sn]]
-				target = vertices[name_id[tn]]
+		si = parse(Int,sn)
+		ti = parse(Int,tn)
+		if si != ti
+			if si < ti
+				i1 = si
+				i2 = ti
+				n1 = sn
+				n2 = tn
+			else
+				i1 = ti
+				i2 = si
+				n1 = tn
+				n2 = sn
+			end
+			h = hash(n1*n2)
+			if !(h in s)
+				source = vertices[i1]
+				target = vertices[i2]
+				@debug("adding edge ($i1,$i2)")
 				push!(edges, Line(ecounter, source, target, -1.im))
-				push!(h,h1)
-				push!(h,h2)
+				push!(s,h)
 				ecounter += 1
 			end
 		end
@@ -67,7 +63,6 @@ function load_graph(E_fn::AbstractString, pos_fn::AbstractString)
 end
 
 g = load_graph(ARGS[1],ARGS[2])
-
 println(g)
 
 serialize_to_file(g,"../data/ukgrid/ukgrid.jld")
