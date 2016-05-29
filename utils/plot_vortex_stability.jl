@@ -6,7 +6,7 @@ include("../plotly.jl")
 @Logging.configure(level=DEBUG)
 
 # stats associated to a given random P
-type Stats
+type AStats
 	# vortex stable & convergence
 	Vst::Dict{Float64,Float64}
 	# vortex inside & convergence
@@ -21,7 +21,7 @@ end
 astats = load_serialized(ARGS[1])
 pstats = load_serialized(ARGS[2])
 
-plot_astats = false
+plot_astats = true
 plot_pstats = true
 
 ###

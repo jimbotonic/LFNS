@@ -212,6 +212,6 @@ for alpha in alphas
 end
 
 println(astats2)
-serialize_to_file(astats2, "AStats2_$np-$low-$step-$high.jld")
-serialize_to_file(pstats, "PStats2_$np-$low-$step-$high.jld")
+serialize_to_file(astats2, "AStats2_$n-$m-$np-$low-$step-$high.jld")
+serialize_to_file(pstats, "PStats2_$n-$m-$np-$low-$step-$high.jld")
 

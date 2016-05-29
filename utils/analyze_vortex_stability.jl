@@ -175,6 +175,6 @@ for alpha in alphas
 end
 
 println(stats)
-serialize_to_file(stats, "AStats_$np-$low-$step-$high.jld")
-serialize_to_file(pstats, "PStats_$np-$low-$step-$high.jld")
+serialize_to_file(stats, "AStats_$n-$m-$np-$low-$step-$high.jld")
+serialize_to_file(pstats, "PStats_$n-$m-$np-$low-$step-$high.jld")
 
