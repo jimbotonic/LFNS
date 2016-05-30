@@ -65,5 +65,31 @@ end
 g = load_graph(ARGS[1],ARGS[2])
 println(g)
 
-serialize_to_file(g,"../data/ukgrid/ukgrid.jld")
-export_graphml(g,"../data/ukgrid/ukgrid.graphml")
+#serialize_to_file(g,"../data/ukgrid/ukgrid.jld")
+#export_graphml(g,"../data/ukgrid/ukgrid.graphml")
+
+###
+# making graph planar
+###
+
+vs = vertices(g)
+# correct lng of vertex 108 and 58
+vs[108].lng = vs[107].lng
+vs[58].lng = vs[59].lng
+
+# remove edge 7-42
+redges = Array{Pair{Int,Int},1}()
+push!(redges,Pair{Int,Int}(7,42))
+ng = get_pruned_graph(g, redges)
+println(ng)
+
+# remove cut component vertices (110,111,112,113,114,115,116)
+n2g = get_subgraph(ng,Int[110,111,112,113,114,115,116],false)
+println(n2g)
+
+# remove sinks and branches
+n3g = get_subgraph(n2g,Int[18,23,30,47,53,55,84,85,88,98,99,103,105],false)
+println(n3g)
+
+serialize_to_file(g,"../data/ukgrid/ukgrid_planar_no-sink-no-cut.jld")
+export_graphml(g,"../data/ukgrid/ukgrid_planar_no-sink-no-cut.graphml")

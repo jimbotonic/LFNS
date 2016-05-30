@@ -22,7 +22,7 @@ println("---")
 
 mc = get_principal_component(g)
 
-gp = get_subgraph(g, mc)
+gp = get_subgraph(g, [v.id for v in mc])
 SAVE && serialize_to_file(gp, "../data/eurogrid/eurogrid_pc.jld")
 SAVE && export_graphml(gp, "../data/eurogrid/eurogrid_pc.graphml")
 SAVE && export_topology_graphml(gp, "../data/eurogrid/eurogrid_pc_topology.graphml")

@@ -22,12 +22,12 @@ type Bus
 	P_max::Float64
 	sh_conductance::Float64
 	sh_susceptance::Float64
-	# normalized latitude and longitude (between 0 and 1)
-	lat::Float64
+	# normalized longitude and latitude (between 0 and 1)
 	lng::Float64
+	lat::Float64
 	
 	# default constructor
-	function Bus(id::Int64, name::AbstractString, bus_type::Int, init_voltage::Float64, final_voltage::Float64, base_voltage::Float64, angle::Float64, load::Complex{Float64}, generation::Complex{Float64}, Q_min::Float64, Q_max::Float64, P_min::Float64, P_max::Float64, sh_conductance::Float64, sh_susceptance::Float64, lat::Float64, lng::Float64)
+	function Bus(id::Int64, name::AbstractString, bus_type::Int, init_voltage::Float64, final_voltage::Float64, base_voltage::Float64, angle::Float64, load::Complex{Float64}, generation::Complex{Float64}, Q_min::Float64, Q_max::Float64, P_min::Float64, P_max::Float64, sh_conductance::Float64, sh_susceptance::Float64, lng::Float64, lat::Float64)
 		new(id, name, bus_type, init_voltage, final_voltage, base_voltage, angle, load, generation, Q_min, Q_max, P_min, P_max, sh_conductance, sh_susceptance, lat, lng)
 	end
 
@@ -134,16 +134,25 @@ function get_incidence_matrix(g::Graphs.AbstractGraph{Bus,Line})
 	return I
 end
 
-# get the principal component vertex ids
+# get the principal component as an array of vertices
 function get_principal_component(g::Graphs.AbstractGraph{Bus,Line})
 	cs = connected_components(g)
 	return cs[indmax([length(c) for c in cs])]
 end
 
-# get the subgraph induced by the specified vertices
-function get_subgraph(g::Graphs.AbstractGraph{Bus,Line}, vs::Array{Bus,1})
-	# sorted array of subgraph vertex ids
-	svids = sort(Int64[v.id for v in vs])
+# get subgraph
+# 
+# if keep_vertices is true, get the sungraph induced by the specified list of vertices
+# otherwise, get the subgraph induced by the set of vertices remaining after the specified list is removed
+function get_subgraph(g::Graphs.AbstractGraph{Bus,Line}, vids::Array{Int64,1}, keep_vids::Bool=true)
+	if keep_vids
+		# sorted array of subgraph vertex ids
+		svids = sort(vids)
+	else
+		gvids = Int64[v.id for v in vertices(g)]
+		svids = sort(setdiff(gvids,vids)) 
+	end
+
 	nvs = Bus[]
 	nes = Line[]
 
@@ -152,10 +161,12 @@ function get_subgraph(g::Graphs.AbstractGraph{Bus,Line}, vs::Array{Bus,1})
 
 	vcounter = 1
 	for v in vs
-		o2n_ids[v.id] = vcounter
-		nv = Bus(vcounter, v.name, v.bus_type, v.init_voltage, v.final_voltage, v.base_voltage, v.angle, v.load, v.generation, v.Q_min, v.Q_max, v.P_min, v.P_max, v.sh_conductance, v.sh_susceptance)
-		push!(nvs, nv)
-		vcounter += 1
+		if v.id in svids
+			o2n_ids[v.id] = vcounter
+			nv = Bus(vcounter, v.name, v.bus_type, v.init_voltage, v.final_voltage, v.base_voltage, v.angle, v.load, v.generation, v.Q_min, v.Q_max, v.P_min, v.P_max, v.sh_conductance, v.sh_susceptance, v.lng, v.lat)
+			push!(nvs, nv)
+			vcounter += 1
+		end
 	end
 
 	ecounter = 1
@@ -176,6 +187,8 @@ function get_subgraph(g::Graphs.AbstractGraph{Bus,Line}, vs::Array{Bus,1})
 end
 
 # prune the graph by removing the specified list of  edge ids
+#
+# NB: there is no need to renumber the vertex ids
 function get_pruned_graph(g::Graphs.AbstractGraph{Bus,Line}, reids::Array{Int64,1})
 	# sort array of subgraph edge ids to be removed
 	sort!(reids)
@@ -183,7 +196,7 @@ function get_pruned_graph(g::Graphs.AbstractGraph{Bus,Line}, reids::Array{Int64,
 	nes = Line[]
 
 	for v in vertices(g)
-		nv = Bus(v.id, v.name, v.bus_type, v.init_voltage, v.final_voltage, v.base_voltage, v.angle, v.load, v.generation, v.Q_min, v.Q_max, v.P_min, v.P_max, v.sh_conductance, v.sh_susceptance)
+		nv = Bus(v.id, v.name, v.bus_type, v.init_voltage, v.final_voltage, v.base_voltage, v.angle, v.load, v.generation, v.Q_min, v.Q_max, v.P_min, v.P_max, v.sh_conductance, v.sh_susceptance, v.lng, v.lat)
 		push!(nvs, nv)
 	end
 
@@ -191,6 +204,35 @@ function get_pruned_graph(g::Graphs.AbstractGraph{Bus,Line}, reids::Array{Int64,
 	for edge in edges(g)
 		# if the current edge is not in the sorted list
 		if length(searchsorted(reids, edge.id)) == 0
+			ne = Line(ecounter, edge.source, edge.target, edge.line_type, edge.line_status, edge.admittance, edge.sh_susceptance, edge.s_ratio, edge.t_ratio)
+			push!(nes, ne)
+			ecounter += 1
+		end
+	end
+	
+	return graph(nvs, nes, is_directed=false)
+end
+
+# prune the graph by removing the specified list of edges specified as pairs (source_id,target_id
+#
+# NB: there is no need to renumber the vertex ids
+function get_pruned_graph(g::Graphs.AbstractGraph{Bus,Line}, redges::Array{Pair{Int,Int},1})
+	nvs = Bus[]
+	nes = Line[]
+
+	for v in vertices(g)
+		# id, name, bus_type, init_voltage, final_voltage, base_voltage, angle, load, generation, Q_min, Q_max, P_min, P_max, sh_conductance, sh_susceptance, lat, lng)
+		#nv = copy(v)
+		nv = Bus(v.id, v.name, v.bus_type, v.init_voltage, v.final_voltage, v.base_voltage, v.angle, v.load, v.generation, v.Q_min, v.Q_max, v.P_min, v.P_max, v.sh_conductance, v.sh_susceptance, v.lng, v.lat)
+		push!(nvs, nv)
+	end
+
+	ecounter = 1
+	for edge in edges(g)
+		# if the current edge is not in the sorted list
+		if !(Pair{Int,Int}(edge.source.id,edge.target.id) in redges)
+			#ne = copy(edge)
+			#ne.id = ecounter
 			ne = Line(ecounter, edge.source, edge.target, edge.line_type, edge.line_status, edge.admittance, edge.sh_susceptance, edge.s_ratio, edge.t_ratio)
 			push!(nes, ne)
 			ecounter += 1
