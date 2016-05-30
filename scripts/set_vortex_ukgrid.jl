@@ -47,9 +47,9 @@ bcycle = [1,5,4,6,7,38,39,40,41,37,35,117,49,50,51,52,54,68,69,77,78,80,81,89,95
 # injections initialization
 ###
 
-alpha = 0.25
+alpha = parse(Float64,ARGS[2])
 # :PR, :uniform, :random
-init_type = :uniform
+init_type = :PR
 
 if init_type == :uniform
 	# initialize the injections with a uniform distribution
@@ -70,6 +70,8 @@ P = P_ref*alpha
 ###
 # initializing angles
 ###
+
+winding_num = parse(Int,ARGS[3])
 
 X = Float64[]
 Y = Float64[]
@@ -103,6 +105,10 @@ xc,yc = mean(X),mean(Y)
 for i in 1:length(X)
 	push!(T,compute_edge_angle(xc, yc, X[i], Y[i]))
 end
+
+# [0,2pi] -> [-pi,pi]
+#T -= pi
+T *= winding_num
 
 ###
 # launching simulation
