@@ -19,6 +19,7 @@ function vorticity(T::Array{Float64,1}, cycle::Array{Int64,1})
 	c = copy(cycle)
 	push!(c,c[1])
 	s = 0.
+	ma = 0.
 	for j in 1:(length(c)-1)
 		s += mod(T[c[j]] - T[c[j+1]] + pi, 2*pi) - pi
 	end
