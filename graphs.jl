@@ -142,7 +142,7 @@ end
 
 # get subgraph
 # 
-# if keep_vertices is true, get the sungraph induced by the specified list of vertices
+# if keep_vertices is true, get the sugraph induced by the specified list of vertices
 # otherwise, get the subgraph induced by the set of vertices remaining after the specified list is removed
 function get_subgraph(g::Graphs.AbstractGraph{Bus,Line}, vids::Array{Int64,1}, keep_vids::Bool=true)
 	if keep_vids
@@ -160,7 +160,7 @@ function get_subgraph(g::Graphs.AbstractGraph{Bus,Line}, vids::Array{Int64,1}, k
 	o2n_ids = Dict{Int64, Int64}()
 
 	vcounter = 1
-	for v in vs
+	for v in vertices(g)
 		if v.id in svids
 			o2n_ids[v.id] = vcounter
 			nv = Bus(vcounter, v.name, v.bus_type, v.init_voltage, v.final_voltage, v.base_voltage, v.angle, v.load, v.generation, v.Q_min, v.Q_max, v.P_min, v.P_max, v.sh_conductance, v.sh_susceptance, v.lng, v.lat)
