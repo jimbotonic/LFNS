@@ -72,6 +72,22 @@ function init_P4(U::Array{Float64,1})
 	return P
 end
 
+# generate a ring 
+#
+## INPUT
+# n: length of the cycle
+function generate_ring(n::Int)
+	vs = Bus[]
+	es = Line[]
+	push!(vs,Bus(1,0.,0.))
+	for i in 2:n
+		push!(vs,Bus(i,0.,0.))
+		push!(es,Line(i-1,vs[i-1],vs[i],-1.im))
+	end
+	push!(es,Line(n,vs[n],vs[1],-1.im))
+	return graph(vs, es, is_directed=false)
+end
+
 # generate a ring with one producer at vertex 1 and one consumer at a chosen vertex
 #
 ## INPUT

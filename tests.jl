@@ -155,3 +155,14 @@ ignore_vids = Set{Int}([84,110,111,112,113,114,115,116])
 bcycle2 = get_geolocalized_graph_contour_cycle(g,ignore_vids)
 
 @test bcycle == bcycle2 
+
+###
+# test vorticity functions
+###
+
+a = [pi/2,pi,3pi/2,0]
+v1 = vorticity(a,[1,2,3,4])
+v2 = vorticity2(a,[1,2,3,4])
+
+@test v1 == -1
+@test v2 == -1

@@ -1,29 +1,51 @@
 # compute the vorticity of the graph
 function vorticity(T::Array{Float64,1}, cycles::Array{Array{Int64,1},1})
 	V = Float64[]
-	for cy in cycles
-		c = copy(cy)
-		push!(c,c[1])
+	for c in cycles
 		s = 0.
 		for j in 1:(length(c)-1)
-			s += mod(T[c[j]] - T[c[j+1]] + pi, 2*pi) - pi
+			s += mod(T[c[j]] - T[c[j+1]] + pi, 2pi) - pi
 		end
+		s += mod(T[c[end]] - T[c[1]] + pi, 2pi) - pi
 		# entries are multiples of 2*pi
-		push!(V,round(Int,abs(s/(2*pi))))
+		push!(V,round(Int,s/(2pi)))
 	end
 	return V
 end
 
 # compute the vorticity of a given cycle
 function vorticity(T::Array{Float64,1}, cycle::Array{Int64,1})
-	c = copy(cycle)
-	push!(c,c[1])
 	s = 0.
-	ma = 0.
-	for j in 1:(length(c)-1)
-		s += mod(T[c[j]] - T[c[j+1]] + pi, 2*pi) - pi
+	for j in 1:(length(cycle)-1)
+		s += mod(T[cycle[j]] - T[cycle[j+1]] + pi, 2pi) - pi
 	end
-	return round(Int,abs(s/(2*pi)))
+	s += mod(T[cycle[end]] - T[cycle[1]] + pi, 2pi) - pi
+	return round(Int,s/(2pi))
+end
+
+# compute the vorticity of a given cycle
+function vorticity2(T::Array{Float64,1}, cycle::Array{Int64,1})
+	s = 0.
+	for j in 1:(length(cycle)-1)
+		# d in [-2pi,2pi]
+		d = mod(T[cycle[j]], 2pi) - mod(T[cycle[j+1]], 2pi)
+		if d > pi 
+			d -= 2pi
+		elseif d < -pi
+			d += 2pi
+		end
+		# d in [-pi,pi]
+		s += d
+	end
+	d = mod(T[cycle[end]], 2pi) - mod(T[cycle[1]], 2pi)
+	if d > pi 
+		d -= 2pi
+	elseif d < -pi
+		d += 2pi
+	end
+	# d in [-pi,pi]
+	s += d
+	return round(Int,s/(2pi))
 end
 
 # find the positions of the vortices
