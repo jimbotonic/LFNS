@@ -153,31 +153,34 @@ end
 # matrix-like coordinates:
 # -> n,m: (height,width) of the lattice
 # -> i,j: (row,column) coordinates of the vortex center
+#
+# NB: returned angles belong to [-pi,pi]
 function create_vortex_on_sq_lattice(n::Int,m::Int,i::Int,j::Int)
 	T = zeros(Float64,n*m)
 	for p in 1:(n*m)
 		# get coordinates of the current point 
+		# NB: here (x,y): (column,row)
 		x = mod(p,m)
 		if x == 0
 			x = m
 		end
 		y = ceil(Int,p/m)
 		# center of the vortex
+		# NB: each square has a 1 unit length
 		cx = j + 1/2
 		cy = i + 1/2
 		ba = atan(abs((y-cy)/(x-cx)))
-		# NO
-		# NB: each square has a 1 unit length
-		if x <= cx && y <= cy
+		# Q2 (NE)
+		if x < cx && y <= cy
 			T[p] = -ba + pi
-		# NE
+		# Q1 (NO)
 		elseif x >= cx && y <= cy
 			T[p] = ba 
-		# SE
-		elseif x >= cx && y >= cy
+		# Q4 (SO)
+		elseif x >= cx && y > cy
 			T[p] = -ba
-		# SO
-		elseif x <= cx && y >= cy
+		# Q3 (SE) (x < cx && y > cy)
+		else
 			T[p] = ba - pi
 		end
 	end	
@@ -193,31 +196,34 @@ end
 # matrix-like coordinates:
 # -> n,m: (height,width) of the lattice
 # -> i,j: (row,column) coordinates of the vortex center
+#
+# NB: returned angles belong to [-pi,pi]
 function create_antivortex_on_sq_lattice(n::Int,m::Int,i::Int,j::Int)
 	T = zeros(Float64,n*m)
 	for p in 1:(n*m)
 		# get coordinates of the current point 
+		# NB: here (x,y): (column,row)
 		x = mod(p,m)
 		if x == 0
 			x = m
 		end
 		y = ceil(Int,p/m)
 		# center of the vortex
+		# NB: each square has a 1 unit length
 		cx = j + 1/2
 		cy = i + 1/2
 		ba = atan(abs((y-cy)/(x-cx)))
-		# NO
-		# NB: each square has a 1 unit length
-		if x <= cx && y <= cy
+		# Q2 (NE)
+		if x < cx && y <= cy
 			T[p] = ba - pi
-		# NE
+		# Q1 (NO)
 		elseif x >= cx && y <= cy
 			T[p] = -ba
-		# SE
-		elseif x >= cx && y >= cy
+		# Q4 (SO)
+		elseif x >= cx && y > cy
 			T[p] = ba
-		# SO
-		elseif x <= cx && y >= cy
+		# Q3 (SE) (x < cx && y > cy)
+		else
 			T[p] = -ba + pi
 		end
 	end	
@@ -248,23 +254,48 @@ function get_sq_lattice_contour_cycle(n::Int,m::Int)
 end
 
 # compute the angle (mode A, i.e., with respect to y=0,x>0 axis) for the edge parent node - child node 
+#
+# NB: returned angle belongs to [-pi,pi[
 function compute_edge_angle(px::Float64, py::Float64, cx::Float64, cy::Float64)
 	#@debug("computing angle ($px,$py)-($cx,$cy)")
 	dx = cx-px
 	dy = cy-py
-
+	t = atan(abs(dy/dx))
 	# Q1
 	if dx >= 0 && dy >= 0
-		return atan(abs(dy/dx))
+		return t
 	# Q2
 	elseif dx < 0 && dy >= 0
-		return pi-atan(abs(dy/dx))
+		return -t+pi
 	# Q3
 	elseif dy < 0 && dx <= 0
-		return pi+atan(abs(dy/dx))
+		return t-pi
 	# Q4 (dy < 0 && dx > 0)
 	else
-		return 2pi-atan(abs(dy/dx))
+		return -t
+	end
+end
+
+# compute the anti angle (mode A, i.e., with respect to y=0,x>0 axis) for the edge parent node - child node 
+#
+# NB: returned angle belongs to [-pi,pi[
+function compute_anti_edge_angle(px::Float64, py::Float64, cx::Float64, cy::Float64)
+	#@debug("computing anti angle ($px,$py)-($cx,$cy)")
+	dx = cx-px
+	dy = cy-py
+	t = atan(abs(dy/dx))
+	# Q1
+	if dx >= 0 && dy >= 0
+		return -t
+	# Q2
+	elseif dx < 0 && dy >= 0
+		return t-pi
+	# Q3
+	elseif dy < 0 && dx <= 0
+		return -t+pi
+	# Q4 (dy < 0 && dx > 0)
+	else
+		return t
 	end
 end
 
@@ -651,7 +682,7 @@ end
 # producer and consumer are located at the degree 3 vertices
 #
 ## INPUT
-# l,c,r: number of VERTICES on each branch of the double cycle
+# l,c,r: # of vertices on each branch of the double cycle
 # p: produced/consumed power
 function generate_double_ring(l::Int,c::Int,r::Int,p::Float64)
 	vs = Bus[]
