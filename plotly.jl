@@ -9,55 +9,23 @@ function get_linear_fit(aX,aY)
 	return pinv(X'*X)*X'*aY
 end
 
-# remove null entries before taking the log
-function get_filtered_log(X,Y,minx=None,maxx=None)
-	nX = Float64[]
-	nY = Float64[]
-	for i in 1:length(X)
-		x = X[i]
-		y = Y[i]
-
-		nentry = false
-		if x > 0 && y > 0
-			if minx != None
-				if maxx != None
-					if x >= minx && x <= maxx
-						nentry = true
-					end
-				else
-					if x >= minx
-						nentry = true
-					end
-				end
-			else
-				nentry = true
-			end
-		end
-		if nentry
-			push!(nX,log(x))
-			push!(nY,log(y))
-		end
-	end
-	return nX,nY
-end
-
 ### layouts
 
 function get_layout(title::AbstractString,xname::AbstractString,yname::AbstractString,xtype::AbstractString,ytype::AbstractString)
-	return [
+	return Dict(
   "title" => title,
-  "xaxis" => [
+  "xaxis" => Dict(
       "title" => xname,
       "type" => xtype, 
       "autorange" => true
-	    ], 
-  "yaxis" => [
+	    ), 
+  "yaxis" => Dict(
       "title" => yname,
       # linear, log, date, category
       "type" => ytype, 
       "autorange" => true
-		]
-	]
+		)
+	)
 end
 
 ### plotting functions
@@ -67,16 +35,16 @@ function plot_heatmap(bin_matrix, filename::AbstractString, log_scale=false, lay
 		bin_matrix = log(bin_matrix)
 	end
 	data = [
-	  	[
+	  	Dict(	
 	        "z" => bin_matrix,
 		"type" => "heatmap"
-		]
+		)
 	]
 
 	if layout != None
-		response = Plotly.plot(collect(data), ["layout" => layout, "filename" => filename, "fileopt" => "overwrite"])
+		response = Plotly.plot(collect(data), Dict("layout" => layout, "filename" => filename, "fileopt" => "overwrite"))
 	else
-		response = Plotly.plot(collect(data), ["filename" => filename, "fileopt" => "overwrite"])
+		response = Plotly.plot(collect(data), Dict("filename" => filename, "fileopt" => "overwrite"))
 	end
 	plot_url = response["url"]
 end
@@ -94,11 +62,11 @@ function plot_scatter_data(X::Array{Float64,1},Y::Array{Float64,1}, ptype::Abstr
 	    "mode" => mode
 	  ]
 	]
-
+	
 	if layout != None
-		response = Plotly.plot(collect(data), ["layout" => layout, "filename" => filename, "fileopt" => "overwrite"])
+		response = Plotly.plot(data, Dict("layout" => layout, "filename" => filename, "fileopt" => "overwrite"))
 	else
-		response = Plotly.plot(collect(data), ["filename" => filename, "fileopt" => "overwrite"])
+		response = Plotly.plot(data, Dict("filename" => filename, "fileopt" => "overwrite"))
 	end
 	plot_url = response["url"]
 end
@@ -114,13 +82,13 @@ end
 function get_scatter_data(traces::Array{scatter_trace,1},ptype::AbstractString,mode::AbstractString)
 	data = Dict{AbstractString,Any}[]
 	for t in traces
-		ptrace = [
+		ptrace = Dict(
 			"x" => t.X,
 			"y" => t.Y,
 			"type" => ptype,
 			"mode" => mode,
 			"name" => t.name
-			]
+			)
 		push!(data,ptrace)
 	end
 	return data
@@ -130,9 +98,9 @@ end
 function plot_scatter_data(traces::Array{scatter_trace,1}, ptype::AbstractString, mode::AbstractString, filename::AbstractString, layout=None)
 	data = get_scatter_data(traces,ptype,mode)
 	if layout != None
-		response = Plotly.plot([data], ["layout" => layout, "filename" => filename, "fileopt" => "overwrite"])
+		response = Plotly.plot([data], Dict("layout" => layout, "filename" => filename, "fileopt" => "overwrite"))
 	else
-		response = Plotly.plot([data], ["filename" => filename, "fileopt" => "overwrite"])
+		response = Plotly.plot([data], Dict("filename" => filename, "fileopt" => "overwrite"))
 	end
 	plot_url = response["url"]
 end
@@ -147,13 +115,13 @@ end
 function get_hist_data(traces::Array{hist_trace,1})
 	data = Dict{AbstractString,Any}[]
 	for t in traces
-		ptrace = [
+		ptrace = Dict(
 			"x" => t.X,
 			"name" => t.name,
 	  		"opacity" => 0.75,
 	  		"histnorm" => "probability density",
 	  		"type" => "histogram"
-			]
+			)
 		push!(data,ptrace)
 	end
 	return data
@@ -169,9 +137,9 @@ function plot_histograms(traces::Array{hist_trace,1}, filename::AbstractString, 
 	#  "barmode" => "overlay"]
 
 	if layout != None
-		response = Plotly.plot([data], ["layout" => layout, "filename" => filename, "fileopt" => "overwrite"])
+		response = Plotly.plot([data], Dict("layout" => layout, "filename" => filename, "fileopt" => "overwrite"))
 	else
-		response = Plotly.plot([data], ["filename" => filename, "fileopt" => "overwrite"])
+		response = Plotly.plot([data], Dict("filename" => filename, "fileopt" => "overwrite"))
 	end
 	plot_url = response["url"]
 end
