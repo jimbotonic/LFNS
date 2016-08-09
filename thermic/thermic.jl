@@ -15,7 +15,7 @@ type Boiler
 	ref_temp::Float64
 	comfort_temp_delta::Float64
 	# temperature of the cold water
-	cold_water_temp::Float64
+	cold_temp::Float64
 	volume::Float64
 	power::Float64
 	# thermal capacity = 4185 J/(Kg x K) = 1.1625 Wh / (L x K)
@@ -25,8 +25,8 @@ type Boiler
 	# constructor
 	# volume, power, is_on, ref_temp, confort_temp_delta, cold_water_temp, thermal_conductivity
 	# temp -> random temp in the comfort zone
-	function Boiler(is_on::Bool,settings::BoilerSettings,temp::Float64,ref_temp::Float64,comfort_temp_delta::Float64,cold_water_temp::Float64,volume::Float64,power::Float64,thermal_conductivity::Float64,thermal_capacity::Float64)
-		new(is_on,settings,temp,ref_temp,comfort_temp_delta,cold_water_temp,volume,power,thermal_conductivity,thermal_capacity)
+	function Boiler(is_on::Bool,settings::BoilerSettings,temp::Float64,ref_temp::Float64,comfort_temp_delta::Float64,cold_temp::Float64,volume::Float64,power::Float64,thermal_conductivity::Float64,thermal_capacity::Float64)
+		new(is_on,settings,temp,ref_temp,comfort_temp_delta,cold_temp,volume,power,thermal_conductivity,thermal_capacity)
 	end
 end
 
