@@ -5,7 +5,7 @@ include("simulator.jl")
 
 # right-hand side function of boiler solver
 function rhs_boiler(house::House,consumption::Float64)
-	boiler = house.boiler
+	boiler = house.thermic_device
 	# debit of hot water (replaced by cold water)
 	a= (consumption/boiler.volume)*(boiler.cold_temp-boiler.temp)
 	# contribution of heating
@@ -22,7 +22,7 @@ end
 function euler_boiler_solver(sp::SParams)
 	for i in 1:sp.iter_max
 		for house in sp.neighborhood
-			house.boiler.temp += sp.delta*rhs_boiler(house,house.profile.hot_water_consumption[i])
+			house.thermic_device.temp += sp.delta * rhs_boiler(house, house.profile.hot_water_consumption.values[i,1])
 		end
 		# call back function (control and monitoring)
 		sp.controller(sp,i)
@@ -34,5 +34,4 @@ end
 #
 ## OUTPUT
 function euler_heatpump_solver(sp::SParams)
-	# return State(Float64[],sp.T,Tdot,n_iter)
 end
