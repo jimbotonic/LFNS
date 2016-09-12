@@ -41,7 +41,7 @@ end
 type Simulator
 	# set of houses
 	neighborhood::Array{House,1}
-	# solver
+	# solver & controller functions
 	solver::Function
 	controller::Function
 	# solver additional optional arguments
@@ -60,11 +60,9 @@ type Simulator
 end
 
 # lead a simulation 
-#
-# callback_func: callback function to be called at each iteration of the solver
-function simulation(s::Simulator,callback_func::Function)
+function simulation(s::Simulator)
 	sp = get_sparams(s)
-	state = s.solver(sp,callback_func)
+	state = s.solver(sp)
 	push!(s.states,state)
 	return state
 end

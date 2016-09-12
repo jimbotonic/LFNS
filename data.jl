@@ -417,6 +417,7 @@ end
 # load CSV data from file
 # 
 # NB: file is assumed to be in CSV format with no header
+# NB: dimensions are (# rows, # columns)
 function load_csv_data(fn::AbstractString)
 	return readtable(fn, header = false)
 end

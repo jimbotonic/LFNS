@@ -16,23 +16,23 @@ function rhs_boiler(house::House,consumption::Float64)
 end
 
 ## INPUT
-# callback_func: callback function to be called at each iteration of the solver
+# sp: simulation parameters
 #
 ## OUTPUT
-function Euler_boiler_solver(sp::SParams,callback_func::Function)
+function euler_boiler_solver(sp::SParams)
 	for i in 1:sp.iter_max
 		for house in sp.neighborhood
 			house.boiler.temp += sp.delta*rhs_boiler(house,house.profile.hot_water_consumption[i])
 		end
-		# call back (control and monitoring)
-		callback_func(sp.controller,sp,i)
+		# call back function (control and monitoring)
+		sp.controller(sp,i)
 	end
 end
 
 ## INPUT
-# callback_func: callback function to be called at each iteration of the solver
+# sp: simulation parameters
 #
 ## OUTPUT
-function Euler_heatpump_solver(sp::SParams,callback_func::Function)
+function euler_heatpump_solver(sp::SParams)
 	# return State(Float64[],sp.T,Tdot,n_iter)
 end

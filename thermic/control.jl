@@ -1,12 +1,16 @@
 include("thermic.jl")
 
 # Boiler callback function 
-function boiler_callback_func(control_func::Function,sp::SParams,i::Int64) 
-	# control
-	control_func(sp,i)
+function thermic_device_controller(sp::SParams,i::Int64) 
+	# thermostat control
+	for house in sp.neighborhood
+		if house.thermic_device.temp < house.thermic_device.ref_temp-house.thermic_device.comfort_temp_delta
+			house.thermic_device.is_on=True
+		if house.thermic_device.temp>house.thermic_device.ref_temp+house.thermic_device.comfort_temp_delta
+			house.thermic_device.is_on=False
 
 	# save state
-	P = Float64[boiler.is_on?boiler.power:0. for boiler in sp.neighborhood]
-	K = Float64[boiler.temp for boiler in sp.neighborhood]
+	P = Float64[house.thermic_device.is_on?house.thermic_device.power:0. for house in sp.neighborhood]
+	K = Float64[house.thermic_device.temp for house in sp.neighborhood]
 	push!(sp.states,State(P,K)	
 end
