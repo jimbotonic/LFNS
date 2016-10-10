@@ -2,6 +2,7 @@ include("init.jl")
 include("data.jl")
 include("solvers.jl")
 include("graphs.jl")
+include("metrics.jl")
 
 using Base.Test, Logging, Distances
 
