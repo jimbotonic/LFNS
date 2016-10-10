@@ -25,6 +25,15 @@ function get_rand_unit_vector_Ninf(n::Int)
 	return R./maximum(R)
 end
 
+# generate random with entries drawn uniformly around 0 in [-hwidth,hwidth]
+function get_rand_unif_vector(n::Int, hwidth::Float64=2.)
+	T = Float64[]
+	for i in 1:n
+		push!(T,2*hwidth*rand(Uniform())-hwidth)
+	end
+	return T
+end
+
 # initialize P vector with entry values in [-1, 1] and absolute value of greatest value equal to 1
 #
 # NB: U is assumed to be a distribution
