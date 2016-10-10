@@ -2,15 +2,27 @@ using Distributions
 
 include("graphs.jl")
 
-# initialize a random distribution whose entries are drawn uniformaly at random
+# initialize a uniform distribution whose entries are all equal
 function init_unif_dist(n::Int64)
 	return Float64[1/n for i in 1:n]
 end
 
-# initialize a random distribution whose entries are drawn uniformaly at random
+# initialize a random distribution whose entries are drawn uniformly at random
 function init_rand_dist(n::Int64)
 	U = rand(Uniform(),n)
 	return U/sum(U)
+end
+
+# generate random unit-length (norm-2) n-dimensional vector with positive entries
+function get_rand_unit_vector_N2(n::Int)
+	R = rand(n)
+	return R./sqrt(sumabs2(R,1))
+end
+
+# generate random unit-length (norm-Inf) n-dimensional vector with positive entries
+function get_rand_unit_vector_Ninf(n::Int)
+	R = rand(n)
+	return R./maximum(R)
 end
 
 # initialize P vector with entry values in [-1, 1] and absolute value of greatest value equal to 1
@@ -20,6 +32,7 @@ function init_P1(U::Array{Float64,1})
 	P = U*2-1
 	# make sure that sum(P)=0
 	P -= mean(P)
+	# |P|inf = 1
 	P *= 1/maximum(abs(P))
 	return P
 end
