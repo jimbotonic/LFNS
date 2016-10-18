@@ -106,7 +106,29 @@ function get_active_powers(g::Graphs.AbstractGraph{Bus,Line})
 	
 	return P
 end
-		
+
+# get the admittance matrix
+function get_admittance_matrix(g::Graphs.AbstractGraph{Bus,Line})
+	n = length(vertices(g))
+	Y = Array{Complex{Float64},2}(n,n)
+	for e in edges(g)
+		s = e.source.id
+		t = e.target.id
+		Y[s,t] = e.admittance
+		Y[t,s] = e.admittance
+	end
+	return -SparseMatrixCSC{Complex{Float64},Int64}(Y)
+end	
+
+# get the vector of angles
+function get_angles(g::Graphs.AbstractGraph{Bus,Line})
+	T = Array{Float64,1}()
+	for v in vertices(g)
+		push!(T,v.angle)
+	end
+	return mod(T+pi,2*pi)-pi
+end
+	
 # get the adjacency matrix
 function get_adjacency_matrix(g::Graphs.AbstractGraph{Bus,Line})
 	n = length(vertices(g))

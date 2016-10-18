@@ -191,7 +191,37 @@ function get_stability_matrix(T::Array{Float64,1}, Y::SparseMatrixCSC{Complex{Fl
 	return M
 end
 
-# get lambda 2
+function get_stability_matrix(g::Graphs.AbstractGraph{Bus,Line}, approx_level::Int64=3)
+	Y = get_admittance_matrix(g)
+	T = get_angles(g)
+	
+	B = imag(Y) 
+	G = real(Y)
+	
+	n = length(T)
+	dT = T*ones(1,n)-ones(n,1)*T'
+	
+	# 1: linearized equations, i.e. the sines are linearized and G=0.
+	if approx_level == 1
+		M = B.*dT
+	# 2: lossless case, i.e. G=0
+	elseif approx_level == 2
+		M = B.*cos(dT)
+	# 3: lossy case without reactive power
+	elseif approx_level == 3
+		M = B.*cos(dT) + G.*sin(dT)
+	# 4: full case with reactive power
+	else
+		# TODO
+	end
+	
+	M = M-diagm(collect(sum(M,1)))
+	
+	return M
+end
+	
+	
+# get the real part of lambda 2
 #
 ## INPUT
 # T: thetas
@@ -203,11 +233,9 @@ function get_lambda2(T::Array{Float64,1}, Y::SparseMatrixCSC{Complex{Float64},In
 	# get stability matrix
 	M = get_stability_matrix(T,Y)
 	n = size(M)[1]
-	# why?
-	M = Symmetric(M)
-	evs = eigvals(M,(n-1:n))
+	evs = sort(real(eigvals(M)))
 	l1 = evs[end]
-	
+
 	if abs(l1) > epsilon
 		return l1
 	else
@@ -215,6 +243,19 @@ function get_lambda2(T::Array{Float64,1}, Y::SparseMatrixCSC{Complex{Float64},In
 	end
 end
 
+function get_lambda2(g::Graphs.AbstractGraph{Bus,Line}, epsilon::Float64=1e-12)
+	# get stability matrix
+	M = get_stability_matrix(g)
+	n = size(M)[1]
+	evs = eigvals(M)
+	l1 = evs[end]
+
+	if abs(l1) > epsilon
+		return l1
+	else
+		return evs[end-1]
+	end
+end
 # computes the flows at each node and on every line
 #
 ## INPUT
