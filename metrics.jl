@@ -219,8 +219,32 @@ function get_stability_matrix(g::Graphs.AbstractGraph{Bus,Line}, approx_level::I
 	
 	return M
 end
-	
-	
+
+# get the eigenvalues
+#
+## INPUT
+# T: thetas
+# Y: admittance matrix
+#
+## OUTPUT
+# eigv: array of the eigenvalues
+function get_eigenvalues(T::Array{Float64,1}, Y::SparseMatrixCSC{Complex{Float64},Int64})
+	# get stability matrix
+	M = get_stability_matrix(T,Y)
+	n = size(M)[1]
+	eigv = eigvals(M)
+	return eigv
+end	
+
+function get_eigenvalues(g::Graphs.AbstractGraph{Bus,Line})
+	# get stability matrix
+	M = get_stability_matrix(g)
+	n = size(M)[1]
+	eigv = eigvals(M)
+	return eigv
+end	
+
+
 # get the real part of lambda 2
 #
 ## INPUT
@@ -230,10 +254,7 @@ end
 ## OUTPUT
 # l2: greatest non-null real part of the stability matrix eigenvalues
 function get_lambda2(T::Array{Float64,1}, Y::SparseMatrixCSC{Complex{Float64},Int64}, epsilon::Float64=1e-12)
-	# get stability matrix
-	M = get_stability_matrix(T,Y)
-	n = size(M)[1]
-	evs = sort(real(eigvals(M)))
+	evs = sort(real(get_eigenvalues(T,Y)))
 	l1 = evs[end]
 
 	if abs(l1) > epsilon
@@ -244,10 +265,7 @@ function get_lambda2(T::Array{Float64,1}, Y::SparseMatrixCSC{Complex{Float64},In
 end
 
 function get_lambda2(g::Graphs.AbstractGraph{Bus,Line}, epsilon::Float64=1e-12)
-	# get stability matrix
-	M = get_stability_matrix(g)
-	n = size(M)[1]
-	evs = eigvals(M)
+	evs = sort(real(get_eigenvalues(g)))
 	l1 = evs[end]
 
 	if abs(l1) > epsilon
@@ -256,11 +274,13 @@ function get_lambda2(g::Graphs.AbstractGraph{Bus,Line}, epsilon::Float64=1e-12)
 		return evs[end-1]
 	end
 end
+
+
 # computes the flows at each node and on every line
 #
 ## INPUT
 # T: thetas
-# Y: admittance matrix
+# Y: admittance matrix with positive out-diagonal elemets !
 # 
 ## OUTPUT
 # P: vector of power balance at each node
@@ -269,17 +289,17 @@ end
 function flow_test(T::Array{Float64,1}, Y::SparseMatrixCSC{Complex{Float64},Int64})
 	n = length(T)
 	
-	YY = Y.*(1-eye(n))
-	YY = YY-diagm(collect(sum(YY,2)))
+	YY = Y.*(1 - eye(n))
+	YY = YY - diagm(collect(sum(YY,2)))
 	
 	G = real(YY)
 	B = imag(YY)
 	
-	dT = T*ones(1,n)-ones(n,1)*T'
+	dT = T*ones(1,n) - ones(n,1)*T'
 
-	F = B.*sin(dT)+G.*cos(dT)
-	P = collect(sum(F.*(1-eye(n)),2))
-	L = F+F'
+	F = B.*sin(dT) - G.*cos(dT)
+	P = collect(sum(F,2))
+	L = F + F'
 	
 	return P,F,L
 end
