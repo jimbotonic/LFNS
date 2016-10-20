@@ -112,18 +112,13 @@ function get_admittance_matrix(g::Graphs.AbstractGraph{Bus,Line})
 	n = length(vertices(g))
 	Y = sparse(zeros(Complex{Float64},n,n))
 
-	mx = 0
 	for e in edges(g)
 		s = e.source.id
 		t = e.target.id
 		Y[s,t] = -e.admittance
 		Y[t,s] = -e.admittance
-		mx = maximum([mx,norm(e.admittance)])
 	end
 	
-	print("Control: ")
-	println(mx)
-		
 	return Y
 end	
 
