@@ -110,33 +110,21 @@ end
 # get the admittance matrix
 function get_admittance_matrix(g::Graphs.AbstractGraph{Bus,Line})
 	n = length(vertices(g))
-	Y = Array{Complex{Float64},2}(n,n)
+	Y = sparse(zeros(Complex{Float64},n,n))
 
-############### ATTENTION : LE PASSAGE A LA MATRICE SPARSE BUG !!!! ############################
-
-#	mx = 0
+	mx = 0
 	for e in edges(g)
 		s = e.source.id
 		t = e.target.id
 		Y[s,t] = -e.admittance
 		Y[t,s] = -e.admittance
-#		mx = maximum([mx,norm(e.admittance)])
+		mx = maximum([mx,norm(e.admittance)])
 	end
 	
-#	print("Control: ")
-#	println(mx)
-
-	YY = SparseMatrixCSC{Complex{Float64},Int64}(Y)
-	
-#	mx = 0
-#	for z in YY
-#		mx = maximum([mx,norm(z)])
-#	end
-
-#	print("Control 2: ")
-#	printl(mx)
+	print("Control: ")
+	println(mx)
 		
-	return YY
+	return Y
 end	
 
 # get the vector of angles
