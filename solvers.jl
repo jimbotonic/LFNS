@@ -205,8 +205,9 @@ function RK_solver1(sp::SParams)
 	M = M - spdiagm(diag(M))
 	M1 = real(M)
 	M2 = imag(M)
-	V1 = diag(M1)
-
+	V1 = collect(-sum(M1,2))
+	V1 = zeros(V1)
+	
 	(dT, Tdot) = dU(sp.T, sp.o_args[:h], V1, M1, M2, sp.P)
 	sp.T += dT
 	n_iter = 2
@@ -219,7 +220,8 @@ function RK_solver1(sp::SParams)
 		if error1 < sp.epsilon || error2 < sp.epsilon
 			break
 		end
-		@debug("# iter $n_iter with error=$error")
+		@debug("# iter $n_iter with max velocity=$error1")
+		@debug("# iter $n_iter with max velocity change=$error2")
 		sp.T += dT
 		n_iter += 1
 	end
@@ -253,7 +255,7 @@ function RK_solver1(sp::SParams,callback_func::Function)
 	M = M - spdiagm(diag(M))
 	M1 = real(M)
 	M2 = imag(M)
-	V1 = diag(M1)
+	V1 = collect(-sum(M1,2))
 
 	(dT, Tdot) = dU(sp.T, sp.o_args[:h], V1, M1, M2, sp.P)
 	sp.T += dT
@@ -267,7 +269,8 @@ function RK_solver1(sp::SParams,callback_func::Function)
 		if error1 < sp.epsilon || error2 < sp.epsilon
 			break
 		end
-		@debug("# iter $n_iter with error=$error")
+		@debug("# iter $n_iter with max velocity=$error1")
+		@debug("# iter $n_iter with max velocity change=$error2")
 		sp.T += dT
 		n_iter += 1
 		go_on = callback_func(sp,n_iter,error)
