@@ -280,7 +280,7 @@ end
 #
 ## INPUT
 # T: thetas
-# Y: admittance matrix with positive out-diagonal elemets !
+# Y: admittance matrix with positive out-diagonal elements !
 # 
 ## OUTPUT
 # P: vector of power balance at each node
@@ -291,7 +291,7 @@ function flow_test(T::Array{Float64,1}, Y::SparseMatrixCSC{Complex{Float64},Int6
 	
 	YY = Y.*(1 - eye(n))
 	YY = YY - diagm(collect(sum(YY,2)))
-	
+
 	G = real(YY)
 	B = imag(YY)
 	

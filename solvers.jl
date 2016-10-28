@@ -197,7 +197,7 @@ end
 # n_iter: # of iterations before convergence
 function RK_solver1(sp::SParams)
 	dU = RK4(f1)
-	nTdot = zeros(Float64, length(sp.T))
+	oTdot = zeros(Float64, length(sp.T))
 	Tdot = zeros(Float64, length(sp.T))
 	
 	M = sp.V'.*sp.Y.*sp.V
@@ -207,11 +207,16 @@ function RK_solver1(sp::SParams)
 	M2 = imag(M)
 	V1 = diag(M1)
 
-	n_iter = 1
+	(dT, Tdot) = dU(sp.T, sp.o_args[:h], V1, M1, M2, sp.P)
+	sp.T += dT
+	n_iter = 2
+	
 	while n_iter < sp.iter_max
+		oTdot = copy(Tdot)
 		(dT, Tdot) = dU(sp.T, sp.o_args[:h], V1, M1, M2, sp.P)
-		error = norm(Tdot,Inf)
-		if error < sp.epsilon
+		error1 = norm(Tdot,Inf)
+		error2 = norm(Tdot-oTdot,Inf)
+		if error1 < sp.epsilon || error2 < sp.epsilon
 			break
 		end
 		@debug("# iter $n_iter with error=$error")
@@ -240,7 +245,7 @@ end
 # n_iter: # of iterations before convergence
 function RK_solver1(sp::SParams,callback_func::Function)
 	dU = RK4(f1)
-	nTdot = zeros(Float64, length(sp.T))
+	oTdot = zeros(Float64, length(sp.T))
 	Tdot = zeros(Float64, length(sp.T))
 	
 	M = sp.V'.*sp.Y.*sp.V
@@ -250,11 +255,16 @@ function RK_solver1(sp::SParams,callback_func::Function)
 	M2 = imag(M)
 	V1 = diag(M1)
 
-	n_iter = 1
+	(dT, Tdot) = dU(sp.T, sp.o_args[:h], V1, M1, M2, sp.P)
+	sp.T += dT
+	n_iter = 2
+	
 	while n_iter < sp.iter_max
+		oTdot = copy(Tdot)
 		(dT, Tdot) = dU(sp.T, sp.o_args[:h], V1, M1, M2, sp.P)
-		error = norm(Tdot,Inf)
-		if error < sp.epsilon
+		error1 = norm(Tdot,Inf)
+		error2 = norm(Tdot-oTdot,Inf)
+		if error1 < sp.epsilon || error2 < sp.epsilon
 			break
 		end
 		@debug("# iter $n_iter with error=$error")
@@ -319,6 +329,11 @@ function SD_solver(sp::SParams)
 		nabla = -sp.P + ST.*(K*CT) - CT.*(K*ST)
 		delta = norm(nabla,Inf)
 		@debug("# iter $n_iter with error=$delta")
+	end
+
+	if n_iter == sp.iter_max
+		sp.T = zeros(n)
+		@info(" Did not converge.")
 	end
 
 	o_data = Dict{Symbol,Any}()
