@@ -206,8 +206,7 @@ function RK_solver1(sp::SParams)
 	M1 = real(M)
 	M2 = imag(M)
 	V1 = collect(-sum(M1,2))
-	V1 = zeros(V1)
-	
+
 	(dT, Tdot) = dU(sp.T, sp.o_args[:h], V1, M1, M2, sp.P)
 	sp.T += dT
 	n_iter = 2
@@ -217,6 +216,7 @@ function RK_solver1(sp::SParams)
 		(dT, Tdot) = dU(sp.T, sp.o_args[:h], V1, M1, M2, sp.P)
 		error1 = norm(Tdot,Inf)
 		error2 = norm(Tdot-oTdot,Inf)
+		# the simulation has converged either if all the theta derivatives are zero (error1 < epsilon) or if they have not changed between the last two iterations (error2 < epsilon)
 		if error1 < sp.epsilon || error2 < sp.epsilon
 			break
 		end
@@ -266,6 +266,7 @@ function RK_solver1(sp::SParams,callback_func::Function)
 		(dT, Tdot) = dU(sp.T, sp.o_args[:h], V1, M1, M2, sp.P)
 		error1 = norm(Tdot,Inf)
 		error2 = norm(Tdot-oTdot,Inf)
+		# the simulation has converged either if all the theta derivatives are zero (error1 < epsilon) or if they have not changed between the last two iterations (error2 < epsilon)
 		if error1 < sp.epsilon || error2 < sp.epsilon
 			break
 		end
