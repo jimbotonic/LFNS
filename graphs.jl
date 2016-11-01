@@ -122,21 +122,6 @@ function get_admittance_matrix(g::Graphs.AbstractGraph{Bus,Line})
 	return Y
 end	
 
-# ERROR : get the admittance matrix
-function error_get_admittance_matrix(g::Graphs.AbstractGraph{Bus,Line})
-	n = length(vertices(g))
-	Y = zeros(Complex{Float64},n,n)
-	
-	for e in edges(g)
-		s = e.source.id
-		t = e.target.id
-		Y[s,t] = -e.admittance
-		Y[t,s] = -e.admittance
-	end
-	
-	return SparseMatrixCSC{Complex{Float64},Int}(Y)
-end
-
 # get the vector of angles
 function get_angles(g::Graphs.AbstractGraph{Bus,Line})
 	T = Array{Float64,1}()
