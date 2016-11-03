@@ -288,9 +288,9 @@ end
 # L: matrix of losses on every line
 function flow_test(T::Array{Float64,1}, Y::SparseMatrixCSC{Complex{Float64},Int64})
 	n = length(T)
-	YY = Y.*(1 - eye(n))
+	YY = Y - spdiagm(diag(Y))
 	YY = YY - spdiagm(collect(sum(YY,2)))
-	G = real(YY)
+	G = -real(YY)
 	B = imag(YY)
 	dT = T*ones(1,n) - ones(n,1)*T'
 

@@ -178,6 +178,10 @@ end
 function f1(T::Array{Float64,1}, V1::Array{Float64,1}, M1::SparseMatrixCSC{Float64,Int64}, M2::SparseMatrixCSC{Float64,Int64}, P::Array{Float64,1})
 	V2 = cos(T)
 	V3 = sin(T)
+	
+#	@info(M1[1,1:2])
+#	@info(M2[1,1:2])
+	
 	return (P - V1 + (V2.*(-M1*V2 + M2*V3) - V3.*(M1*V3 + M2*V2))) 
 end
 
@@ -206,7 +210,7 @@ function RK_solver1(sp::SParams)
 	M1 = real(M)
 	M2 = imag(M)
 	V1 = collect(-sum(M1,2))
-
+	
 	(dT, Tdot) = dU(sp.T, sp.o_args[:h], V1, M1, M2, sp.P)
 	sp.T += dT
 	n_iter = 2
@@ -214,10 +218,10 @@ function RK_solver1(sp::SParams)
 	while n_iter < sp.iter_max
 		oTdot = copy(Tdot)
 		(dT, Tdot) = dU(sp.T, sp.o_args[:h], V1, M1, M2, sp.P)
-		error1 = norm(Tdot,Inf)
-		error2 = norm(Tdot-oTdot,Inf)
-		# the simulation has converged either if all the theta derivatives are zero (error1 < epsilon) or if they have not changed between the last two iterations (error2 < epsilon)
-		if error1 < sp.epsilon || error2 < sp.epsilon
+		error1 = norm(Tdot-oTdot,Inf)
+		error2 = var(Tdot)
+		# the simulation has converged if all the theta derivatives have not changed between the last two iterations (error1 < epsilon) and all the theta derivatives are the same (error2 < epsilon)
+		if error1 < sp.epsilon && error2 < sp.epsilon
 			break
 		end
 		@debug("# iter $n_iter with max velocity=$error1")
@@ -264,10 +268,10 @@ function RK_solver1(sp::SParams,callback_func::Function)
 	while n_iter < sp.iter_max
 		oTdot = copy(Tdot)
 		(dT, Tdot) = dU(sp.T, sp.o_args[:h], V1, M1, M2, sp.P)
-		error1 = norm(Tdot,Inf)
-		error2 = norm(Tdot-oTdot,Inf)
-		# the simulation has converged either if all the theta derivatives are zero (error1 < epsilon) or if they have not changed between the last two iterations (error2 < epsilon)
-		if error1 < sp.epsilon || error2 < sp.epsilon
+		error1 = norm(Tdot-oTdot,Inf)
+		error2 = var(Tdot)
+		# the simulation has converged if all the theta derivatives have not changed between the last two iterations (error1 < epsilon) and all the theta derivatives are the same (error2 < epsilon)
+		if error1 < sp.epsilon && error2 < sp.epsilon
 			break
 		end
 		@debug("# iter $n_iter with max velocity=$error1")

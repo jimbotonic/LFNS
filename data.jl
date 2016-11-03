@@ -467,3 +467,37 @@ function load_graph(P_fn::AbstractString, Y_fn::AbstractString)
 	return graph(vertices, edges, is_directed=false)
 end
 
+
+# load graph from the specified Y, T and P files
+#
+# CSV files with no-header and comma-separated are expected
+# P_fn contains one float per line
+# T_fn contains on float per line
+# Y_fn: node_id1, node_id2, G_value (0 in the non-dissipative case), B value
+function load_graph2(P_fn::AbstractString, T_fn::AbstractString, Y_fn::AbstractString)
+	# load the data from Y and P file
+	P_df = load_csv_data(P_fn)
+	T_df = load_csv_data(t_fn)
+	Y_df = load_csv_data(Y_fn)
+
+	# the size of the network is assumed to be the # of rows in P0 
+	P = collect(P_df[1])
+	T = collect(T_df[1])
+	n = length(P)
+
+	vertices = Bus[]
+	for i in 1:n
+		push!(vertices, Bus(i, Float64(T[i]), Float64(P[i])))
+	end
+	
+	edges = Line[]
+	for i in 1:size(Y_df,1)
+		source = vertices[Y_df[i,1]]
+		target = vertices[Y_df[i,2]]
+		y = Float64(Y_df[i,3])+Float64(Y_df[i,4])*im
+		push!(edges, Line(i, source, target, y))
+	end
+	
+	return graph(vertices, edges, is_directed=false)
+end
+
