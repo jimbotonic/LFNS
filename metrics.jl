@@ -280,7 +280,7 @@ end
 #
 ## INPUT
 # T: thetas
-# Y: admittance matrix with positive out-diagonal elements !
+# Y: admittance matrix with positive imaginary part and negative real part for out-diagonal elements !
 # 
 ## OUTPUT
 # P: vector of power balance at each node
@@ -289,12 +289,11 @@ end
 function flow_test(T::Array{Float64,1}, Y::SparseMatrixCSC{Complex{Float64},Int64})
 	n = length(T)
 	YY = Y - spdiagm(diag(Y))
-	YY = YY - spdiagm(collect(sum(YY,2)))
 	G = -real(YY)
 	B = imag(YY)
 	dT = T*ones(1,n) - ones(n,1)*T'
 
-	F = B.*sin(dT) - G.*cos(dT)
+	F = B.*sin(dT) + G.*(1 - cos(dT))
 	P = collect(sum(F,2))
 	L = F + F'
 	
