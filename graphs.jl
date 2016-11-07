@@ -112,6 +112,9 @@ function get_admittance_matrix(g::Graphs.AbstractGraph{Bus,Line})
 	n = length(vertices(g))
 	Y = sparse(zeros(Complex{Float64},n,n))
 
+##	YY = SparseMatrixCSC{Complex{Float64},Int64}(Y)
+##	Using this type convertion from an Array of Complex Floats, we obtained some non-zero values at non-deterministic locations in matrix YY.
+
 	for e in edges(g)
 		s = e.source.id
 		t = e.target.id
@@ -121,6 +124,7 @@ function get_admittance_matrix(g::Graphs.AbstractGraph{Bus,Line})
 	
 	return Y
 end	
+
 
 # get the vector of angles
 function get_angles(g::Graphs.AbstractGraph{Bus,Line})
