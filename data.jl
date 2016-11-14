@@ -423,6 +423,8 @@ function load_csv_data(fn::AbstractString)
 end
 
 # load serialized adjacency list
+#
+# @deprecated
 function load_serialized(filename::AbstractString)
 	x = open(filename, "r") do file
 		deserialize(file)
@@ -431,11 +433,47 @@ function load_serialized(filename::AbstractString)
 end
 
 # serialize graph
+#
+# @deprecate
 function serialize_to_file(x, filename::AbstractString)
 	open(filename, "w") do file
 		serialize(file, x)
 	end
 end			
+
+# load serialized JLS data
+function load_jls_serialized(filename::AbstractString)
+	x = open(filename, "r") do file
+		deserialize(file)
+	end
+	return x
+end
+
+# serialize data to JLS format
+function serialize_to_jls(x, filename::AbstractString)
+	open("$filename.jls", "w") do file
+		serialize(file, x)
+	end
+end
+
+# load serialized JLD data
+#
+# NB: better long-term backwards compatibility than jls files 
+function load_jld_serialized(name::AbstractString, filename::AbstractString)
+	x = jldopen(filename, "r") do file
+    		read(file, name)
+  	end
+	return x
+end
+
+# serialize data to JLD format
+#
+# NB: better long-term backwards compatibility than jls files 
+function serialize_to_jld(x, name::AbstractString, filename::AbstractString)
+	jldopen("$filename.jld", "w") do file
+		write(file, name, x)
+	end
+end	
 
 # load graph from the specified Y and P files
 #
