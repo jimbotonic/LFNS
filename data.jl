@@ -1,4 +1,4 @@
-using Logging, DataFrames
+using Logging, DataFrames, JLD
 
 include("graphs.jl")
 
@@ -435,7 +435,7 @@ end
 # serialize graph
 #
 # @deprecate
-function serialize_to_file(x, filename::AbstractString)
+function serialize_to_file(x::Any, filename::AbstractString)
 	open(filename, "w") do file
 		serialize(file, x)
 	end
@@ -450,7 +450,7 @@ function load_jls_serialized(filename::AbstractString)
 end
 
 # serialize data to JLS format
-function serialize_to_jls(x, filename::AbstractString)
+function serialize_to_jls(x::Any, filename::AbstractString)
 	open("$filename.jls", "w") do file
 		serialize(file, x)
 	end
@@ -469,7 +469,7 @@ end
 # serialize data to JLD format
 #
 # NB: better long-term backwards compatibility than jls files 
-function serialize_to_jld(x, name::AbstractString, filename::AbstractString)
+function serialize_to_jld(x::Any, name::AbstractString, filename::AbstractString)
 	jldopen("$filename.jld", "w") do file
 		write(file, name, x)
 	end
