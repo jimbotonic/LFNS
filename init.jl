@@ -34,6 +34,43 @@ function get_rand_unif_vector(n::Int, hwidth::Number=2.)
 	return T
 end
 
+# perturbe T vector (T_ref += alpha*(2pi*rand()-pi)
+# the vector entries are distributed uniformly in [-pi,pi]
+function perturbe_T_Unif(T_ref::Array{Float64,1}, alpha::Float64=1.)
+	T = copy(T_ref)
+	n = length(T)
+	for i in 1:n
+		T[i] += alpha*(2pi*rand(Uniform())-pi)
+	end
+	return T
+end
+
+# perturbe T vector (T_ref += alpha*(2pi*R2-pi))
+function perturbe_T_N2(T_ref::Array{Float64,1}, alpha::Float64=1.)
+	T = copy(T_ref)
+	n = length(T)
+	# get random vector of norm-2 1 (i.e. R belongs to the hypercube of side 1)
+	R = get_rand_unit_vector_N2(n)
+	for i in 1:n
+		# the perturbative vector belongs to the hypersphere of radius pi*alpha centered at the origin
+		T[i] += (R[i]*2pi-pi)*alpha
+	end
+	return T
+end
+
+# perturbe T vector (T_ref += alpha*(2pi*Rinf-pi))
+function perturbe_T_Ninf(T_ref::Array{Float64,1}, alpha::Float64=1.)
+	T = copy(T_ref)
+	n = length(T)
+	# get random vector of norm-inf 1 (i.e. R belongs to the hypercube of side 1)
+	R = get_rand_unit_vector_Ninf(n)
+	for i in 1:n
+		# the perturbative vector belongs to the hypercube of side 2*pi*alpha centered at the origin
+		T[i] += (R[i]*2pi-pi)*alpha
+	end
+	return T
+end
+
 # initialize P vector with entry values in [-1, 1] and absolute value of greatest value equal to 1
 #
 # NB: U is assumed to be a distribution
