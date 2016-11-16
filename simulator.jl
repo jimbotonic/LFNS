@@ -174,3 +174,15 @@ function change_T(g::Graphs.AbstractGraph{Bus,Line},T::Array{Float64,1})
 		vs[i].angle = T[i]
 	end
 end
+
+
+# change the admittance matrix
+# !!! Does cannot add or remove some lines, only change the admittance value of the existing lines
+function change_Y(g::Graphs.AbstractGraph{Bus,Line},Y::SparseMatrixCSC{Complex{Float64},Int64})
+	ed = edges(g)
+	for e in ed
+		i = e.source.id
+		j = e.target.id
+		e.admittance = -Y[i,j]
+	end
+end
