@@ -1,3 +1,12 @@
+# estimate slope of function f at x numerically
+#
+# NB: f is assumed to be continuous and differentiable 
+function slope(f::Function, x::Float64)
+	# compute smallest h based on available precision
+	h = sqrt(eps(typeof(x)))
+	return (f(x+h)-f(x))/h
+end
+
 # compute the vorticity of the graph
 function vorticity(T::Array{Float64,1}, cycles::Array{Array{Int64,1},1})
 	V = Float64[]
