@@ -101,7 +101,7 @@ function get_active_powers(g::Graphs.AbstractGraph{Bus,Line})
 	n = length(vertices(g))
 	P = zeros(Float64,n)
 	for v in vertices(g)
-		P[v.id] = v.generation-v.load
+		P[v.id] = real(v.generation)-real(v.load)
 	end
 	
 	return P
