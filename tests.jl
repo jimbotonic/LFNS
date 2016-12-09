@@ -33,6 +33,10 @@ tic()
 state = simulation(s)
 toc()
 
+tic()
+state2 = simulation(s)
+toc()
+
 state.T = uniform_phase_shift(state.T)
 
 #@info("T_sim: ", state.T[1:20])
@@ -131,6 +135,10 @@ s = Simulator(g,NR_solver,o_args,100.,1e-8,15)
 
 tic()
 state = simulation(s)
+toc()
+
+tic()
+state2 = simulation(s)
 toc()
 
 error_V = chebyshev(state.V,V_ref)
