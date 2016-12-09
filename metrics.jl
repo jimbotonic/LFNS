@@ -1,8 +1,15 @@
+# compute distance between 2 vectors of angles on the torus [-pi,pi]^n
+#
+# norm_type: typically 2 or Inf
+function toric_distance(T_ref::Array{Float64,1}, T::Array{Float64,1}, norm_type::Real)
+	return norm(mod(T_ref[i] - T[i] + pi, 2pi) - pi, norm_type)
+end
+
 # estimate slope of function f at x numerically
 #
 # NB: f is assumed to be continuous and differentiable 
-function slope(f::Function, x::Float64)
-	# compute smallest h based on available precision
+function univariate_func_slope(f::Function, x::Float64)
+	# compute smallest possible h based on machine precision
 	h = sqrt(eps(typeof(x)))
 	return (f(x+h)-f(x))/h
 end
