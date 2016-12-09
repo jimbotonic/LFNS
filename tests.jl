@@ -25,16 +25,12 @@ g = load_graph(p_fn,y_fn)
 T_out = uniform_phase_shift(collect(load_csv_data(t_fn)[1]))
 
 o_args = Dict{Symbol,Any}()
-o_args[:h] = 3e-2
+o_args[:h] = 1e-2
 s = Simulator(g,RK_solver1,o_args,1.,1e-10,round(Int64,1e5))
 
 # launch the simulation
 tic()
 state = simulation(s)
-toc()
-
-tic()
-state2 = simulation(s)
 toc()
 
 state.T = uniform_phase_shift(state.T)
@@ -77,7 +73,6 @@ d = chebyshev(state.T, T_out)
 
 @test_approx_eq_eps d 0. 1e-4
 
-
 ###
 # test SD solver
 ###
@@ -94,7 +89,7 @@ T_out = uniform_phase_shift(collect(load_csv_data(t_fn)[1]))
 
 o_args = Dict{Symbol,Any}()
 o_args[:d] = 1
-s = Simulator(g,SD_solver,o_args,1.,1e-8,round(Int64,1e5))
+s = Simulator(g,SD_solver,o_args,1.,1e-10,round(Int64,1e5))
 
 # launch the simulation
 tic()
@@ -131,14 +126,10 @@ g = load_IEEE_SLFD(sys_fn)
 o_args = Dict{Symbol,Any}()
 o_args[:g] = g
 o_args[:bootstrap_iter] = 0
-s = Simulator(g,NR_solver,o_args,100.,1e-8,15)
+s = Simulator(g,NR_solver,o_args,100.,1e-10,15)
 
 tic()
 state = simulation(s)
-toc()
-
-tic()
-state2 = simulation(s)
 toc()
 
 error_V = chebyshev(state.V,V_ref)
@@ -151,7 +142,6 @@ error_T = chebyshev(state.T,T_ref)
 
 @test_approx_eq_eps error_V 0. 1e-4
 @test_approx_eq_eps error_T 0. 1e-4
-
 
 # Test on UK grid without dissipation, same setting as RK_solver and SD_solver
 @info("######### UK grid without dissipation")
@@ -171,7 +161,7 @@ o_args = Dict{Symbol,Any}()
 o_args[:g] = g
 o_args[:bootstrap_iter] = 0
 
-s = Simulator(g,NR_solver,o_args,1.,1e-8,round(Int64,1e5))
+s = Simulator(g,NR_solver,o_args,1.,1e-10,round(Int64,1e5))
 
 # launch the simulation
 tic()
@@ -232,8 +222,6 @@ error_T = chebyshev(state.T,T_ref)
 
 @test_approx_eq_eps error_V 0. 1e-4
 @test_approx_eq_eps error_T 0. 1e-4
-
-
 
 ###
 # test lattice initialization
