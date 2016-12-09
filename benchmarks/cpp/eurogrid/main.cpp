@@ -85,8 +85,8 @@ bool runge_kutta(Array & y, Array & ydot, double deltat, const Array & P, const 
 	
 	y=y+(1.0/6.0)*(k1+2.0*k2+2.0*k3+k4);
 	ydot=rhs(y,P,B,G);
-	//if ((ydot+(-1.0)*ydot_old).abs_max() < precision){ return true; }
-	if (ydot.abs_max() < precision){ return true; }
+	if ((ydot+(-1.0)*ydot_old).abs_max() < precision && ydot.var() < precision){ return true; }
+	// if (ydot.abs_max() < precision){ return true; }
 	else{ return false; }
 }
 
