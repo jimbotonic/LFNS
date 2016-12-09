@@ -25,7 +25,7 @@ g = load_graph(p_fn,y_fn)
 T_out = uniform_phase_shift(collect(load_csv_data(t_fn)[1]))
 
 o_args = Dict{Symbol,Any}()
-o_args[:h] = 3e-2
+o_args[:h] = 1e-2
 s = Simulator(g,RK_solver1,o_args,1.,1e-10,round(Int64,1e5))
 
 # launch the simulation
