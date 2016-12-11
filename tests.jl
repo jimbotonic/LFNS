@@ -15,7 +15,7 @@ BASE_FOLDER = "./data/tests"
 ###
 
 @info("######## Testing RK solver")
-@info("######### UK grid without dissipation")
+@info("######### UK grid without dissipation (RK solver)")
 
 p_fn = BASE_FOLDER * "/RK/UK1/P_in.csv"
 y_fn = BASE_FOLDER * "/RK/UK1/Y_in.csv"
@@ -44,7 +44,32 @@ d = chebyshev(state.T, T_out)
 
 @test_approx_eq_eps d 0. 1e-4
 
-@info("######### UK grid with dissipation")
+@info("######### Eurogrid without dissipation (RK solver)")
+
+#g = load_jld_serialized("g", "./data/eurogrid/eurogrid.jld") 
+#@info("# vertices: ", length(vertices(g)))
+
+#pc_ids = Int64[v.id for v in get_principal_component(g)]
+#pc = get_subgraph(g,pc_ids)
+#serialize_to_jld(pc, "g", "./data/eurogrid/eurogrid_pc")
+
+# load principal component of eurogrid
+g = load_jld_serialized("g", "./data/eurogrid/eurogrid_pc.jld") 
+@info("# vertices: ", length(vertices(g)))
+
+P = collect(load_csv_data("./benchmarks/cpp/eurogrid/P.dat")[1])
+change_P(g,P)
+
+o_args = Dict{Symbol,Any}()
+o_args[:h] = 1e-2
+s = Simulator(g,RK_solver1,o_args,1.,1e-6,round(Int64,1e6))
+
+# launch the simulation
+tic()
+#state = simulation(s)
+toc()
+
+@info("######### UK grid with dissipation (RK solver)")
 
 p_fn = BASE_FOLDER * "/RK/UK2/P_losses.csv"
 y_fn = BASE_FOLDER * "/RK/UK2/Y_in2.csv"
@@ -78,7 +103,7 @@ d = chebyshev(state.T, T_out)
 ###
 
 @info("######## Testing SD solver")
-@info("######### UK grid without dissipation")
+@info("######### UK grid without dissipation (SD solver)")
 
 p_fn = BASE_FOLDER * "/RK/UK1/P_in.csv"
 y_fn = BASE_FOLDER * "/RK/UK1/Y_in.csv"
@@ -112,7 +137,7 @@ d = chebyshev(state.T, T_out)
 ###
 
 @info("######## Testing NR solver")
-@info("######## IEEE benchmark")
+@info("######## IEEE benchmark (NR solver)")
 
 sys_fn = BASE_FOLDER * "/NR/IEEE/ieee14cdf.txt"
 T_fn = BASE_FOLDER * "/NR/IEEE/T_out.csv"
@@ -144,7 +169,7 @@ error_T = chebyshev(state.T,T_ref)
 @test_approx_eq_eps error_T 0. 1e-4
 
 # Test on UK grid without dissipation, same setting as RK_solver and SD_solver
-@info("######### UK grid without dissipation")
+@info("######### UK grid without dissipation (NR solver)")
 
 p_fn = BASE_FOLDER * "/RK/UK1/P_in.csv"
 y_fn = BASE_FOLDER * "/RK/UK1/Y_in.csv"
@@ -183,9 +208,8 @@ error_T = chebyshev(state.T,T_ref)
 @test_approx_eq_eps error_V 0. 1e-4
 @test_approx_eq_eps error_T 0. 1e-4
 
-
 # Test on UK grid with dissipation, same setting as for RK_solver
-@info("######### UK grid with dissipation")
+@info("######### UK grid with dissipation (NR solver)")
 
 p_fn = BASE_FOLDER * "/RK/UK2/P_losses.csv"
 y_fn = BASE_FOLDER * "/RK/UK2/Y_in2.csv"
