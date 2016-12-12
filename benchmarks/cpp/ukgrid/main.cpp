@@ -59,7 +59,8 @@ int main()
 
 	}
 	cout<<"REAL STEP "<<real_step<<endl;
-	Results <<real_step*deltat <<" "<< Y<<" "<< Ydot <<endl;
+	//Results << real_step*deltat <<" "<< Y <<" "<< Ydot << endl;
+	Results << Y << endl;
 	Results.close();
 	
 	auto end = chrono::steady_clock::now();
