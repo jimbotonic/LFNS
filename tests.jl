@@ -79,7 +79,7 @@ d = chebyshev(state.T, T_out)
 #serialize_to_jld(pc, "g", "./data/eurogrid/eurogrid_pc")
 
 p_fn = BASE_FOLDER * "/RK/Eurogrid/P_in.csv"
-t_fn = BASE_FOLDER * "/RK/Eurogrid/T_out.csv"
+t_fn = BASE_FOLDER * "/RK/Eurogrid/T_out_1e-10.csv"
 
 # load principal component of eurogrid
 g = load_jld_serialized("g", "./data/eurogrid/eurogrid_pc.jld") 
@@ -92,7 +92,7 @@ change_P(g,P)
 
 o_args = Dict{Symbol,Any}()
 o_args[:h] = 1e-2
-s = Simulator(g,RK_solver1,o_args,1.,1e-6,round(Int64,1e6))
+s = Simulator(g,RK_solver1,o_args,1.,1e-12,round(Int64,1e8))
 
 # export admittance matrix for TC code
 #vs = vertices(g)
@@ -109,18 +109,20 @@ s = Simulator(g,RK_solver1,o_args,1.,1e-6,round(Int64,1e6))
 #close(cppFile)
 
 # launch the simulation
-#@time state = simulation(s)
+@time state = simulation(s)
 
-#state.T = uniform_phase_shift(state.T)
+state.T = uniform_phase_shift(state.T)
 
-#@info("T_sim: ", state.T[1:20])
-#@info("T_ref: ", T_out[1:20])
+@info("T_sim: ", state.T[1:20])
+@info("T_ref: ", T_out[1:20])
 
-#d = chebyshev(state.T, T_out)
-#@info("distance $d")
-#@info("# iter: ", state.n_iter)
+d = chebyshev(state.T, T_out)
+@info("distance $d")
+@info("# iter: ", state.n_iter)
 
-#@test_approx_eq_eps d 0. 1e-3
+export_csv_data(state.T, "T_out.csv")
+
+@test_approx_eq_eps d 0. 1e-4
 
 ###
 # test SD solver
@@ -267,7 +269,7 @@ error_T = chebyshev(state.T,T_ref)
 @info("######## Eurogrid without dissipation (NR solver)")
 
 p_fn = BASE_FOLDER * "/RK/Eurogrid/P_in.csv"
-t_fn = BASE_FOLDER * "/RK/Eurogrid/T_out.csv"
+t_fn = BASE_FOLDER * "/RK/Eurogrid/T_out_1e-10.csv"
 
 # load principal component of eurogrid
 g = load_jld_serialized("g", "./data/eurogrid/eurogrid_pc.jld") 
@@ -298,7 +300,24 @@ error_T = chebyshev(state.T,T_out)
 @info("Max error in theta: $error_T")
 @info("# iter: ", state.n_iter)
 
-@test_approx_eq_eps error_T 0. 1e-3
+change_T(g,state.T)
+
+o_args = Dict{Symbol,Any}()
+o_args[:h] = 1e-2
+s = Simulator(g,RK_solver1,o_args,1.,1e-6,round(Int64,1e6))
+
+@time state = simulation(s)
+
+state.T = uniform_phase_shift(state.T)
+error_T = chebyshev(state.T,T_out)
+
+@info("T_sim: ", state.T[1:20])
+@info("T_ref: ", T_out[1:20])
+
+@info("Max error in theta: $error_T")
+@info("# iter: ", state.n_iter)
+
+#@test_approx_eq_eps error_T 0. 1e-3
 
 ###
 # test lattice initialization

@@ -225,8 +225,8 @@ function RK_solver1(sp::SParams)
 		if error1 < sp.epsilon && error2 < sp.epsilon
 			break
 		end
-		@debug("# iter $n_iter with max velocity=$error1")
-		@debug("# iter $n_iter with max velocity change=$error2")
+		#@debug("# iter $n_iter with max velocity=$error1")
+		#@debug("# iter $n_iter with max velocity change=$error2")
 		sp.T += dT
 		n_iter += 1
 	end
@@ -277,8 +277,8 @@ function RK_solver1(sp::SParams,callback_func::Function)
 		if error1 < sp.epsilon && error2 < sp.epsilon
 			break
 		end
-		@debug("# iter $n_iter with max velocity=$error1")
-		@debug("# iter $n_iter with max velocity change=$error2")
+		#@debug("# iter $n_iter with max velocity=$error1")
+		#@debug("# iter $n_iter with max velocity change=$error2")
 		sp.T += dT
 		n_iter += 1
 		go_on = callback_func(sp,n_iter,error)
