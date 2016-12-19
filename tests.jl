@@ -284,7 +284,7 @@ change_P(g,P)
 o_args = Dict{Symbol,Any}()
 o_args[:g] = g
 o_args[:bootstrap_iter] = 0
-s = Simulator(g,NR_solver,o_args,1.,1e-9,round(Int64,1e5))
+s = Simulator(g,NR_solver,o_args,1.,1e-10,round(Int64,1e5))
 
 # launch the simulation
 @time state = simulation(s)
