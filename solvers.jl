@@ -2,11 +2,10 @@ using Distances
 
 include("simulator.jl")
 
-# shift angles
+# shift vector angles by using the first one as the reference
+# all angles belong to [-pi,pi] afterward
 function uniform_phase_shift(T::Array{Float64,1})
-	# rotate all angles by using the last one as the reference
-	# all angles belong to [-pi,pi] afterward
-	T = mod(T-T[end]+pi,2*pi)-pi
+	return mod(T-T[1]+pi,2*pi)-pi
 end
 
 # Newton-Raphson solver for Flow Data networks
@@ -209,7 +208,9 @@ function RK_solver1(sp::SParams)
 	M = M - spdiagm(diag(M))
 	M1 = real(M)
 	M2 = imag(M)
-	V1 = collect(-sum(M1,2))
+	# vector of the sum of M1 lines
+	# NB: -sum(M1,2) returns an Array{Float64,1} in v0.45 and Array{Float64,2} in v0.5
+	V1 = -sum(M1,2)[:,1]
 	
 	(dT, Tdot) = dU(sp.T, sp.o_args[:h], V1, M1, M2, sp.P)
 	sp.T += dT
@@ -259,7 +260,9 @@ function RK_solver1(sp::SParams,callback_func::Function)
 	M = M - spdiagm(diag(M))
 	M1 = real(M)
 	M2 = imag(M)
-	V1 = collect(-sum(M1,2))
+	# vector of the sum of M1 lines
+	# NB: -sum(M1,2) returns an Array{Float64,1} in v0.45 and Array{Float64,2} in v0.5
+	V1 = -sum(M1,2)[:,1]
 
 	(dT, Tdot) = dU(sp.T, sp.o_args[:h], V1, M1, M2, sp.P)
 	sp.T += dT

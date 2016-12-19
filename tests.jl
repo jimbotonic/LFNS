@@ -178,6 +178,7 @@ s = Simulator(g,NR_solver,o_args,100.,1e-10,15)
 @time state = simulation(s)
 
 error_V = chebyshev(state.V,V_ref)
+# convert angles from radians to degrees
 state.T = uniform_phase_shift(state.T*180/pi)
 error_T = chebyshev(state.T,T_ref)
 
@@ -283,21 +284,21 @@ change_P(g,P)
 o_args = Dict{Symbol,Any}()
 o_args[:g] = g
 o_args[:bootstrap_iter] = 0
-s = Simulator(g,NR_solver,o_args,1.,1e-6,round(Int64,1e5))
+s = Simulator(g,NR_solver,o_args,1.,1e-9,round(Int64,1e5))
 
 # launch the simulation
-#@time state = simulation(s)
+@time state = simulation(s)
 
-#state.T = uniform_phase_shift(state.T)
-#error_T = chebyshev(state.T,T_out)
+state.T = uniform_phase_shift(state.T)
+error_T = chebyshev(state.T,T_out)
 
-#@info("T_sim: ", state.T[1:20])
-#@info("T_ref: ", T_out[1:20])
+@info("T_sim: ", state.T[1:20])
+@info("T_ref: ", T_out[1:20])
 
-#@info("Max error in theta: $error_T")
-#@info("# iter: ", state.n_iter)
+@info("Max error in theta: $error_T")
+@info("# iter: ", state.n_iter)
 
-#@test_approx_eq_eps error_T 0. 1e-3
+@test_approx_eq_eps error_T 0. 1e-3
 
 ###
 # test lattice initialization
