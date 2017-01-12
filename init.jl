@@ -131,6 +131,24 @@ function init_P4(U::Array{Float64,1})
 	return P
 end
 
+# generate a complete graph of size n
+
+function generate_complete_graph(n::Int)
+	vs = Bus[]
+	es = Line[]
+	push!(vs,Bus(1,0.,0.))
+	line_idx = 0
+	for i in 2:n
+		push!(vs,Bus(i,0.,0.))
+		for j in 1:i-1
+			line_idx += 1
+			push!(es,Line(line_idx,vs[j],vs[i],-1.0im))
+		end
+	end
+	
+	return graph(vs,es,is_directed=false)
+end
+
 # generate a ring 
 #
 ## INPUT
