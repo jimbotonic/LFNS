@@ -189,6 +189,33 @@ function generate_ring(n::Int,ic::Int,p::Float64)
 	return graph(vs, es, is_directed=false)
 end
 
+# genereate a graph from its adjacency matrix
+#
+## INPUT
+# adj: adjacency matrix
+# p: power injections
+function generate_graph_from_adj(ajd::Array{Int,2},p::Array{Float64,1}=zeros(size(adj)[1]))
+	vs = Bus[]
+	es = Line[]
+	n = size(adj)[1]
+	nl = Int(0)
+	
+	for i in 1:n
+		push!(vs,Bus(i,0.,p[i]))
+	end
+	
+	for i in 1:n-1
+		for j in i+1:n
+			if adj[i,j] == 1
+				nl += 1
+				push!(es,Line(nl,vs[i],vs[j],-1.0im))
+			end
+		end
+	end
+	
+	return graph(vs, es, is_directed=false)
+end
+
 # generate a flat square lattice
 #
 ## INPUT
