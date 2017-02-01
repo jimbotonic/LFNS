@@ -69,6 +69,9 @@ d = chebyshev(state.T, T_out)
 
 @test_approx_eq_eps d 0. 1e-4
 
+
+## Too long to compute...
+
 @info("######## Eurogrid without dissipation (RK solver)")
 
 #g = load_jld_serialized("g", "./data/eurogrid/eurogrid.jld") 
@@ -123,6 +126,9 @@ d = chebyshev(state.T, T_out)
 export_csv_data(state.T, "T_out.csv")
 
 @test_approx_eq_eps d 0. 1e-4
+
+
+
 
 ###
 # test SD solver

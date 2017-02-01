@@ -316,3 +316,49 @@ function flow_test(T::Array{Float64,1}, Y::SparseMatrixCSC{Complex{Float64},Int6
 	return P,F,L
 end
 
+
+# Compute the bound on the number of stable fixed points on a network whose cycle basis is given.
+## INPUT
+# cycle_basis: a cycle basis of the network (the smaller the cycles, the better).
+## OUTPUT
+# N: max number of stable fixed points.
+function n_sol_bound(cycle_basis::Array{Array{Int64,1},1})
+	c = length(cycle_basis)
+	
+	n_common_edges = spzeros(Int64,c,c)
+	
+	for i in 1:c-1
+		for j in i+1:c
+			for k in 1:length(cycle_basis[i])
+				for l in 1:length(cycle_basis[j])
+					e1 = (cycle_basis[i][k],cycle_basis[i][mod(k,length(cycle_basis[i]))+1])
+					e2 = (cycle_basis[j][l],cycle_basis[j][mod(l,length(cycle_basis[j]))+1])
+					e3 = (e2[2],e2[1])
+					if e1 == e2 || e1 == e3
+						n_common_edges[i,j] += 1
+						n_common_edges[j,i] += 1
+					end
+				end
+			end
+		end
+	end
+	
+	nprim = Array{Int64,1}()
+	Ncontrib = Array{Int64,1}()
+	
+	for i in 1:c
+		ns = 0
+		for j in 1:c
+			if n_common_edges[i,j] == 1
+				ns += 1
+			end
+		end
+		push!(nprim,ns)
+		maxi = length(cyc[i]) + nprim[end]
+		push!(Ncontrib,2*floor(maxi/4) + 1)
+	end
+	
+	N = Float64(prod(Array{Float64,1}(Ncontrib)))
+	
+	return N
+end
