@@ -98,6 +98,7 @@ end
 # lead a simulation
 function simulation(s::Simulator)
 	sp = get_sparams(s)
+	#sp.T=zeros(length(sp.T))
 	state = s.solver(sp)
 	push!(s.states,state)
 	return state
@@ -108,6 +109,7 @@ end
 # callback_func: callback function to be called at each iteration of the solver
 function simulation(s::Simulator,callback_func::Function)
 	sp = get_sparams(s)
+	#sp.T=zeros(length(sp.T))
 	state = s.solver(sp,callback_func)
 	push!(s.states,state)
 	return state
@@ -131,20 +133,18 @@ function get_sparams(s::Simulator)
 				Y[edge.target.id, edge.target.id] += y + y_sh/2
 				Y[edge.source.id, edge.target.id] += -y
 				Y[edge.target.id, edge.source.id] += -y
-			elseif edge.line_type == 1
-				#y_sh = (edge.sh_conductance + edge.sh_susceptance*im)
+			elseif edge.line_type > 0
 				y_sh = edge.sh_susceptance*im
-				Y[edge.source.id, edge.source.id] += y*abs(edge.s_ratio)^2 
-				Y[edge.target.id, edge.target.id] += abs(edge.t_ratio)^2*(y + y_sh)
-				Y[edge.source.id, edge.target.id] += -y*edge.s_ratio*edge.t_ratio
-				Y[edge.target.id, edge.source.id] += -y*conj(edge.s_ratio*edge.t_ratio)
+				Y[edge.source.id, edge.source.id] += abs(edge.s_ratio)^2*(y + y_sh/2) 
+				Y[edge.target.id, edge.target.id] += abs(edge.t_ratio)^2*(y + y_sh/2)
+				Y[edge.source.id, edge.target.id] += -y*conj(edge.s_ratio)*edge.t_ratio
+				Y[edge.target.id, edge.source.id] += -y*conj(edge.t_ratio)*edge.s_ratio
 			end
         	end
     	end
-
 	# add shunt susceptance to each node
-	Y = Y + spdiagm(Float64[v.sh_susceptance for v in vs])*im
-    
+	Y = Y + spdiagm(Complex{Float64}[v.sh_conductance+v.sh_susceptance*im for v in vs])
+	
 	# injections
 	S = Complex{Float64}[(-v.load + v.generation)/s.sb for v in vs]
 	P = Float64[real(s) for s in S]

@@ -266,7 +266,7 @@ function load_IEEE_SLFD(filename::AbstractString)
 			active_generation = float(strip(replace(l[59:67],',','.')))
 			reactive_generation = float(strip(replace(l[68:75],',','.')))
 			generation = complex(active_generation, reactive_generation)
-
+			
 			if bus_type == 0
 				# for PQ bus, bus voltage is set to its base voltage
 				init_voltage = 1.
@@ -294,10 +294,11 @@ function load_IEEE_SLFD(filename::AbstractString)
 			admittance = 1./(resistance+reactance*im)
 			sh_susceptance = float(strip(replace(l[43:50],',','.')))
 			rtemp = float(strip(replace(l[77:83],',','.')))
+			phase_shift=float(strip(replace(l[84:90],',','.')))*(pi/180)
 			if rtemp > 0 
-				s_ratio = 1./rtemp
+				s_ratio = (1./rtemp)*exp(im*phase_shift)
 			else
-				s_ratio = 1.
+				s_ratio = 1.*exp(im*phase_shift)
 			end
 			t_ratio = 1.
 
@@ -318,6 +319,148 @@ function load_IEEE_SLFD(filename::AbstractString)
 
 	return graph(vs, es, is_directed=false)
 end
+
+
+# load Matpower Solved Load Flow Data file
+function load_MATPOWER_SLFD(filename::AbstractString)
+	# load file
+	f = open(filename, "r")
+	lines = readlines(f)
+	close(f)
+
+	vs = Bus[]
+	es = Line[]
+	
+	# incremented edge id
+	eid = 1
+
+	# incremented node id
+	nid = 1	
+
+	node_section = "mpc.bus ="
+	gen_section = "mpc.gen ="
+	edge_section = "mpc.branch ="
+	end_section = "];"
+
+	in_node_section = false
+	in_gen_section = false
+	in_edge_section = false
+	
+	# node id -> node
+	id_node = Dict{AbstractString,Bus}()
+
+	for l in lines	
+		if startswith(l, end_section)
+			in_node_section = false
+			in_gen_section = false
+			in_edge_section = false
+		end
+		
+		if in_node_section
+			data = split(l)
+			name = data[1]
+			bus_type = parse(Int64, data[2])
+			final_voltage = parse(Float64, data[8])
+			# convert angles defined in degrees into radians
+			angle = parse(Float64,data[9])*pi/180
+			# base voltage value in kV
+			base_voltage = parse(Float64,data[10])
+			
+			active_load = parse(Float64,data[3])
+			reactive_load = parse(Float64,data[4])
+			load = complex(active_load, reactive_load)
+
+			# Generation is taken into account in the generation_section, 
+			active_generation = 0.0
+			reactive_generation = 0.0
+			generation = complex(active_generation, reactive_generation)
+			Q_max=0.0
+			Q_min=0.0
+			P_max=0.0
+			P_min=0.0
+
+			if bus_type > 1
+				init_voltage = 1. # The initial voltage is set in the generator section
+			else
+				# for PQ bus, bus voltage is set to its base voltage
+				bus_type=0				
+				init_voltage = 1.
+			end
+			sh_conductance = parse(Float64,data[5])/S_BASE
+			sh_susceptance = parse(Float64,data[6])/S_BASE
+			
+			v = Bus(nid, name, bus_type, init_voltage, final_voltage, base_voltage, angle, load, generation, Q_min, Q_max, P_min, P_max, sh_conductance, sh_susceptance,0.,0.)
+			push!(vs, v)
+			@info("adding vertex: ", v)
+			
+			# increment node id
+			nid += 1
+
+			# complete id -> node dictionary			
+			id_node[name] = v
+
+		elseif in_gen_section
+			data = split(l)
+			name = data[1]
+			
+			v=id_node[name]
+			active_generation = parse(Float64,data[2])
+			reactive_generation = parse(Float64,data[3])
+			generation = complex(active_generation, reactive_generation)
+
+			v.generation=generation					
+				
+			v.init_voltage=parse(Float64,data[6])
+			v.Q_max=parse(Float64,data[4])
+			v.Q_min=parse(Float64,data[5])
+			v.P_max=parse(Float64,data[9])
+			v.P_min=parse(Float64,data[10])
+
+		elseif in_edge_section
+			data = split(l)
+			source_id = data[1]
+			target_id = data[2]
+			resistance = parse(Float64, data[3]) 
+			reactance =  parse(Float64, data[4]) 
+			admittance = 1./(resistance+reactance*im)
+			sh_susceptance = parse(Float64, data[5]) 
+			rtemp = parse(Float64, data[9])
+			phase_shift= parse(Float64, data[10])*(pi/180)
+			line_status = convert(Bool,parse(Int,data[11]))
+
+			#normal lines, transformers and phase shifters
+			if rtemp == 0. && phase_shift == 0.
+				line_type=0
+				s_ratio=1.
+			elseif rtemp > 0.
+				line_type=1
+				s_ratio = (1./rtemp)*exp(-im*phase_shift)
+			else 
+				line_type=1
+				s_ratio = 1.*exp(-im*phase_shift)
+			end
+			t_ratio = 1.
+
+			edge = Line(eid, id_node[source_id], id_node[target_id], line_type, line_status, admittance, sh_susceptance, complex(s_ratio), complex(t_ratio))
+			push!(es, edge)
+			@info("adding edge: ", edge)
+
+			# increment edge id
+			eid += 1
+		end
+
+		if startswith(l, node_section)
+			in_node_section = true
+		elseif startswith(l, gen_section)
+			in_gen_section = true
+		elseif startswith(l, edge_section)
+			in_edge_section = true
+		end
+	end	
+
+	return graph(vs, es, is_directed=false)
+end
+
 
 # export graph to graphml
 function export_graphml(g::Graphs.AbstractGraph{Bus,Line}, filename::AbstractString)

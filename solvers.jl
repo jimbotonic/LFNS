@@ -1,4 +1,5 @@
 using Distances
+using IterativeSolvers
 
 include("simulator.jl")
 
@@ -97,6 +98,7 @@ function NR_solver(sp::SParams)
 		# solve JX = dPQ
 		X = J\dPQ
 		
+
 		# update V and theta
 		sp.T[ids] += X[1:n-1]
 		sp.V[PQ_ids] += X[n:end]
