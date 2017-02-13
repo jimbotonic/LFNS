@@ -194,7 +194,7 @@ end
 ## INPUT
 # adj: adjacency matrix
 # p: power injections
-function generate_graph_from_adj(ajd::Array{Int,2},p::Array{Float64,1}=zeros(size(adj)[1]))
+function generate_graph_from_adj(adj::Array{Int,2},p::Array{Float64,1}=zeros(size(adj)[1]))
 	vs = Bus[]
 	es = Line[]
 	n = size(adj)[1]
