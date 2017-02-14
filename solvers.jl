@@ -1,5 +1,4 @@
 using Distances
-using IterativeSolvers
 
 include("simulator.jl")
 

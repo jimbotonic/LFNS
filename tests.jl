@@ -71,7 +71,7 @@ d = chebyshev(state.T, T_out)
 
 
 ## Too long to compute...
-
+#=
 @info("######## Eurogrid without dissipation (RK solver)")
 
 #g = load_jld_serialized("g", "./data/eurogrid/eurogrid.jld") 
@@ -127,7 +127,7 @@ export_csv_data(state.T, "T_out.csv")
 
 @test_approx_eq_eps d 0. 1e-4
 
-
+=#
 
 
 ###
@@ -163,11 +163,11 @@ d = chebyshev(state.T, T_out)
 @test_approx_eq_eps d 0. 1e-4
 
 ###
-# test NR solver
+# test NR solver on the IEEE 14 bus test case
 ###
 
 @info("########### Testing NR solver")
-@info("####### IEEE benchmark (NR solver)")
+@info("####### IEEE-14 bus benchmark (NR solver)")
 
 sys_fn = BASE_FOLDER * "/NR/IEEE/ieee14cdf.txt"
 T_fn = BASE_FOLDER * "/NR/IEEE/T_out.csv"
@@ -196,6 +196,44 @@ error_T = chebyshev(state.T,T_ref)
 
 @test_approx_eq_eps error_V 0. 1e-4
 @test_approx_eq_eps error_T 0. 1e-4
+
+
+###
+# test NR solver loading matpower data 
+###
+@info("########### Testing NR solver -- MATPOWER TESTCASES")
+
+# "case9241pegase.m" can also be tested but it takes a long time
+data_fn = ["case14.m","case57.m","case89pegase.m","case118.m","case300.m","case1354pegase.m","case2869pegase.m"]
+input_path = "data/MATPOWER/"
+solved_cases_fn = BASE_FOLDER * "/NR/MATPOWER/solved_cases.txt"
+solved_cases = convert(Array{Float64},readtable(solved_cases_fn, header = false))
+baseMVA = 100.
+
+for i = 1 : length(data_fn)
+	@info("###### ", data_fn[i])
+	g = load_MATPOWER_SLFD(string(input_path, data_fn[i]))			
+	
+	o_args = Dict{Symbol,Any}()
+	o_args[:g] = g
+	o_args[:bootstrap_iter] = 0
+	s = Simulator(g,NR_solver,o_args,100.,1e-10,20)
+	state = simulation(s)
+
+	#determine slack id	
+	slack_id=0
+	for v in vertices(g)
+		if v.bus_type==3
+			slack_id=v.id
+		end
+	end
+
+	sp = get_sparams(s)
+	active_P = get_active_P(sp::SParams,state)
+	error_Slack_P = chebyshev(active_P[slack_id]*baseMVA , solved_cases[i])
+
+	@info("Max error in Slack bus active power: $error_Slack_P")
+end
 
 # Test on UK grid without dissipation, same setting as RK_solver and SD_solver
 @info("######## UK grid without dissipation (NR solver)")
