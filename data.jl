@@ -359,6 +359,7 @@ function load_MATPOWER_SLFD(filename::AbstractString)
 		if in_node_section
 			data = split(l)
 			name = data[1]
+
 			bus_type = parse(Int64, data[2])
 			final_voltage = parse(Float64, data[8])
 			# convert angles defined in degrees into radians

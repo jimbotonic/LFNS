@@ -204,7 +204,7 @@ error_T = chebyshev(state.T,T_ref)
 @info("########### Testing NR solver -- MATPOWER TESTCASES")
 
 # "case9241pegase.m" can also be tested but it takes a long time
-data_fn = ["case14.m","case57.m","case89pegase.m","case118.m","case300.m","case1354pegase.m","case2869pegase.m"]
+data_fn = ["case14.m","case57.m","case89pegase.m","case118.m","case300.m","case1354pegase.m","case2869pegase.m","iceland.m"]
 input_path = "data/MATPOWER/"
 solved_cases_fn = BASE_FOLDER * "/NR/MATPOWER/solved_cases.txt"
 solved_cases = convert(Array{Float64},readtable(solved_cases_fn, header = false))
@@ -229,7 +229,7 @@ for i = 1 : length(data_fn)
 	end
 
 	sp = get_sparams(s)
-	active_P = get_active_P(sp::SParams,state)
+	active_P = get_active_P(sp,state)
 	error_Slack_P = chebyshev(active_P[slack_id]*baseMVA , solved_cases[i])
 
 	@info("Max error in Slack bus active power: $error_Slack_P")
