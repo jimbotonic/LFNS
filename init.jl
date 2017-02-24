@@ -685,7 +685,7 @@ end
 # numbering of the sites is from bottom to top and from left to right
 #
 ## INPUT
-# n: length of the side of the lattice
+# n: number of nodes on the side of the lattice
 function generate_tri_lattice(n::Int)
 	vs = Bus[]
 	es = Line[]	
