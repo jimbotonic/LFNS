@@ -744,12 +744,12 @@ function create_vortex_on_tri_lattice(n::Int,i::Int,j::Int)
 	
 	if j%2 == 1
 		idx += Int((j-1)/2)
-		xvortex = xcoords[idx] + sqrt(3)/3
-		yvortex = ycoords[idx]
-	else
-		idx += Int((j-2)/2)
-		xvortex = xcoords[idx] + sqrt(3)/6
+		xvortex = xcoords[idx] - .5*tan(pi/6)
 		yvortex = ycoords[idx] + .5
+	else
+		idx += Int((j)/2)
+		xvortex = xcoords[idx] - .5*cos(pi/6)
+		yvortex = ycoords[idx] 
 	end	
 
 	# compute angles
