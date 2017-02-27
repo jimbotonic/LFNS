@@ -161,7 +161,11 @@ function generate_ring(n::Int)
 		push!(vs,Bus(i,0.,0.))
 		push!(es,Line(i-1,vs[i-1],vs[i],-1.0im))
 	end
+	
 	push!(es,Line(n,vs[n],vs[1],-1.0im))
+	
+	vs[1].bus_type = 3
+	
 	return graph(vs, es, is_directed=false)
 end
 
@@ -176,6 +180,7 @@ function generate_ring(n::Int,ic::Int,p::Float64)
 	es = Line[]
 	
 	push!(vs,Bus(1,0.,p))
+#	Bus(1, "1", 3, 1., 1., 1., 0., load::Complex{Float64}, generation::Complex{Float64}, Q_min::Float64, Q_max::Float64, P_min::Float64, P_max::Float64, sh_conductance::Float64, sh_susceptance::Float64, lng::Float64, lat::Float64)
 	for i in 2:n
 		if i==ic
 			push!(vs,Bus(i,0.,-p))
@@ -186,6 +191,8 @@ function generate_ring(n::Int,ic::Int,p::Float64)
 	end
 	push!(es,Line(n,vs[n],vs[1],-1.0im))
 	
+	vs[1].bus_type = 3
+		
 	return graph(vs, es, is_directed=false)
 end
 

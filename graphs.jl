@@ -147,6 +147,15 @@ function get_angles(g::Graphs.AbstractGraph{Bus,Line})
 	return mod(T+pi,2*pi)-pi
 end
 	
+# get the vector of voltage amplitudes
+function get_voltages(g::Graphs.AbstractGraph{Bus,Line})
+	V = Array{Float64,1}()
+	for v in vertices(g)
+		push!(V,v.base_voltage)
+	end
+	return V
+end
+	
 # get the adjacency matrix
 function get_adjacency_matrix(g::Graphs.AbstractGraph{Bus,Line})
 	n = length(vertices(g))

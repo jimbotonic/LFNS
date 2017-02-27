@@ -167,6 +167,18 @@ function change_P(g::Graphs.AbstractGraph{Bus,Line},P::Array{Float64,1})
 	end
 end
 
+# change the active and reactive power injection values
+function change_S(g::Graphs.AbstractGraph{Bus,Line},S::Array{Complex{Float64},1})
+	vs = vertices(g)
+	for i in 1:length(vs)
+		if real(S[i]) >= 0
+			vs[i].generation = S[i]
+		else
+			vs[i].load = -S[i]
+		end
+	end
+end
+
 # Compute the active powers from voltages and angles
 function get_active_P(sp::SParams,state::State)
 
@@ -197,7 +209,7 @@ end
 
 
 # change the admittance matrix
-# !!! Does cannot add or remove some lines, only change the admittance value of the existing lines
+# !!! Cannot add or remove some lines, only change the admittance value of the existing lines
 function change_Y(g::Graphs.AbstractGraph{Bus,Line},Y::SparseMatrixCSC{Complex{Float64},Int64})
 	ed = edges(g)
 	for e in ed

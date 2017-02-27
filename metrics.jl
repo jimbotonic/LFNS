@@ -362,3 +362,26 @@ function n_sol_bound(cycle_basis::Array{Array{Int64,1},1})
 	
 	return N
 end
+
+# Compute the complex power balance at each node according to the state of the state of the system
+## INPUT
+# g: network
+## OUTPUT
+# S: active (real part) and reactive (imaginary part) of the power
+function compute_power_balance(g::Graphs.AbstractGraph{Bus,Line})
+	Y = get_admittance_matrix(g)
+	Y = Y - diagm(vec(sum(Y,1)))
+	T = get_angles(g)
+	V = get_voltages(g)
+	
+	U = V.*exp(im.*T)
+	
+	S = U.*(conj(Y)*conj(V))
+	
+	return S
+end
+	
+
+
+
+
