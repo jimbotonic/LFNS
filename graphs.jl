@@ -96,6 +96,7 @@ function get_slack_component_ids(g::Graphs.AbstractGraph{Bus,Line})
 	end
 end
 
+
 # get the vector of active powers
 function get_active_powers(g::Graphs.AbstractGraph{Bus,Line})
 	n = length(vertices(g))
@@ -105,6 +106,17 @@ function get_active_powers(g::Graphs.AbstractGraph{Bus,Line})
 	end
 	
 	return P
+end
+
+# get the vector of reactive powers
+function get_reactive_powers(g::Graphs.AbstractGraph{Bus,Line})
+	n = length(vertices(g))
+	Q = zeros(Float64,n)
+	for v in vertices(g)
+		Q[v.id] = imag(v.generation)-real(v.load)
+	end
+	
+	return Q
 end
 
 # get the admittance matrix
