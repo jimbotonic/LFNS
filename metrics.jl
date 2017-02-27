@@ -380,8 +380,40 @@ function compute_power_balance(g::Graphs.AbstractGraph{Bus,Line})
 	
 	return S
 end
-	
 
+# Compute the active and reactive power flows on the lines
+## INPUT
+# g: network
+## OUTPUT
+# F: matrix of complex flows	
+function compute_line_flows(g::Graphs.AbstractGraph{Bus,Line})
+	vs = vertices(g)
+	es = edges(g)
+	
+	n = length(vs)
+	
+	F = spzeros(Complex{Float64},n,n)
+	
+	for ed in es
+		t1 = ed.source.angle
+		V1 = ed.source.base_voltage
+		t2 = ed.target.angle
+		V2 = ed.target.base_voltage
+		y = -ed.admittance
+		i1 = ed.source.id
+		i2 = ed.target.id
+		b = imag(y)
+		g = real(y)
+		
+		S12 = (V1*(g*(V1-V2*cos(t1-t2)) + b*V2*sin(t1-t2))) + im*(V1*(-b*(V1-V2*cos(t1-t2)) + g*V2*sin(t1-t2)))
+		S21 = (V2*(g*(V2-V1*cos(t2-t1)) + b*V1*sin(t2-t1))) + im*(V2*(-b*(V2-V1*cos(t2-t1)) + g*V1*sin(t2-t1)))
+		
+		F[i1,i2] = S21
+		F[i2,i1] = S12
+	end
+	
+	return F
+end
 
 
 

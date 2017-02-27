@@ -134,7 +134,7 @@ function get_admittance_matrix(g::Graphs.AbstractGraph{Bus,Line})
 		Y[t,s] = -e.admittance
 	end
 	
-	return Y
+	return Y - spdiagm(vec(sum(Y,1)))
 end	
 
 

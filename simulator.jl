@@ -198,6 +198,25 @@ function get_active_P(sp::SParams,state::State)
 	return P
 end
 
+# Compute the reactive powers from voltages and angles
+function get_reactive_Q(sp::SParams,state::State)
+
+	n = length(state.T)
+	B = imag(sp.Y)
+	G = real(sp.Y)
+	Y_abs = abs(sp.Y)
+	Y_angle = angle(sp.Y)
+	M1 = state.V*state.V'.*Y_abs 
+	M2 = repmat(state.T,1,n)-repmat(state.T',n,1)-Y_angle
+	M3 = M1.*sin(M2)
+	M4 = M1.*cos(M2)
+	V1 = diag(Y_abs).*sin(diag(Y_angle)).*state.V.^2
+	V2 = diag(Y_abs).*cos(diag(Y_angle)).*state.V.^2
+	Q = vec(sum(M3,2))
+
+	return Q
+end
+
 
 # change the angle values
 function change_T(g::Graphs.AbstractGraph{Bus,Line},T::Array{Float64,1})
