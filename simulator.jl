@@ -180,6 +180,7 @@ function change_S(g::Graphs.AbstractGraph{Bus,Line},S::Array{Complex{Float64},1}
 end
 
 # Compute the active powers from voltages and angles
+# Power is given in p.u. => has to be multiplied by sb
 function get_active_P(sp::SParams,state::State)
 
 	n = length(state.T)
@@ -199,6 +200,7 @@ function get_active_P(sp::SParams,state::State)
 end
 
 # Compute the reactive powers from voltages and angles
+# Power is given in p.u. => has to be multiplied by sb
 function get_reactive_Q(sp::SParams,state::State)
 
 	n = length(state.T)
