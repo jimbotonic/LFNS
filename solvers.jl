@@ -236,6 +236,47 @@ function RK_solver1(sp::SParams)
 	return State(Float64[],sp.T,Tdot,n_iter)
 end
 
+
+# Same as RK_solver1 but does not print the number of iteration
+
+function RK_solver_quiet(sp::SParams)
+	dU = RK4(f1)
+	oTdot = zeros(Float64, length(sp.T))
+	Tdot = zeros(Float64, length(sp.T))
+	
+	M = sp.V'.*sp.Y.*sp.V
+	
+	M = M - spdiagm(diag(M))
+	M1 = real(M)
+	M2 = imag(M)
+	# vector of the sum of M1 lines
+	# NB: -sum(M1,2) returns an Array{Float64,1} in v0.45 and Array{Float64,2} in v0.5
+	V1 = -sum(M1,2)[:,1]
+	
+	(dT, Tdot) = dU(sp.T, sp.o_args[:h], V1, M1, M2, sp.P)
+	sp.T += dT
+	n_iter = 2
+	
+	while n_iter < sp.iter_max
+		oTdot = copy(Tdot)
+		(dT, Tdot) = dU(sp.T, sp.o_args[:h], V1, M1, M2, sp.P)
+		error1 = norm(Tdot-oTdot,Inf)
+		error2 = var(Tdot)
+		# the simulation has converged if all the theta derivatives have not changed between the last two iterations (error1 < epsilon) and all the theta derivatives are the same (error2 < epsilon)
+		if error1 < sp.epsilon && error2 < sp.epsilon
+			break
+		end
+		#@debug("# iter $n_iter with max velocity=$error1")
+		#@debug("# iter $n_iter with max velocity change=$error2")
+		sp.T += dT
+		n_iter += 1
+	end
+	
+	return State(Float64[],sp.T,Tdot,n_iter)
+end
+
+
+
 # Runge-Kutta solver for Flow Data networks
 #
 ## INPUT
