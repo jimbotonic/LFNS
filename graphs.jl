@@ -113,7 +113,7 @@ function get_reactive_powers(g::Graphs.AbstractGraph{Bus,Line})
 	n = length(vertices(g))
 	Q = zeros(Float64,n)
 	for v in vertices(g)
-		Q[v.id] = imag(v.generation)-real(v.load)
+		Q[v.id] = imag(v.generation)-imag(v.load)
 	end
 	
 	return Q

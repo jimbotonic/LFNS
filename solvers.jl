@@ -323,7 +323,7 @@ function RK_solver1(sp::SParams,callback_func::Function)
 		#@debug("# iter $n_iter with max velocity change=$error2")
 		sp.T += dT
 		n_iter += 1
-		go_on = callback_func(sp,n_iter,error)
+		go_on = callback_func(sp,n_iter,[error1,error2])
 		!go_on && break
 	end
 	
