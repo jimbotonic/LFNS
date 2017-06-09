@@ -363,3 +363,21 @@ function my_pagerank(g::Graphs.AbstractGraph{Bus,Line},pr::Array{Float64,1},damp
 	return pr2
 end
 
+
+# creates a copy of a graph
+function copy_graph(g::Graphs.AbstractGraph{Bus,Line})
+	vs = Bus[]
+	es = Line[]
+	
+	for v in vertices(g)
+		push!(vs,Bus(copy(v.id),copy(v.name),copy(v.bus_type),copy(v.init_voltage),copy(v.final_voltage),copy(v.base_voltage),copy(v.angle),copy(v.load),copy(v.generation),copy(v.Q_min),copy(v.Q_max),copy(v.P_min),copy(v.P_max),copy(v.sh_conductance),copy(v.sh_susceptance),copy(v.lng),copy(v.lat)))
+	end
+	
+	for e in edges(g)
+		push!(es,Line(copy(e.id),vs[e.source.id],vs[e.target.id],copy(e.line_type),copy(e.line_status),copy(e.admittance),copy(e.sh_susceptance),copy(e.s_ratio),copy(e.t_ratio)))
+	end
+	
+	return graph(vs,es,is_directed=is_directed(g))
+end
+
+	
