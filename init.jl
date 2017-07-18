@@ -149,6 +149,21 @@ function generate_complete_graph(n::Int)
 	return graph(vs,es,is_directed=false)
 end
 
+# generate a star graph with n nodes (including the middle one)
+
+function generate_star_graph(n::Int)
+	vs = Bus[]
+	es = Line[]
+	for i in 1:n
+		push!(vs,Bus(i,0.,0.))
+	end
+	for i in 1:n-1
+		push!(es,Line(i,vs[i],vs[n],-1.0im))
+	end
+	
+	return graph(vs,es,is_directed=false)
+end
+	
 # generate a ring 
 #
 ## INPUT
